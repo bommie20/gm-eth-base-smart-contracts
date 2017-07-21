@@ -715,3 +715,167 @@ describe('Contracts 1 - calculate reward', function() {
           );
      });
 });
+
+
+
+describe('Contracts 2 - test MNT getters and setters', function() {
+
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+               creator2 = accounts[4];
+               goldmintRewardsAccount = accounts[5];
+               advisors = accounts[6];
+
+               var contractName = ':MNT';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployGoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    done();
+               });
+          });
+     });
+
+     it('should set creator', function(done){
+          var params = {from: creator, gas: 2900000};
+          mntContract.setCreator(creator2, params, (err,res)=>{
+               assert.equal(err,null);
+               mntContract.creator((err,res)=>{
+                    assert.equal(err,null);
+                    assert.equal(res,creator2);
+                    done();
+               });
+          });
+     });
+
+     it('should set rewards account', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.setRewardsAccount(goldmintTeam, params, (err,res)=>{
+               assert.equal(err, null);
+               mntContract.rewardsAccount((err, res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res, goldmintTeam);
+                    done();
+               });
+          });
+     });
+
+     it('should set gold token address', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.setGoldTokenAddress(goldContractAddress, params, (err,res)=>{
+               assert.equal(err, null);
+               mntContract.gold((err, gold)=>{
+                    assert.equal(err, null);
+                    assert.equal(gold, goldContractAddress);
+                    done();
+               });
+          });
+     });
+
+     it('should set goldmint rewards account', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.setGoldmintRewardsAccount(goldmintRewardsAccount, params, (err,res)=>{
+               assert.equal(err, null);
+               mntContract.goldmintRewardsAccount((err, res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res, goldmintRewardsAccount);
+                    done();
+               });
+          });
+     });
+
+     it('should set divide rewards interval', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.setDivideRewardsInterval(10, params, (err,res)=>{
+               assert.equal(err, null);
+               mntContract.DIVIDE_REWARDS_INTERVAL_DAYS((err, res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res, 10);
+                    done();
+               });
+          });
+     });
+
+     it('should mint team rewards', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.balanceOf(goldmintTeam, (err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10),0);
+
+               mntContract.mintTeamRewards(goldmintTeam, params, (err,res)=>{
+                    assert.equal(err, null);
+                    mntContract.balanceOf(goldmintTeam, (err,res)=>{
+                         assert.equal(err, null);
+                         mntContract.TEAM_REWARD((err,r2)=>{
+                              assert.equal(res.toString(10),r2.toString(10));
+                              done();                              
+                         })
+                    });
+               });
+          });
+     });
+
+     it('should not mint team rewards again', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.mintTeamRewards(goldmintTeam, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();                              
+          })
+     });
+
+     it('should mint advisors rewards', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.balanceOf(advisors, (err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10),0);
+
+               mntContract.mintAdvisorsRewards(advisors, params, (err,res)=>{
+                    assert.equal(err, null);
+                    mntContract.balanceOf(advisors, (err,res)=>{
+                         assert.equal(err, null);
+                         mntContract.ADVISORS_REWARD((err,r2)=>{
+                              assert.equal(res.toString(10),r2.toString(10));
+                              done();                              
+                         })
+                    });
+               });
+          });
+     });
+
+     it('should not mint advisors rewards again', function(done){
+          var params = {from: creator2, gas: 2900000};
+
+          mntContract.mintAdvisorsRewards(advisors, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();                              
+          });
+     });
+})
+
+

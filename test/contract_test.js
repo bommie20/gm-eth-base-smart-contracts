@@ -13,6 +13,10 @@ var accounts;
 
 var creator;
 var goldmintTeam;
+
+var teamRewardsAccount;
+var advisorRewardsAccount;
+
 var buyer;
 var buyer2;
 var buyers = [];
@@ -137,8 +141,11 @@ function deployMntContract(data,cb){
           var alreadyCalled = false;
 
           tempContract.new(
-               creator,  // rewardsAccount
-               goldmintTeam,
+               teamRewardsAccount,
+               advisorRewardsAccount,
+
+               creator,            // rewardsAccount
+               goldmintTeam,       //
                {
                     from: creator, 
                     // should not exceed 5000000 for Kovan by default
@@ -190,6 +197,9 @@ describe('Contracts 0 - GOLD setters and getters', function() {
                buyer = accounts[1];
                buyer2 = accounts[2];
                goldmintTeam = accounts[3];
+
+               teamRewardsAccount = accounts[4];
+               advisorRewardsAccount = accounts[5];
 
                var contractName = ':MNT';
                getContractAbi(contractName,function(err,abi){
@@ -682,7 +692,10 @@ describe('Contracts 1 - calculate reward', function() {
           assert.equal(balance / 1000000000000000000,200);   // 200 tokens (converted)
 
           var total = mntContract.totalSupply();
-          assert.equal(total/ 1000000000000000000,600);   // 600 tokens (converted)
+
+          var TEAM_REWARD = 2000000; 
+          var ADVISORS_REWARD = 400000;
+          assert.equal(total/ 1000000000000000000,600 + TEAM_REWARD + ADVISORS_REWARD);   // 600 tokens (converted)
 
           // should not be zero 
           var totalRewards = mntContract.lastRewardsTotal();

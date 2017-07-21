@@ -262,6 +262,9 @@ contract MNT is StdToken {
      // this is who deployed this contract
      address creator = 0x0;
 
+     address public teamRewardsAccount = 0x0;
+     address public advisorsRewardsAccount = 0x0;
+
      // this is where all GOLD rewards are kept
      address rewardsAccount = 0x0;
 
@@ -311,6 +314,10 @@ contract MNT is StdToken {
 
           currentState = _nextState;
           LogStateSwitch(_nextState);
+
+          if(currentState==State.ICORunning){
+               startICO();
+          }
      }
 
      function getCurrentPrice() returns (uint){
@@ -345,8 +352,17 @@ contract MNT is StdToken {
 /// Functions:
      /// @dev Constructor
      /// @param _rewardsAccount - should be equal to GOLD's rewardsAccount
-     function MNT(address _rewardsAccount, address _goldmintRewardsAccount) {
+     function MNT(
+          address _teamRewardsAccount,
+          address _advisorsRewardsAccount, 
+          
+          address _rewardsAccount, 
+          address _goldmintRewardsAccount) 
+     {
           creator = msg.sender;
+
+          teamRewardsAccount = _teamRewardsAccount;
+          advisorsRewardsAccount = _advisorsRewardsAccount;
 
           rewardsAccount = _rewardsAccount;
           goldmintRewardsAccount = _goldmintRewardsAccount;
@@ -354,43 +370,62 @@ contract MNT is StdToken {
           assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
      }
 
-     // TODO: this method is still not ready... 
      function buyTokens(address _buyer) public payable onlyInState(State.ICORunning) {
           if(msg.value == 0) throw;
           uint newTokens = msg.value * getCurrentPrice();
 
           if (totalSupply + newTokens > ICO_TOKEN_SUPPLY_LIMIT) throw;
 
-          // TODO: holder can buy again)))
-          //tokenHolders[msg.sender] = _buyer;
-          //tokenHoldersCount = tokenHoldersCount + 1;
-
-          balances[_buyer] += newTokens;
-          totalSupply += newTokens;
+          issueTokens(_buyer,newTokens);
 
           LogBuy(_buyer, newTokens);
      }
 
-     /// @dev This should be called to issue team reward tokens after ICO is complete
-     // TODO: test
-     function mintTeamRewards(address _whereToMint) public onlyCreator {
-          if(teamRewardsMinted)throw;
+     /// @dev This function is automatically called when ICO is started
+     /// WARNING: can be called multiple times!
+     function startICO()internal onlyCreator {
+          // 1 - mint team rewards
+          mintTeamRewards(teamRewardsAccount);
 
-          balances[_whereToMint] += TEAM_REWARD;
-          totalSupply += TEAM_REWARD;
+          // 2 - mint advisor rewards
+          mintAdvisorsRewards(advisorsRewardsAccount);
+     }
 
-          teamRewardsMinted = true;
+     function mintTeamRewards(address _whereToMint) internal onlyCreator {
+          if(!teamRewardsMinted){
+               teamRewardsMinted = true;
+               issueTokens(_whereToMint,TEAM_REWARD);
+          }
      }
      
-     /// @dev This should be called to issue advisors reward tokens after ICO is complete
-     // TODO: test
-     function mintAdvisorsRewards(address _whereToMint) public onlyCreator {
-          if(advisorsRewardsMinted)throw;
+     function mintAdvisorsRewards(address _whereToMint) internal onlyCreator {
+          if(!advisorsRewardsMinted){
+               advisorsRewardsMinted = true;
+               issueTokens(_whereToMint,ADVISORS_REWARD);
+          }
+     }
 
-          balances[_whereToMint] += ADVISORS_REWARD;
-          totalSupply += ADVISORS_REWARD;
+     /// @dev This should be called only after ICO is finished...
+     function mintRest()public onlyCreator {
+          // TODO:
+     }
 
-          advisorsRewardsMinted = true;
+     /// @dev This can be called to migrate Presale tokens and to update Bounty campaign balances
+     // TODO: test it
+     function issueTokensExternal(address _who, uint _tokens) onlyCreator {
+          issueTokens(_who,_tokens);
+     }
+
+     // TODO: test it
+     function issueTokens(address _who, uint _tokens) private {
+          // TODO:
+          // TODO: holder can buy again)))
+
+          //tokenHolders[_who] = _tokens;
+          //tokenHoldersCount = tokenHoldersCount + 1;
+
+          balances[_who] += _tokens;
+          totalSupply += _tokens;
      }
 
      function transfer(address _to, uint256 _value) onlyInState(State.Normal) {
@@ -419,6 +454,9 @@ contract MNT is StdToken {
      // This should be called by Goldmint staff
      function sendRewards() onlyCreator onlyInState(State.Normal) allowSendingRewards{
           lastDivideRewardsTime = now;
+
+          // TODO:
+          // 0 - send the rest of rewards to charity account
 
           // 1 - send half of all rewards to GoldmintDAO
           uint totalRewards = gold.balanceOf(rewardsAccount);

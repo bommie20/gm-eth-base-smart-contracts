@@ -822,6 +822,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
+     /*
      it('should mint team rewards', function(done){
           var params = {from: creator2, gas: 2900000};
           mntContract.balanceOf(goldmintTeam, (err,res)=>{
@@ -876,6 +877,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                done();                              
           });
      });
+     */
 })
 
 

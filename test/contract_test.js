@@ -598,6 +598,55 @@ describe('Contracts 1 - calculate reward', function() {
           );
      });
 
+     it('should not transfer MNT token if not in Normal state',function(done){
+          var amount = 1;
+
+          // creator is really == rewardsAccount
+          mntContract.transfer(
+               buyer,
+               amount,
+               {
+                    from: buyer,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should not send rewards if in wrong state',function(done){
+          mntContract.sendRewards(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+
+                    // team should not get rewards here
+                    var tokens = goldContract.balanceOf(goldmintTeam);
+                    assert.equal(tokens / 1000000000000000000,0);   
+
+                    done();
+               }
+          );
+     });
+
+     it('should move state to Normal',function(done){
+          mntContract.setState(
+               3,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
      it('should send rewards',function(done){
           mntContract.sendRewards(
                {
@@ -626,7 +675,6 @@ describe('Contracts 1 - calculate reward', function() {
                }
           );
      });
-
 
      it('should get my rewards 1',function(done){
           // check the balance

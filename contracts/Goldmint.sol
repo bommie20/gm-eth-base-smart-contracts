@@ -253,10 +253,8 @@ contract MNT is StdToken {
 
           ICORunning,
           ICOPaused,
-          ICOFinished,
-
-          RewardsSending,
-          RewardsSent
+         
+          Normal
           // TODO...
      }
      State public currentState = State.Init;
@@ -307,9 +305,7 @@ contract MNT is StdToken {
                =  (currentState == State.Init && _nextState == State.ICORunning)
                || (currentState == State.ICORunning && _nextState == State.ICOPaused)
                || (currentState == State.ICOPaused && _nextState == State.ICORunning)
-               || (currentState == State.ICORunning && _nextState == State.ICOFinished)
-               || (currentState == State.ICOFinished && _nextState == State.RewardsSending)
-               || (currentState == State.RewardsSending && _nextState == State.RewardsSent);
+               || (currentState == State.ICORunning && _nextState == State.Normal);
 
           if(!canSwitchState) throw;
 
@@ -387,7 +383,7 @@ contract MNT is StdToken {
      }
      
      /// @dev This should be called to issue advisors reward tokens after ICO is complete
-     /// TODO: test
+     // TODO: test
      function mintAdvisorsRewards(address _whereToMint) public onlyCreator {
           if(advisorsRewardsMinted)throw;
 
@@ -397,14 +393,14 @@ contract MNT is StdToken {
           advisorsRewardsMinted = true;
      }
 
-     function transfer(address _to, uint256 _value) onlyInState(State.ICOFinished) {
+     function transfer(address _to, uint256 _value) onlyInState(State.Normal) {
           updateLastBalancesMap(msg.sender);
           updateLastBalancesMap(_to);
 
           super.transfer(_to, _value);
      }
 
-     function transferFrom(address _from, address _to, uint256 _value) onlyInState(State.ICOFinished) {
+     function transferFrom(address _from, address _to, uint256 _value) onlyInState(State.Normal) {
           updateLastBalancesMap(_from);
           updateLastBalancesMap(_to);
 
@@ -421,7 +417,7 @@ contract MNT is StdToken {
      }
 
      // This should be called by Goldmint staff
-     function sendRewards() onlyCreator allowSendingRewards{
+     function sendRewards() onlyCreator onlyInState(State.Normal) allowSendingRewards{
           lastDivideRewardsTime = now;
 
           // 1 - send half of all rewards to GoldmintDAO

@@ -123,7 +123,12 @@ contract GOLD is StdToken {
      string public constant symbol = "GOLD";
      uint public constant decimals = 18;
 
+     uint public constant CURRENT_FEE_MODIFIER_MIN = 100;
+     uint public constant CURRENT_FEE_MODIFIER_MAX = 100000;
      uint public currentFeeModifier = 400;   // 0.25%
+
+     uint public constant MIN_FEE = 0.001 * (1 ether / 1 wei);
+     uint public constant MAX_FEE = 0.01 * (1 ether / 1 wei);
      uint public currentMinFee = 0.0025 * (1 ether / 1 wei);  
 
      enum State{
@@ -132,58 +137,40 @@ contract GOLD is StdToken {
 
      State public currentState = State.Init;
 
-     address creator = 0x0;
-
-     // this is used to send fees (that is then distributed as rewards)
-     address rewardsAccount = 0x0;
+     address public creator = 0x0;
+     // this is used to send fees (that is then distributed as rewards to all MNT token holders)
+     address public rewardsAccount = 0x0;
 
 /// Modifiers:
      modifier onlyCreator() { if(msg.sender != creator) throw; _; }
      modifier onlyInState(State state){ if(state != currentState) throw; _; }
 
 /// Access methods:
-     function getRewardsAccount()constant returns(address){
-          return rewardsAccount;
+     // TODO: test
+     function setCreator(address _creator) onlyCreator {
+          creator = _creator;
      }
 
+     // TODO: test
+     function setRewardsAccount(address _rewardsAccount) onlyCreator {
+          rewardsAccount = _rewardsAccount;
+     }
+     
      function setCurrentFeeModifier(uint _value)onlyCreator{
+          // 0.001% (100000) .. 1% (100)
           // 0.25% (400) by default
-          // 0% .. 0.5% (200)
-          if(_value<200){
+          if((_value<CURRENT_FEE_MODIFIER_MIN) || (_value>CURRENT_FEE_MODIFIER_MAX)){
                throw;
           }
           currentFeeModifier = _value;
      }
 
-     function getCurrentFeeModifier()constant returns(uint out){
-          out = currentFeeModifier;
-          return;
-     }
-
      function setCurrentMinFee(uint _value)onlyCreator{
           // 0.001 .. 0.01
-          uint left = 0.001 * (1 ether / 1 wei);
-          uint right = 0.01 * (1 ether / 1 wei);
-
-          if((_value>=left) && (_value<=right)){
-               currentMinFee = _value;
-          }else{
+          if((_value<MIN_FEE) || (_value>MAX_FEE)){
                throw;
           }
-     }
-
-     function getCurrentMinFee()constant returns(uint out){
-          out = currentMinFee;
-          return;
-     }
-
-     function setCreator(address _value)onlyCreator{
-          creator = _value;
-     }
-
-     function getCreator()constant returns(address out){
-          out = creator;
-          return;
+          currentMinFee = _value;
      }
 
 ///
@@ -217,8 +204,8 @@ contract GOLD is StdToken {
           return super.transfer(_to, sendThis);
      }
 
+     // TODO: msg.sender should be only MNT contract
      function transferRewardWithoutFee(address _to, uint _value) onlyPayloadSize(2*32) {
-          // TODO: msg.sender should be only MNT contract
           if((balances[rewardsAccount] < _value) || (balances[_to] + _value <= balances[_to])) {
                throw;
           }
@@ -245,12 +232,21 @@ contract MNT is StdToken {
 
      // TODO:
      uint public constant PRICE = 1000;  // per 1 Ether
+     
+     uint public constant PRESALE_TOKEN_SUPPLY_LIMIT = 300000 * (1 ether / 1 wei); 
+     // we sell only this amount of tokens during the ICO
+     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7300000 * (1 ether / 1 wei); 
+     uint public constant TEAM_REWARD = 2000000 * (1 ether / 1 wei);
+     uint public constant ADVISORS_REWARD = 400000 * (1 ether / 1 wei);
 
-     // Cap is 2000 ETH
-     // 1 eth = 1000 presale SQPT tokens
-     // 
-     // TODO:
-     uint public constant TOKEN_SUPPLY_LIMIT = PRICE * 2000 * (1 ether / 1 wei);
+     uint public constant TOTAL_TOKEN_SUPPLY = 
+          PRESALE_TOKEN_SUPPLY_LIMIT + 
+          ICO_TOKEN_SUPPLY_LIMIT + 
+          TEAM_REWARD + 
+          ADVISORS_REWARD;
+
+     bool public teamRewardsMinted = false;
+     bool public advisorsRewardsMinted = false;
 
      enum State{
           Init,
@@ -263,10 +259,18 @@ contract MNT is StdToken {
           RewardsSent
           // TODO...
      }
-
      State public currentState = State.Init;
+
+     // this is who deployed this contract
      address creator = 0x0;
+
+     // this is where all GOLD rewards are kept
      address rewardsAccount = 0x0;
+
+     // this is where 50% of all GOLD rewards will be transferred
+     // (this is Goldmint fund)
+     address goldmintRewardsAccount = 0x0;
+
      GOLD gold;
 
      // TODO: combine with 'balances' map...
@@ -283,13 +287,15 @@ contract MNT is StdToken {
      uint tokenHoldersCount = 0;
      mapping(address => TokenHolder) tokenHolders;
 
-     uint lastDivideRewardsTime = 0;
-     uint lastRewardsTotal = 0;
+     // Divide rewards
+     uint public lastDivideRewardsTime = 0;
+     uint public DIVIDE_REWARDS_INTERVAL_DAYS = 7;
+     uint public lastRewardsTotal = 0;
 
 /// Modifiers:
      modifier onlyCreator() { if(msg.sender != creator) throw; _; }
-     modifier onlyRewardsAccount() { if(msg.sender != rewardsAccount) throw; _; }
      modifier onlyInState(State state){ if(state != currentState) throw; _; }
+     modifier allowSendingRewards(){if((lastDivideRewardsTime + (DIVIDE_REWARDS_INTERVAL_DAYS * 1 days)) > now) throw; _; }
 
 /// Events:
      event LogBuy(address indexed owner, uint value);
@@ -311,32 +317,53 @@ contract MNT is StdToken {
           LogStateSwitch(_nextState);
      }
 
+     function getCurrentPrice() returns (uint){
+          return PRICE;
+     }
+
+     // TODO: test
+     function setCreator(address _creator) onlyCreator {
+          creator = _creator;
+     }
+
+     // TODO: test
+     function setRewardsAccount(address _rewardsAccount) onlyCreator {
+          rewardsAccount = _rewardsAccount;
+     }
+
+     // TODO: test
      function setGoldTokenAddress(address _goldTokenContractAddress) onlyCreator {
           gold = GOLD(_goldTokenContractAddress);
      }
 
-     function getRewardsAccount()constant returns(address){
-          return rewardsAccount; 
+     // TODO: test
+     function setGoldmintRewardsAccount(address _goldmintRewardsAccount) onlyCreator {
+          goldmintRewardsAccount = _goldmintRewardsAccount;
      }
 
-     function getLastRewardsTotal()constant returns(uint){
-          return lastRewardsTotal;
+     // TODO: test
+     function setDivideRewardsInterval(uint _days) onlyCreator {
+          DIVIDE_REWARDS_INTERVAL_DAYS = _days;
      }
 
 /// Functions:
      /// @dev Constructor
      /// @param _rewardsAccount - should be equal to GOLD's rewardsAccount
-     function MNT(address _rewardsAccount) {
+     function MNT(address _rewardsAccount, address _goldmintRewardsAccount) {
           creator = msg.sender;
+
           rewardsAccount = _rewardsAccount;
+          goldmintRewardsAccount = _goldmintRewardsAccount;
+
+          assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
      }
 
      // TODO: this method is still not ready... 
      function buyTokens(address _buyer) public payable onlyInState(State.ICORunning) {
           if(msg.value == 0) throw;
-          uint newTokens = msg.value * PRICE;
+          uint newTokens = msg.value * getCurrentPrice();
 
-          if (totalSupply + newTokens > TOKEN_SUPPLY_LIMIT) throw;
+          if (totalSupply + newTokens > ICO_TOKEN_SUPPLY_LIMIT) throw;
 
           // TODO: holder can buy again)))
           //tokenHolders[msg.sender] = _buyer;
@@ -346,6 +373,28 @@ contract MNT is StdToken {
           totalSupply += newTokens;
 
           LogBuy(_buyer, newTokens);
+     }
+
+     /// @dev This should be called to issue team reward tokens after ICO is complete
+     // TODO: test
+     function mintTeamRewards(address _whereToMint) public onlyCreator {
+          if(teamRewardsMinted)throw;
+
+          balances[_whereToMint] += TEAM_REWARD;
+          totalSupply += TEAM_REWARD;
+
+          teamRewardsMinted = true;
+     }
+     
+     /// @dev This should be called to issue advisors reward tokens after ICO is complete
+     /// TODO: test
+     function mintAdvisorsRewards(address _whereToMint) public onlyCreator {
+          if(advisorsRewardsMinted)throw;
+
+          balances[_whereToMint] += ADVISORS_REWARD;
+          totalSupply += ADVISORS_REWARD;
+
+          advisorsRewardsMinted = true;
      }
 
      function transfer(address _to, uint256 _value) onlyInState(State.ICOFinished) {
@@ -372,12 +421,18 @@ contract MNT is StdToken {
      }
 
      // This should be called by Goldmint staff
-     function sendRewards()onlyRewardsAccount{
-          // 7 days
-          if(lastDivideRewardsTime + 7 days > now) throw;
+     function sendRewards() onlyCreator allowSendingRewards{
           lastDivideRewardsTime = now;
+
+          // 1 - send half of all rewards to GoldmintDAO
+          uint totalRewards = gold.balanceOf(rewardsAccount);
+          uint half = totalRewards / 2;
+          gold.transferRewardWithoutFee(goldmintRewardsAccount,half);
+
+          // 2 - send other half to token holders
           // save total rewards at this time
-          lastRewardsTotal = gold.balanceOf(rewardsAccount);
+          uint rest = totalRewards - half;
+          lastRewardsTotal = rest;
      }
 
      // This should be called by token holder

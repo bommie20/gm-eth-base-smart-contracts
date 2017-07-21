@@ -12,6 +12,7 @@ var web3 = new Web3(new Web3.providers.HttpProvider(process.env.ETH_NODE));
 var accounts;
 
 var creator;
+var goldmintTeam;
 var buyer;
 var buyer2;
 var buyers = [];
@@ -137,6 +138,7 @@ function deployMntContract(data,cb){
 
           tempContract.new(
                creator,  // rewardsAccount
+               goldmintTeam,
                {
                     from: creator, 
                     // should not exceed 5000000 for Kovan by default
@@ -175,7 +177,165 @@ function deployMntContract(data,cb){
      });
 }
 
-describe('ContractsScheme2 0', function() {
+describe('Contracts 0 - GOLD setters and getters', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+
+               var contractName = ':MNT';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployGoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    done();
+               });
+          });
+     });
+
+     it('should get default fee modifier',function(done){
+          var feeModifier = goldContract.currentFeeModifier();
+          assert.equal(feeModifier, 400);
+          done();
+     });
+
+     it('should not set fee modifier less than 200',function(done){
+          goldContract.setCurrentFeeModifier(
+               99,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should not set fee modifier if not creator',function(done){
+          goldContract.setCurrentFeeModifier(
+               250,
+               {
+                    from: buyer,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should set fee modifier',function(done){
+          goldContract.setCurrentFeeModifier(
+               200,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should get updated fee modifier',function(done){
+          var feeModifier = goldContract.currentFeeModifier();
+          assert.equal(feeModifier, 200);
+          done();
+     });
+
+////////////////////////////////////////////////////
+     // TODO
+     it('should get default min fee',function(done){
+          var minFee = goldContract.currentMinFee();
+          assert.equal(minFee, 0.0025 *  1000000000000000000);
+          done();
+     });
+
+     it('should not set min fee if not creator',function(done){
+          goldContract.setCurrentMinFee(
+               0.0030 * 1000000000000000000,
+               {
+                    from: buyer,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should not set min fee if less than min',function(done){
+          goldContract.setCurrentMinFee(
+               0.0001 * 1000000000000000000,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should not set min fee if more than max',function(done){
+          goldContract.setCurrentMinFee(
+               0.02 * 1000000000000000000,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should set min fee',function(done){
+          goldContract.setCurrentMinFee(
+               0.009 * 1000000000000000000,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should get updated min fee',function(done){
+          var minFee = goldContract.currentMinFee();
+          assert.equal(minFee, 0.009 *  1000000000000000000);
+          done();
+     });
+});
+
+describe('Contracts 1 - calculate reward', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
                if(err) {
@@ -239,6 +399,23 @@ describe('ContractsScheme2 0', function() {
           var state = mntContract.currentState();
           assert.equal(state,0);
           done();
+     });
+
+     it('should not set GOLD token address if not creator',function(done){
+          mntContract.setGoldTokenAddress(
+               goldContractAddress,
+               {
+                    from: buyer,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+
+                    web3.eth.getTransactionReceipt(result, function(err, r2){
+                         assert.notEqual(err, null);
+                         done();
+                    });
+               }
+          );
      });
 
      it('should set GOLD token address',function(done){
@@ -406,14 +583,14 @@ describe('ContractsScheme2 0', function() {
                     tokens = goldContract.balanceOf(buyer2);
                     assert.equal(tokens / 1000000000000000000,19.95);   
 
-                    var rewAccount = goldContract.getRewardsAccount();
+                    var rewAccount = goldContract.rewardsAccount();
                     assert.equal(rewAccount,creator);
 
                     var totalRewardsCollected = goldContract.balanceOf(rewAccount);
                     assert.equal(totalRewardsCollected/ 1000000000000000000,0.05);   
 
                     // should be zero because no sendRewards was called...
-                    var totalRewards = mntContract.getLastRewardsTotal();
+                    var totalRewards = mntContract.lastRewardsTotal();
                     assert.equal(totalRewards/ 1000000000000000000,0);   
 
                     done();
@@ -428,6 +605,10 @@ describe('ContractsScheme2 0', function() {
                     gas: 2900000 
                },function(err,result){
                     assert.equal(err,null);
+
+                    // team should get 50% of all rewards
+                    var tokens = goldContract.balanceOf(goldmintTeam);
+                    assert.equal(tokens / 1000000000000000000,0.025);   
 
                     done();
                }
@@ -456,8 +637,9 @@ describe('ContractsScheme2 0', function() {
           assert.equal(total/ 1000000000000000000,600);   // 600 tokens (converted)
 
           // should not be zero 
-          var totalRewards = mntContract.getLastRewardsTotal();
-          assert.equal(totalRewards,0.05 * 1000000000000000000);   
+          var totalRewards = mntContract.lastRewardsTotal();
+          // half of all rewards
+          assert.equal(totalRewards,0.025 * 1000000000000000000);   
 
           var myRewards = mntContract.calculateMyReward(buyer);
 
@@ -471,5 +653,4 @@ describe('ContractsScheme2 0', function() {
                }
           );
      });
-
 });

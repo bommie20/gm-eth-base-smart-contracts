@@ -260,16 +260,16 @@ contract MNT is StdToken {
      State public currentState = State.Init;
 
      // this is who deployed this contract
-     address creator = 0x0;
+     address public creator = 0x0;
 
      // this is where all GOLD rewards are kept
-     address rewardsAccount = 0x0;
+     address public rewardsAccount = 0x0;
 
      // this is where 50% of all GOLD rewards will be transferred
      // (this is Goldmint fund)
-     address goldmintRewardsAccount = 0x0;
+     address public goldmintRewardsAccount = 0x0;
 
-     GOLD gold;
+     GOLD public gold;
 
      // TODO: combine with 'balances' map...
      struct TokenHolder {

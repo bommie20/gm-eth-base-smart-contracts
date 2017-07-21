@@ -253,25 +253,23 @@ contract MNT is StdToken {
 
           ICORunning,
           ICOPaused,
-          ICOFinished,
-
-          RewardsSending,
-          RewardsSent
+         
+          Normal
           // TODO...
      }
      State public currentState = State.Init;
 
      // this is who deployed this contract
-     address public creator = 0x0;
+     address creator = 0x0;
 
      // this is where all GOLD rewards are kept
-     address public rewardsAccount = 0x0;
+     address rewardsAccount = 0x0;
 
      // this is where 50% of all GOLD rewards will be transferred
      // (this is Goldmint fund)
-     address public goldmintRewardsAccount = 0x0;
+     address goldmintRewardsAccount = 0x0;
 
-     GOLD public gold;
+     GOLD gold;
 
      // TODO: combine with 'balances' map...
      struct TokenHolder {
@@ -307,9 +305,7 @@ contract MNT is StdToken {
                =  (currentState == State.Init && _nextState == State.ICORunning)
                || (currentState == State.ICORunning && _nextState == State.ICOPaused)
                || (currentState == State.ICOPaused && _nextState == State.ICORunning)
-               || (currentState == State.ICORunning && _nextState == State.ICOFinished)
-               || (currentState == State.ICOFinished && _nextState == State.RewardsSending)
-               || (currentState == State.RewardsSending && _nextState == State.RewardsSent);
+               || (currentState == State.ICORunning && _nextState == State.Normal);
 
           if(!canSwitchState) throw;
 
@@ -321,22 +317,27 @@ contract MNT is StdToken {
           return PRICE;
      }
 
+     // TODO: test
      function setCreator(address _creator) onlyCreator {
           creator = _creator;
      }
 
+     // TODO: test
      function setRewardsAccount(address _rewardsAccount) onlyCreator {
           rewardsAccount = _rewardsAccount;
      }
 
+     // TODO: test
      function setGoldTokenAddress(address _goldTokenContractAddress) onlyCreator {
           gold = GOLD(_goldTokenContractAddress);
      }
 
+     // TODO: test
      function setGoldmintRewardsAccount(address _goldmintRewardsAccount) onlyCreator {
           goldmintRewardsAccount = _goldmintRewardsAccount;
      }
 
+     // TODO: test
      function setDivideRewardsInterval(uint _days) onlyCreator {
           DIVIDE_REWARDS_INTERVAL_DAYS = _days;
      }
@@ -371,6 +372,7 @@ contract MNT is StdToken {
      }
 
      /// @dev This should be called to issue team reward tokens after ICO is complete
+     // TODO: test
      function mintTeamRewards(address _whereToMint) public onlyCreator {
           if(teamRewardsMinted)throw;
 
@@ -381,6 +383,7 @@ contract MNT is StdToken {
      }
      
      /// @dev This should be called to issue advisors reward tokens after ICO is complete
+     // TODO: test
      function mintAdvisorsRewards(address _whereToMint) public onlyCreator {
           if(advisorsRewardsMinted)throw;
 
@@ -390,14 +393,14 @@ contract MNT is StdToken {
           advisorsRewardsMinted = true;
      }
 
-     function transfer(address _to, uint256 _value) onlyInState(State.ICOFinished) {
+     function transfer(address _to, uint256 _value) onlyInState(State.Normal) {
           updateLastBalancesMap(msg.sender);
           updateLastBalancesMap(_to);
 
           super.transfer(_to, _value);
      }
 
-     function transferFrom(address _from, address _to, uint256 _value) onlyInState(State.ICOFinished) {
+     function transferFrom(address _from, address _to, uint256 _value) onlyInState(State.Normal) {
           updateLastBalancesMap(_from);
           updateLastBalancesMap(_to);
 
@@ -414,7 +417,7 @@ contract MNT is StdToken {
      }
 
      // This should be called by Goldmint staff
-     function sendRewards() onlyCreator allowSendingRewards{
+     function sendRewards() onlyCreator onlyInState(State.Normal) allowSendingRewards{
           lastDivideRewardsTime = now;
 
           // 1 - send half of all rewards to GoldmintDAO

@@ -807,7 +807,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should mint advisors rewards', function(done){
+     it('should not mint advisors rewards again', function(done){
           var params = {from: creator2, gas: 2900000};
 
           mntContract.mintAdvisorsRewards(advisors, params, (err,res)=>{

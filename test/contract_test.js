@@ -31,6 +31,8 @@ var mntContract;
 var goldContractAddress;
 var goldContract;
 
+var TEAM_REWARD;
+var ADVISORS_REWARD;
 // init BigNumber
 var unit = new BigNumber(Math.pow(10,18));
 
@@ -822,6 +824,125 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
+
+     it('should not issue tokens external with issueTokens function', function(done){
+          assert.equal(typeof mntContract.issueTokens, 'undefined');
+          done();     
+     });
+
+     it('should issue tokens external with issueTokensExternal function to creator', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.issueTokensExternal(creator, 1000, params, (err,res)=>{
+               assert.equal(err, null);
+               mntContract.balanceOf(creator, (err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10),1000);
+                    done();
+               });
+          });
+     });
+
+     it('should return 0 for total supply', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), 1000);
+               done();                              
+          })
+     });
+
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.setState(1, params, (err,res)=>{
+               assert.equal(err, null);
+               mntContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should update total supply (TEAM_REWARD, ADVISORS_REWARD and 1000 for creator in prev. test)', function(done){
+          var params = {from: creator2, gas: 2900000};
+
+          mntContract.TEAM_REWARD((err,r2)=>{
+               TEAM_REWARD = r2.toString(10);
+                                                   
+               mntContract.ADVISORS_REWARD((err,r2)=>{
+                    ADVISORS_REWARD = r2.toString(10)
+
+                    mntContract.totalSupply((err,res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res.toString(10), (+TEAM_REWARD) + (+ADVISORS_REWARD) + 1000);
+                         done();                              
+                    });
+               });
+          });
+     });
+
+
+     it('should change state to ICOPaused', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.setState(2, params, (err,res)=>{
+               assert.equal(err, null);
+               mntContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,2);
+                    done();
+               });
+          });
+     });
+
+     it('should not update total supply (TEAM_REWARD, ADVISORS_REWARD and 1000 for creator in prev. test) after ->running->paused', function(done){
+          var params = {from: creator2, gas: 2900000};
+
+          mntContract.TEAM_REWARD((err,r2)=>{
+               TEAM_REWARD = r2.toString(10);
+                                                   
+               mntContract.ADVISORS_REWARD((err,r2)=>{
+                    ADVISORS_REWARD = r2.toString(10)
+
+                    mntContract.totalSupply((err,res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res.toString(10), (+TEAM_REWARD) + (+ADVISORS_REWARD) + 1000);
+                         done();                              
+                    });
+               });
+          });
+     });
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.setState(1, params, (err,res)=>{
+               assert.equal(err, null);
+               mntContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should not update total supply (TEAM_REWARD, ADVISORS_REWARD and 1000 for creator in prev. test) after ->running->paused->running', function(done){
+          var params = {from: creator2, gas: 2900000};
+
+          mntContract.TEAM_REWARD((err,r2)=>{
+               TEAM_REWARD = r2.toString(10);
+                                                   
+               mntContract.ADVISORS_REWARD((err,r2)=>{
+                    ADVISORS_REWARD = r2.toString(10)
+
+                    mntContract.totalSupply((err,res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res.toString(10), (+TEAM_REWARD) + (+ADVISORS_REWARD) + 1000);
+                         done();                              
+                    });
+               });
+          });
+     });
+
      /*
      it('should mint team rewards', function(done){
           var params = {from: creator2, gas: 2900000};
@@ -835,11 +956,21 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                          assert.equal(err, null);
                          mntContract.TEAM_REWARD((err,r2)=>{
                               assert.equal(res.toString(10),r2.toString(10));
+                              TEAM_REWARD = r2.toString(10);
                               done();                              
                          })
                     });
                });
           });
+     });
+
+     it('should update total supply', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), TEAM_REWARD);
+               done();                              
+          })
      });
 
      it('should not mint team rewards again', function(done){
@@ -861,12 +992,22 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                     mntContract.balanceOf(advisors, (err,res)=>{
                          assert.equal(err, null);
                          mntContract.ADVISORS_REWARD((err,r2)=>{
+                              ADVISORS_REWARD = r2.toString(10)
                               assert.equal(res.toString(10),r2.toString(10));
                               done();                              
                          })
                     });
                });
           });
+     });
+
+     it('should update total supply', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), (+TEAM_REWARD) + (+ADVISORS_REWARD));
+               done();                              
+          })
      });
 
      it('should not mint advisors rewards again', function(done){

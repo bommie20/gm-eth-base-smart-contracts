@@ -27,6 +27,8 @@ var mntContract;
 var goldContractAddress;
 var goldContract;
 
+var TEAM_REWARD;
+var ADVISORS_REWARD;
 // init BigNumber
 var unit = new BigNumber(Math.pow(10,18));
 
@@ -821,11 +823,21 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                          assert.equal(err, null);
                          mntContract.TEAM_REWARD((err,r2)=>{
                               assert.equal(res.toString(10),r2.toString(10));
+                              TEAM_REWARD = r2.toString(10);
                               done();                              
                          })
                     });
                });
           });
+     });
+
+     it('should update total supply', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), TEAM_REWARD);
+               done();                              
+          })
      });
 
      it('should not mint team rewards again', function(done){
@@ -847,12 +859,22 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                     mntContract.balanceOf(advisors, (err,res)=>{
                          assert.equal(err, null);
                          mntContract.ADVISORS_REWARD((err,r2)=>{
+                              ADVISORS_REWARD = r2.toString(10)
                               assert.equal(res.toString(10),r2.toString(10));
                               done();                              
                          })
                     });
                });
           });
+     });
+
+     it('should update total supply', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), (+TEAM_REWARD) + (+ADVISORS_REWARD));
+               done();                              
+          })
      });
 
      it('should not mint advisors rewards again', function(done){

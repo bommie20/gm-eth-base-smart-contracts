@@ -262,16 +262,16 @@ contract MNT is StdToken {
      State public currentState = State.Init;
 
      // this is who deployed this contract
-     address creator = 0x0;
+     address public creator = 0x0;
 
      // this is where all GOLD rewards are kept
-     address rewardsAccount = 0x0;
+     address public rewardsAccount = 0x0;
 
      // this is where 50% of all GOLD rewards will be transferred
      // (this is Goldmint fund)
-     address goldmintRewardsAccount = 0x0;
+     address public goldmintRewardsAccount = 0x0;
 
-     GOLD gold;
+     GOLD public gold;
 
      // TODO: combine with 'balances' map...
      struct TokenHolder {
@@ -321,27 +321,22 @@ contract MNT is StdToken {
           return PRICE;
      }
 
-     // TODO: test
      function setCreator(address _creator) onlyCreator {
           creator = _creator;
      }
 
-     // TODO: test
      function setRewardsAccount(address _rewardsAccount) onlyCreator {
           rewardsAccount = _rewardsAccount;
      }
 
-     // TODO: test
      function setGoldTokenAddress(address _goldTokenContractAddress) onlyCreator {
           gold = GOLD(_goldTokenContractAddress);
      }
 
-     // TODO: test
      function setGoldmintRewardsAccount(address _goldmintRewardsAccount) onlyCreator {
           goldmintRewardsAccount = _goldmintRewardsAccount;
      }
 
-     // TODO: test
      function setDivideRewardsInterval(uint _days) onlyCreator {
           DIVIDE_REWARDS_INTERVAL_DAYS = _days;
      }
@@ -376,7 +371,6 @@ contract MNT is StdToken {
      }
 
      /// @dev This should be called to issue team reward tokens after ICO is complete
-     // TODO: test
      function mintTeamRewards(address _whereToMint) public onlyCreator {
           if(teamRewardsMinted)throw;
 
@@ -387,7 +381,6 @@ contract MNT is StdToken {
      }
      
      /// @dev This should be called to issue advisors reward tokens after ICO is complete
-     /// TODO: test
      function mintAdvisorsRewards(address _whereToMint) public onlyCreator {
           if(advisorsRewardsMinted)throw;
 

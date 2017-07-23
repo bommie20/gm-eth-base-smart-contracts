@@ -16,6 +16,9 @@ var goldmintTeam;
 var charityAccount;
 var charityAccount2;
 
+var foundersRewardAccount;
+var manualUploadAccount;
+
 var buyer;
 var buyer2;
 var buyers = [];
@@ -140,6 +143,9 @@ function deployMntContract(data,cb){
           var alreadyCalled = false;
 
           tempContract.new(
+               foundersRewardAccount,
+               manualUploadAccount,
+
                creator,            // temp account to keep all GOLD rewards here 
                goldmintTeam,       // Goldmint foundation account
                charityAccount,     // charity account
@@ -194,6 +200,8 @@ describe('Contracts 0 - GOLD setters and getters', function() {
                buyer = accounts[1];
                buyer2 = accounts[2];
                goldmintTeam = accounts[3];
+               foundersRewardAccount = accounts[4];
+               manualUploadAccount = accounts[5];
 
                charityAccount = accounts[6];
 
@@ -353,6 +361,8 @@ describe('Contracts 1 - calculate reward', function() {
                creator = accounts[0];
                buyer = accounts[1];
                buyer2 = accounts[2];
+               foundersRewardAccount = accounts[4];
+               manualUploadAccount = accounts[5];
 
                var contractName = ':MNT';
                getContractAbi(contractName,function(err,abi){
@@ -695,7 +705,9 @@ describe('Contracts 1 - calculate reward', function() {
 
           var total = mntContract.totalSupply();
 
-          assert.equal(total/ 1000000000000000000,600);   // 600 tokens (converted)
+          var FOUNDERS_REWARD = 2000000; 
+          var BONUS_REWARD = 1800000; 
+          assert.equal(total/ 1000000000000000000,600 + FOUNDERS_REWARD + BONUS_REWARD);   // 600 tokens (converted)
 
           // half of all rewards
           var totalRewards = mntContract.lastIntervalTokenHoldersRewards();
@@ -741,6 +753,9 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                goldmintRewardsAccount = accounts[5];
                advisors = accounts[6];
                charityAccount2 = accounts[7];
+
+               foundersRewardAccount = accounts[8];
+               manualUploadAccount = accounts[9];
 
                var contractName = ':MNT';
                getContractAbi(contractName,function(err,abi){
@@ -1006,9 +1021,12 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      });
 
      it('should not update total supply after ->running->paused', function(done){
+          //var FOUNDERS_REWARD = 2000000000000000000000000;
+          //var BONUS_REWARD = 1800000000000000000000000;
+
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
-               assert.equal(res.toString(10), 1000);
+               assert.equal(res.toString(10), 3800000000000000000001000);
                done();                              
           });
      });
@@ -1030,7 +1048,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
 
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
-               assert.equal(res.toString(10), 1000);
+               assert.equal(res.toString(10), 3800000000000000000001000);
                done();                              
           });
      });

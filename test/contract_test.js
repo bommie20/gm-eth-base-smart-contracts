@@ -13,6 +13,7 @@ var accounts;
 
 var creator;
 var goldmintTeam;
+var charityAccount;
 
 var teamRewardsAccount;
 var advisorRewardsAccount;
@@ -146,8 +147,9 @@ function deployMntContract(data,cb){
                teamRewardsAccount,
                advisorRewardsAccount,
 
-               creator,            // rewardsAccount
-               goldmintTeam,       //
+               creator,            // temp account to keep all GOLD rewards here 
+               goldmintTeam,       // Goldmint foundation account
+               charityAccount,     // charity account
                {
                     from: creator, 
                     // should not exceed 5000000 for Kovan by default
@@ -202,6 +204,8 @@ describe('Contracts 0 - GOLD setters and getters', function() {
 
                teamRewardsAccount = accounts[4];
                advisorRewardsAccount = accounts[5];
+
+               charityAccount = accounts[6];
 
                var contractName = ':MNT';
                getContractAbi(contractName,function(err,abi){
@@ -595,15 +599,18 @@ describe('Contracts 1 - calculate reward', function() {
                     tokens = goldContract.balanceOf(buyer2);
                     assert.equal(tokens / 1000000000000000000,19.95);   
 
-                    var rewAccount = goldContract.rewardsAccount();
+                    var rewAccount = goldContract.tempGoldAccount();
                     assert.equal(rewAccount,creator);
 
                     var totalRewardsCollected = goldContract.balanceOf(rewAccount);
                     assert.equal(totalRewardsCollected/ 1000000000000000000,0.05);   
 
                     // should be zero because no sendRewards was called...
-                    var totalRewards = mntContract.lastRewardsTotal();
+                    var totalRewards = mntContract.lastIntervalTokenHoldersRewards();
                     assert.equal(totalRewards/ 1000000000000000000,0);   
+
+                    var withdrawn = mntContract.lastIntervalTokenHoldersWithdrawn();
+                    assert.equal(withdrawn/ 1000000000000000000,0);   
 
                     done();
                }
@@ -671,11 +678,15 @@ describe('Contracts 1 - calculate reward', function() {
                     var tokens = goldContract.balanceOf(goldmintTeam);
                     assert.equal(tokens / 1000000000000000000,0.025);   
 
+                    var withdrawn = mntContract.lastIntervalTokenHoldersWithdrawn();
+                    assert.equal(withdrawn/ 1000000000000000000,0);   
+
                     done();
                }
           );
      });
 
+     /*
      it('should not send rewards again',function(done){
           mntContract.sendRewards(
                {
@@ -699,10 +710,12 @@ describe('Contracts 1 - calculate reward', function() {
           var ADVISORS_REWARD = 400000;
           assert.equal(total/ 1000000000000000000,600 + TEAM_REWARD + ADVISORS_REWARD);   // 600 tokens (converted)
 
-          // should not be zero 
-          var totalRewards = mntContract.lastRewardsTotal();
           // half of all rewards
+          var totalRewards = mntContract.lastIntervalTokenHoldersRewards();
           assert.equal(totalRewards,0.025 * 1000000000000000000);   
+
+          var withdrawn = mntContract.lastIntervalTokenHoldersWithdrawn();
+          assert.equal(withdrawn/ 1000000000000000000,0);   
 
           var myRewards = mntContract.calculateMyReward(buyer);
 
@@ -712,12 +725,16 @@ describe('Contracts 1 - calculate reward', function() {
                     gas: 2900000 
                },function(err,result){
                     assert.equal(err,null);
+
+                    var withdrawn = mntContract.lastIntervalTokenHoldersWithdrawn();
+                    assert.equal('' + withdrawn, '' + myRewards);   
+
                     done();
                }
           );
      });
+     */
 });
-
 
 
 describe('Contracts 2 - test MNT getters and setters', function() {
@@ -764,6 +781,24 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
+     it('should not set creator if from bad account', function(done){
+          mntContract.creator((err,res)=>{
+               assert.equal(err,null);
+               assert.equal(res,creator);
+
+               var params = {from: buyer, gas: 2900000};
+               mntContract.setCreator(creator2, params, (err,res)=>{
+                    assert.notEqual(err,null);
+
+                    mntContract.creator((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,creator);
+                         done();
+                    });
+               });
+          });
+     });
+
      it('should set creator', function(done){
           var params = {from: creator, gas: 2900000};
           mntContract.setCreator(creator2, params, (err,res)=>{
@@ -776,11 +811,28 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
+     it('should not set rewards account if from bad account', function(done){
+          mntContract.tempGoldAccount((err, res)=>{
+               assert.equal(err, null);
+               assert.equal(res, creator);
+
+               var params = {from: creator, gas: 2900000};
+               mntContract.setTempGoldAccount(goldmintTeam, params, (err,res)=>{
+
+                    mntContract.tempGoldAccount((err, res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res, creator);
+                         done();
+                    });
+               });
+          });
+     });
+
      it('should set rewards account', function(done){
           var params = {from: creator2, gas: 2900000};
-          mntContract.setRewardsAccount(goldmintTeam, params, (err,res)=>{
+          mntContract.setTempGoldAccount(goldmintTeam, params, (err,res)=>{
                assert.equal(err, null);
-               mntContract.rewardsAccount((err, res)=>{
+               mntContract.tempGoldAccount((err, res)=>{
                     assert.equal(err, null);
                     assert.equal(res, goldmintTeam);
                     done();
@@ -788,14 +840,55 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should set gold token address', function(done){
-          var params = {from: creator2, gas: 2900000};
-          mntContract.setGoldTokenAddress(goldContractAddress, params, (err,res)=>{
+     it('should not set gold token address if from bad account', function(done){
+          mntContract.gold((err, gold)=>{
                assert.equal(err, null);
-               mntContract.gold((err, gold)=>{
+               assert.equal(gold, 0);
+
+               var params = {from: creator, gas: 2900000};
+               mntContract.setGoldTokenAddress(goldContractAddress, params, (err,res)=>{
+                    assert.notEqual(err, null);
+
+                    mntContract.gold((err, gold)=>{
+                         assert.equal(err, null);
+                         assert.equal(gold, 0);
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should set gold token address', function(done){
+          mntContract.gold((err, gold)=>{
+               assert.equal(err, null);
+               assert.equal(gold, 0);
+
+               var params = {from: creator2, gas: 2900000};
+               mntContract.setGoldTokenAddress(goldContractAddress, params, (err,res)=>{
                     assert.equal(err, null);
-                    assert.equal(gold, goldContractAddress);
-                    done();
+                    mntContract.gold((err, gold)=>{
+                         assert.equal(err, null);
+                         assert.equal(gold, goldContractAddress);
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should not set goldmint rewards account if from bad account', function(done){
+          mntContract.goldmintRewardsAccount((err, res)=>{
+               assert.equal(err, null);
+               assert.equal(res, goldmintTeam);
+
+               var params = {from: buyer, gas: 2900000};
+               mntContract.setGoldmintRewardsAccount(goldmintRewardsAccount, params, (err,res)=>{
+                    assert.notEqual(err, null);
+
+                    mntContract.goldmintRewardsAccount((err, res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res, goldmintTeam);
+                         done();
+                    });
                });
           });
      });
@@ -808,6 +901,24 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                     assert.equal(err, null);
                     assert.equal(res, goldmintRewardsAccount);
                     done();
+               });
+          });
+     });
+
+     it('should not set divide rewards interval if from bad account', function(done){
+          mntContract.DIVIDE_REWARDS_INTERVAL_DAYS((err, res)=>{
+               assert.equal(err, null);
+               assert.equal(res, 7);
+
+               var params = {from: buyer, gas: 2900000};
+               mntContract.setDivideRewardsInterval(10, params, (err,res)=>{
+                    assert.notEqual(err, null);
+
+                    mntContract.DIVIDE_REWARDS_INTERVAL_DAYS((err, res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res, 7);
+                         done();
+                    });
                });
           });
      });

@@ -348,7 +348,6 @@ contract MNT is StdToken {
           DIVIDE_REWARDS_INTERVAL_DAYS = _days;
      }
 
-     // TODO: test
      function setCharityAccount(address _charityAccount) onlyCreator {
           charityAccount = _charityAccount;
      }

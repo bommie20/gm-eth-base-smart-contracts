@@ -14,6 +14,7 @@ var accounts;
 var creator;
 var goldmintTeam;
 var charityAccount;
+var charityAccount2;
 
 var teamRewardsAccount;
 var advisorRewardsAccount;
@@ -754,6 +755,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                creator2 = accounts[4];
                goldmintRewardsAccount = accounts[5];
                advisors = accounts[6];
+               charityAccount2 = accounts[7];
 
                var contractName = ':MNT';
                getContractAbi(contractName,function(err,abi){
@@ -930,6 +932,37 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                mntContract.DIVIDE_REWARDS_INTERVAL_DAYS((err, res)=>{
                     assert.equal(err, null);
                     assert.equal(res, 10);
+                    done();
+               });
+          });
+     });
+
+     it('should not set charity account if from bad account', function(done){
+          mntContract.charityAccount((err, res)=>{
+               assert.equal(err, null);
+               assert.equal(res, charityAccount);
+
+               var params = {from: buyer, gas: 2900000};
+               mntContract.setCharityAccount(charityAccount2, params, (err,res)=>{
+                    assert.notEqual(err, null);
+
+                    mntContract.charityAccount((err, res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res, charityAccount);
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should set goldmint rewards account', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.setCharityAccount(charityAccount2, params, (err,res)=>{
+               assert.equal(err, null);
+
+               mntContract.charityAccount((err, res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res, charityAccount2);
                     done();
                });
           });

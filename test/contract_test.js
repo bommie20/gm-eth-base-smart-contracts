@@ -16,9 +16,6 @@ var goldmintTeam;
 var charityAccount;
 var charityAccount2;
 
-var teamRewardsAccount;
-var advisorRewardsAccount;
-
 var buyer;
 var buyer2;
 var buyers = [];
@@ -33,8 +30,6 @@ var mntContract;
 var goldContractAddress;
 var goldContract;
 
-var TEAM_REWARD;
-var ADVISORS_REWARD;
 // init BigNumber
 var unit = new BigNumber(Math.pow(10,18));
 
@@ -145,9 +140,6 @@ function deployMntContract(data,cb){
           var alreadyCalled = false;
 
           tempContract.new(
-               teamRewardsAccount,
-               advisorRewardsAccount,
-
                creator,            // temp account to keep all GOLD rewards here 
                goldmintTeam,       // Goldmint foundation account
                charityAccount,     // charity account
@@ -202,9 +194,6 @@ describe('Contracts 0 - GOLD setters and getters', function() {
                buyer = accounts[1];
                buyer2 = accounts[2];
                goldmintTeam = accounts[3];
-
-               teamRewardsAccount = accounts[4];
-               advisorRewardsAccount = accounts[5];
 
                charityAccount = accounts[6];
 
@@ -687,7 +676,6 @@ describe('Contracts 1 - calculate reward', function() {
           );
      });
 
-     /*
      it('should not send rewards again',function(done){
           mntContract.sendRewards(
                {
@@ -707,9 +695,7 @@ describe('Contracts 1 - calculate reward', function() {
 
           var total = mntContract.totalSupply();
 
-          var TEAM_REWARD = 2000000; 
-          var ADVISORS_REWARD = 400000;
-          assert.equal(total/ 1000000000000000000,600 + TEAM_REWARD + ADVISORS_REWARD);   // 600 tokens (converted)
+          assert.equal(total/ 1000000000000000000,600);   // 600 tokens (converted)
 
           // half of all rewards
           var totalRewards = mntContract.lastIntervalTokenHoldersRewards();
@@ -734,7 +720,6 @@ describe('Contracts 1 - calculate reward', function() {
                }
           );
      });
-     */
 });
 
 
@@ -1008,25 +993,6 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should update total supply (TEAM_REWARD, ADVISORS_REWARD and 1000 for creator in prev. test)', function(done){
-          var params = {from: creator2, gas: 2900000};
-
-          mntContract.TEAM_REWARD((err,r2)=>{
-               TEAM_REWARD = r2.toString(10);
-                                                   
-               mntContract.ADVISORS_REWARD((err,r2)=>{
-                    ADVISORS_REWARD = r2.toString(10)
-
-                    mntContract.totalSupply((err,res)=>{
-                         assert.equal(err, null);
-                         assert.equal(res.toString(10), (+TEAM_REWARD) + (+ADVISORS_REWARD) + 1000);
-                         done();                              
-                    });
-               });
-          });
-     });
-
-
      it('should change state to ICOPaused', function(done){
           var params = {from: creator2, gas: 2900000};
           mntContract.setState(2, params, (err,res)=>{
@@ -1039,21 +1005,11 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should not update total supply (TEAM_REWARD, ADVISORS_REWARD and 1000 for creator in prev. test) after ->running->paused', function(done){
-          var params = {from: creator2, gas: 2900000};
-
-          mntContract.TEAM_REWARD((err,r2)=>{
-               TEAM_REWARD = r2.toString(10);
-                                                   
-               mntContract.ADVISORS_REWARD((err,r2)=>{
-                    ADVISORS_REWARD = r2.toString(10)
-
-                    mntContract.totalSupply((err,res)=>{
-                         assert.equal(err, null);
-                         assert.equal(res.toString(10), (+TEAM_REWARD) + (+ADVISORS_REWARD) + 1000);
-                         done();                              
-                    });
-               });
+     it('should not update total supply after ->running->paused', function(done){
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), 1000);
+               done();                              
           });
      });
 
@@ -1069,100 +1025,15 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should not update total supply (TEAM_REWARD, ADVISORS_REWARD and 1000 for creator in prev. test) after ->running->paused->running', function(done){
+     it('should not update total supply after ->running->paused->running', function(done){
           var params = {from: creator2, gas: 2900000};
 
-          mntContract.TEAM_REWARD((err,r2)=>{
-               TEAM_REWARD = r2.toString(10);
-                                                   
-               mntContract.ADVISORS_REWARD((err,r2)=>{
-                    ADVISORS_REWARD = r2.toString(10)
-
-                    mntContract.totalSupply((err,res)=>{
-                         assert.equal(err, null);
-                         assert.equal(res.toString(10), (+TEAM_REWARD) + (+ADVISORS_REWARD) + 1000);
-                         done();                              
-                    });
-               });
-          });
-     });
-
-     /*
-     it('should mint team rewards', function(done){
-          var params = {from: creator2, gas: 2900000};
-          mntContract.balanceOf(goldmintTeam, (err,res)=>{
-               assert.equal(err, null);
-               assert.equal(res.toString(10),0);
-
-               mntContract.mintTeamRewards(goldmintTeam, params, (err,res)=>{
-                    assert.equal(err, null);
-                    mntContract.balanceOf(goldmintTeam, (err,res)=>{
-                         assert.equal(err, null);
-                         mntContract.TEAM_REWARD((err,r2)=>{
-                              assert.equal(res.toString(10),r2.toString(10));
-                              TEAM_REWARD = r2.toString(10);
-                              done();                              
-                         })
-                    });
-               });
-          });
-     });
-
-     it('should update total supply', function(done){
-          var params = {from: creator2, gas: 2900000};
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
-               assert.equal(res.toString(10), TEAM_REWARD);
-               done();                              
-          })
-     });
-
-     it('should not mint team rewards again', function(done){
-          var params = {from: creator2, gas: 2900000};
-          mntContract.mintTeamRewards(goldmintTeam, params, (err,res)=>{
-               assert.notEqual(err, null);
-               done();                              
-          })
-     });
-
-     it('should mint advisors rewards', function(done){
-          var params = {from: creator2, gas: 2900000};
-          mntContract.balanceOf(advisors, (err,res)=>{
-               assert.equal(err, null);
-               assert.equal(res.toString(10),0);
-
-               mntContract.mintAdvisorsRewards(advisors, params, (err,res)=>{
-                    assert.equal(err, null);
-                    mntContract.balanceOf(advisors, (err,res)=>{
-                         assert.equal(err, null);
-                         mntContract.ADVISORS_REWARD((err,r2)=>{
-                              ADVISORS_REWARD = r2.toString(10)
-                              assert.equal(res.toString(10),r2.toString(10));
-                              done();                              
-                         })
-                    });
-               });
-          });
-     });
-
-     it('should update total supply', function(done){
-          var params = {from: creator2, gas: 2900000};
-          mntContract.totalSupply((err,res)=>{
-               assert.equal(err, null);
-               assert.equal(res.toString(10), (+TEAM_REWARD) + (+ADVISORS_REWARD));
-               done();                              
-          })
-     });
-
-     it('should not mint advisors rewards again', function(done){
-          var params = {from: creator2, gas: 2900000};
-
-          mntContract.mintAdvisorsRewards(advisors, params, (err,res)=>{
-               assert.notEqual(err, null);
+               assert.equal(res.toString(10), 1000);
                done();                              
           });
      });
-     */
 })
 
 

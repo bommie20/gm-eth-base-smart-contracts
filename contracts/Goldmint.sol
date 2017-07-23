@@ -233,20 +233,16 @@ contract MNT is StdToken {
      // TODO:
      uint public constant PRICE = 1000;  // per 1 Ether
      
-     uint public constant PRESALE_TOKEN_SUPPLY_LIMIT = 300000 * (1 ether / 1 wei); 
      // we sell only this amount of tokens during the ICO
-     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7300000 * (1 ether / 1 wei); 
+     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 6200000 * (1 ether / 1 wei); 
+
+     uint public constant MANUAL_UPLOAD = (310000 + 800000 + 467500 + 222500) * (1 ether/ 1 wei);
      uint public constant TEAM_REWARD = 2000000 * (1 ether / 1 wei);
-     uint public constant ADVISORS_REWARD = 400000 * (1 ether / 1 wei);
 
      uint public constant TOTAL_TOKEN_SUPPLY = 
-          PRESALE_TOKEN_SUPPLY_LIMIT + 
+          MANUAL_UPLOAD + 
           ICO_TOKEN_SUPPLY_LIMIT + 
-          TEAM_REWARD + 
-          ADVISORS_REWARD;
-
-     bool public teamRewardsMinted = false;
-     bool public advisorsRewardsMinted = false;
+          TEAM_REWARD;
 
      enum State{
           Init,
@@ -261,10 +257,6 @@ contract MNT is StdToken {
 
      // this is who deployed this contract
      address public creator = 0x0;
-     // this is to allocate ICO rewards (one time only)
-     address public teamRewardsAccount = 0x0;
-     // this is to allocate ICO rewards (one time only)
-     address public advisorsRewardsAccount = 0x0;
      // this is where 50% of all GOLD rewards will be transferred
      // (this is Goldmint foundation fund)
      address public goldmintRewardsAccount = 0x0;
@@ -356,17 +348,11 @@ contract MNT is StdToken {
      /// @dev Constructor
      /// @param _tempGoldAccount - should be equal to GOLD's tempGoldAccount
      function MNT(
-          address _teamRewardsAccount,
-          address _advisorsRewardsAccount, 
-          
           address _tempGoldAccount, 
           address _goldmintRewardsAccount,
           address _charityAccount) 
      {
           creator = msg.sender;
-
-          teamRewardsAccount = _teamRewardsAccount;
-          advisorsRewardsAccount = _advisorsRewardsAccount;
 
           tempGoldAccount = _tempGoldAccount;
           goldmintRewardsAccount = _goldmintRewardsAccount;
@@ -390,29 +376,6 @@ contract MNT is StdToken {
      /// @dev This function is automatically called when ICO is started
      /// WARNING: can be called multiple times!
      function startICO()internal onlyCreator {
-          // 1 - mint team rewards
-          mintTeamRewards(teamRewardsAccount);
-
-          // 2 - mint advisor rewards
-          mintAdvisorsRewards(advisorsRewardsAccount);
-     }
-
-     function mintTeamRewards(address _whereToMint) internal onlyCreator {
-          if(!teamRewardsMinted){
-               teamRewardsMinted = true;
-               issueTokens(_whereToMint,TEAM_REWARD);
-          }
-     }
-     
-     function mintAdvisorsRewards(address _whereToMint) internal onlyCreator {
-          if(!advisorsRewardsMinted){
-               advisorsRewardsMinted = true;
-               issueTokens(_whereToMint,ADVISORS_REWARD);
-          }
-     }
-
-     /// @dev This should be called only after ICO is finished...
-     function mintRest()public onlyCreator {
           // TODO:
      }
 

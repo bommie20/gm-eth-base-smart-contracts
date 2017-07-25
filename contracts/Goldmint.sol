@@ -424,21 +424,31 @@ contract Goldmint is SafeMath {
 
      MNT public mntToken; 
 
-     // TODO:
-     uint public constant PRICE = 1000;  // per 1 Ether
-     
-     // we sell only this amount of tokens during the ICO
-     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 6200000 * (1 ether / 1 wei); 
-     // this is bounty rewards + presale tokens migration + advisors, etc
-     uint public constant BONUS_REWARD = (310000 + 800000 + 467500 + 222500) * (1 ether/ 1 wei);
+     // These can be changed before ICO start ($6USD/MNT)
+     uint constant STD_PRICE_USD_PER_1000_TOKENS = 6000;
+     // coinmarketcap.com 25.07.2017
+     uint constant ETH_PRICE_IN_USD = 205;
+          
+     uint constant TOKENS_PREICO_SOLD = 310000;
+     uint constant TOKENS_EARLY_INVESTORS = 700000;
+     uint constant TOKENS_ADVISORS = 690000;
+
+     // 1 700 000 tokens
+     uint public constant BONUS_REWARD = (TOKENS_PREICO_SOLD + TOKENS_EARLY_INVESTORS + TOKENS_ADVISORS) * (1 ether/ 1 wei);
+     // 2 000 000 tokens
      uint public constant FOUNDERS_REWARD = 2000000 * (1 ether / 1 wei);
+     // we sell only this amount of tokens during the ICO
+     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 6300000 * (1 ether / 1 wei); 
 
      uint public constant TOTAL_TOKEN_SUPPLY = 
           BONUS_REWARD + 
           ICO_TOKEN_SUPPLY_LIMIT + 
           FOUNDERS_REWARD;
 
-     // this is total that was issued by a scripts
+     // this is total number of tokens sold during ICO
+     uint public icoTokensSold = 0;
+
+     // this is total number of tokens that were issued by a scripts
      uint public issuedExternallyTokens = 0;
 
      bool public foundersRewardsMinted = false;
@@ -477,6 +487,7 @@ contract Goldmint is SafeMath {
 
           foundersRewardsAccount = _foundersRewardsAccount;
 
+          // 10 mln tokens total
           assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
      }
 
@@ -511,17 +522,31 @@ contract Goldmint is SafeMath {
           }
      }
 
-     function getCurrentPrice() returns (uint){
-          return PRICE;
+     // TODO: test
+     function getMntTokensPerEth() public constant returns (uint){
+          // 10 buckets
+          uint priceIndex = icoTokensSold / 700000;
+          assert(priceIndex>=0 && (priceIndex<=9));
+          
+          uint8[10] memory discountPercents = [10,8,6,4,3,2,1,0,0,0];
+
+          // Example: $5400 / 1000 MNT
+          uint pricePer1000tokensUsd = 
+               (STD_PRICE_USD_PER_1000_TOKENS - (discountPercents[priceIndex] * STD_PRICE_USD_PER_1000_TOKENS / 100));
+
+          uint mntPerEth = (ETH_PRICE_IN_USD * 1000 * (1 ether / 1 wei)) / pricePer1000tokensUsd;
+          return mntPerEth;
      }
 
+     // TODO: test
      function buyTokens(address _buyer) public payable onlyInState(State.ICORunning) {
           if(msg.value == 0) throw;
-          uint newTokens = msg.value * getCurrentPrice();
+          uint newTokens = (msg.value * getMntTokensPerEth()) / (1 ether / 1 wei);
 
-          if(mntToken.totalSupply() + newTokens > ICO_TOKEN_SUPPLY_LIMIT) throw;
+          if(icoTokensSold + newTokens > ICO_TOKEN_SUPPLY_LIMIT) throw;
 
           mntToken.issueTokens(_buyer,newTokens);
+          icoTokensSold+=newTokens;
 
           LogBuy(_buyer, newTokens);
      }
@@ -529,6 +554,11 @@ contract Goldmint is SafeMath {
      /// @dev This can be called to manually issue new tokens
      // TODO: test it
      function issueTokensExternal(address _to, uint _tokens) onlyCreator {
+          // can not issue more than BONUS_REWARD
+          if(issuedExternallyTokens + _tokens>BONUS_REWARD){
+               throw;
+          }
+
           mntToken.issueTokens(_to,_tokens);
           
           issuedExternallyTokens+=_tokens;

@@ -800,6 +800,18 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           );
      });
 
+     it('should get initial price', function(done){
+          goldmintContract.getMntTokensPerEth((err,res)=>{
+               assert.equal(err,null);
+               assert.equal(res,37962962962962962962);
+
+               console.log('RES: ');
+               console.log(res);
+
+               done();
+          });
+     });
+
      it('should not set creator if from bad account', function(done){
           mntContract.creator((err,res)=>{
                assert.equal(err,null);

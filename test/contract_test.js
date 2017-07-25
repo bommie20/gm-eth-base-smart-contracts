@@ -17,7 +17,6 @@ var charityAccount;
 var charityAccount2;
 
 var foundersRewardAccount;
-var manualUploadAccount;
 
 var buyer;
 var buyer2;
@@ -32,6 +31,9 @@ var mntContract;
 
 var goldContractAddress;
 var goldContract;
+
+var goldmintContractAddress;
+var goldmintContract;
 
 // init BigNumber
 var unit = new BigNumber(Math.pow(10,18));
@@ -145,8 +147,6 @@ function deployMntContract(data,cb){
           tempContract.new(
                goldContractAddress,
 
-               foundersRewardAccount,
-
                creator,            // temp account to keep all GOLD rewards here 
                goldmintTeam,       // Goldmint foundation account
                charityAccount,     // charity account
@@ -188,6 +188,70 @@ function deployMntContract(data,cb){
      });
 }
 
+function deployGoldmintContract(data,cb){
+     var file = './contracts/Goldmint.sol';
+     var contractName = ':Goldmint';
+
+     fs.readFile(file, function(err, result){
+          assert.equal(err,null);
+
+          var source = result.toString();
+          assert.notEqual(source.length,0);
+
+          assert.equal(err,null);
+
+          var output = solc.compile(source, 0); // 1 activates the optimiser
+
+          //console.log('OUTPUT: ');
+          //console.log(output.contracts);
+
+          var abi = JSON.parse(output.contracts[contractName].interface);
+          var bytecode = output.contracts[contractName].bytecode;
+          var tempContract = web3.eth.contract(abi);
+
+          var alreadyCalled = false;
+
+          tempContract.new(
+               mntContractAddress,
+               goldmintTeam,       // _foundersRewardsAccount 
+               {
+                    from: creator, 
+                    // should not exceed 5000000 for Kovan by default
+                    gas: 4995000,
+                    //gasPrice: 120000000000,
+                    data: '0x' + bytecode
+               }, 
+               function(err, c){
+                    assert.equal(err, null);
+
+                    console.log('TX HASH: ');
+                    console.log(c.transactionHash);
+
+                    // TX can be processed in 1 minute or in 30 minutes...
+                    // So we can not be sure on this -> result can be null.
+                    web3.eth.getTransactionReceipt(c.transactionHash, function(err, result){
+                         //console.log('RESULT: ');
+                         //console.log(result);
+
+                         assert.equal(err, null);
+                         assert.notEqual(result, null);
+
+                         goldmintContractAddress = result.contractAddress;
+                         goldmintContract = web3.eth.contract(abi).at(goldmintContractAddress);
+
+                         console.log('Goldmint Contract address: ');
+                         console.log(goldmintContractAddress);
+
+                         if(!alreadyCalled){
+                              alreadyCalled = true;
+
+                              return cb(null);
+                         }
+                    });
+               });
+     });
+}
+
 describe('Contracts 0 - GOLD setters and getters', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
@@ -202,7 +266,6 @@ describe('Contracts 0 - GOLD setters and getters', function() {
                buyer2 = accounts[2];
                goldmintTeam = accounts[3];
                foundersRewardAccount = accounts[4];
-               manualUploadAccount = accounts[5];
 
                charityAccount = accounts[6];
 
@@ -226,7 +289,11 @@ describe('Contracts 0 - GOLD setters and getters', function() {
 
                deployMntContract(data,function(err){
                     assert.equal(err,null);
-                    done();
+
+                    deployGoldmintContract(data,function(err){
+                         assert.equal(err,null);
+                         done();
+                    });
                });
           });
      });
@@ -362,7 +429,6 @@ describe('Contracts 1 - calculate reward', function() {
                buyer = accounts[1];
                buyer2 = accounts[2];
                foundersRewardAccount = accounts[4];
-               manualUploadAccount = accounts[5];
 
                var contractName = ':MNT';
                getContractAbi(contractName,function(err,abi){
@@ -382,12 +448,30 @@ describe('Contracts 1 - calculate reward', function() {
 
           deployGoldContract(data,function(err){
                assert.equal(err,null);
+
                deployMntContract(data,function(err){
                     assert.equal(err,null);
 
-                    done();
+                    deployGoldmintContract(data,function(err){
+                         assert.equal(err,null);
+                         done();
+                    });
                });
           });
+     });
+
+     it('should set Goldmint token address to MNT contract',function(done){
+          mntContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
      });
 
      it('should get initial balances',function(done){
@@ -412,13 +496,13 @@ describe('Contracts 1 - calculate reward', function() {
      });
 
      it('should get initial state',function(done){
-          var state = mntContract.currentState();
+          var state = goldmintContract.currentState();
           assert.equal(state,0);
           done();
      });
 
      it('should not move state if not owner',function(done){
-          mntContract.setState(
+          goldmintContract.setState(
                1,
                {
                     from: buyer,               
@@ -436,7 +520,7 @@ describe('Contracts 1 - calculate reward', function() {
           web3.eth.sendTransaction(
                {
                     from: buyer,               
-                    to: mntContractAddress,
+                    to: goldmintContractAddress,
                     value: amount,
                     gas: 2900000 
                },function(err,result){
@@ -448,7 +532,7 @@ describe('Contracts 1 - calculate reward', function() {
      });
 
      it('should move state to ICO started',function(done){
-          mntContract.setState(
+          goldmintContract.setState(
                1,
                {
                     from: creator,               
@@ -468,7 +552,7 @@ describe('Contracts 1 - calculate reward', function() {
           web3.eth.sendTransaction(
                {
                     from: buyer,               
-                    to: mntContractAddress,
+                    to: goldmintContractAddress,
                     value: amount,
                     gas: 2900000 
                },function(err,result){
@@ -486,7 +570,7 @@ describe('Contracts 1 - calculate reward', function() {
           web3.eth.sendTransaction(
                {
                     from: buyer2,               
-                    to: mntContractAddress,
+                    to: goldmintContractAddress,
                     value: amount,
                     gas: 2900000 
                },function(err,result){
@@ -582,55 +666,6 @@ describe('Contracts 1 - calculate reward', function() {
           );
      });
 
-     it('should not transfer MNT token if not in Normal state',function(done){
-          var amount = 1;
-
-          // creator is really == rewardsAccount
-          mntContract.transfer(
-               buyer,
-               amount,
-               {
-                    from: buyer,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.notEqual(err,null);
-
-                    done();
-               }
-          );
-     });
-
-     it('should not send rewards if in wrong state',function(done){
-          mntContract.sendRewards(
-               {
-                    from: creator,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.notEqual(err,null);
-
-                    // team should not get rewards here
-                    var tokens = goldContract.balanceOf(goldmintTeam);
-                    assert.equal(tokens / 1000000000000000000,0);   
-
-                    done();
-               }
-          );
-     });
-
-     it('should move state to Normal',function(done){
-          mntContract.setState(
-               3,
-               {
-                    from: creator,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.equal(err,null);
-
-                    done();
-               }
-          );
-     });
-
      it('should send rewards',function(done){
           mntContract.sendRewards(
                {
@@ -717,10 +752,10 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                creator2 = accounts[4];
                goldmintRewardsAccount = accounts[5];
                advisors = accounts[6];
-               charityAccount2 = accounts[7];
+               charityAccount = accounts[7];
+               charityAccount2 = accounts[8];
 
-               foundersRewardAccount = accounts[8];
-               manualUploadAccount = accounts[9];
+               foundersRewardAccount = accounts[9];
 
                var contractName = ':MNT';
                getContractAbi(contractName,function(err,abi){
@@ -743,9 +778,26 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                deployMntContract(data,function(err){
                     assert.equal(err,null);
 
-                    done();
+                    deployGoldmintContract(data,function(err){
+                         assert.equal(err,null);
+                         done();
+                    });
                });
           });
+     });
+
+     it('should set Goldmint token address to MNT contract',function(done){
+          mntContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
      });
 
      it('should not set creator if from bad account', function(done){
@@ -950,17 +1002,14 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-
-     it('should not issue tokens external with issueTokens function', function(done){
-          assert.equal(typeof mntContract.issueTokens, 'undefined');
-          done();     
-     });
-
      it('should issue tokens external with issueTokensExternal function to creator', function(done){
-          var params = {from: creator2, gas: 2900000};
-          mntContract.issueTokensExternal(creator, 1000, params, (err,res)=>{
+          assert.notEqual(typeof mntContract.issueTokens, 'undefined');
+
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.issueTokensExternal(creator2, 1000, params, (err,res)=>{
                assert.equal(err, null);
-               mntContract.balanceOf(creator, (err,res)=>{
+
+               mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res.toString(10),1000);
                     done();
@@ -968,7 +1017,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should return 0 for total supply', function(done){
+     it('should return 1000 for total supply', function(done){
           var params = {from: creator2, gas: 2900000};
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
@@ -979,10 +1028,10 @@ describe('Contracts 2 - test MNT getters and setters', function() {
 
 
      it('should change state to ICORunning', function(done){
-          var params = {from: creator2, gas: 2900000};
-          mntContract.setState(1, params, (err,res)=>{
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(1, params, (err,res)=>{
                assert.equal(err, null);
-               mntContract.currentState((err,res)=>{
+               goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res,1);
                     done();
@@ -991,10 +1040,10 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      });
 
      it('should change state to ICOPaused', function(done){
-          var params = {from: creator2, gas: 2900000};
-          mntContract.setState(2, params, (err,res)=>{
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(2, params, (err,res)=>{
                assert.equal(err, null);
-               mntContract.currentState((err,res)=>{
+               goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res,2);
                     done();
@@ -1014,13 +1063,19 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      });
 
      it('should change state to ICORunning', function(done){
-          var params = {from: creator2, gas: 2900000};
-          mntContract.setState(1, params, (err,res)=>{
-               assert.equal(err, null);
-               mntContract.currentState((err,res)=>{
+          goldmintContract.currentState((err,res)=>{
+               assert.equal(err,null);
+               assert.equal(res,2);
+
+               var params = {from: creator, gas: 2900000};
+               goldmintContract.setState(1, params, (err,res)=>{
                     assert.equal(err, null);
-                    assert.equal(res,1);
-                    done();
+
+                    goldmintContract.currentState((err,res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res,1);
+                         done();
+                    });
                });
           });
      });

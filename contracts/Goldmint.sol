@@ -230,41 +230,8 @@ contract MNT is StdToken {
      string public constant symbol = "MNT";
      uint public constant decimals = 18;
 
-     // TODO:
-     uint public constant PRICE = 1000;  // per 1 Ether
-     
-     // we sell only this amount of tokens during the ICO
-     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 6200000 * (1 ether / 1 wei); 
-     // this is bounty rewards + presale tokens migration + advisors, etc
-     uint public constant BONUS_REWARD = (310000 + 800000 + 467500 + 222500) * (1 ether/ 1 wei);
-     uint public constant FOUNDERS_REWARD = 2000000 * (1 ether / 1 wei);
-
-     uint public constant TOTAL_TOKEN_SUPPLY = 
-          BONUS_REWARD + 
-          ICO_TOKEN_SUPPLY_LIMIT + 
-          FOUNDERS_REWARD;
-
-     // this is total that was issued by a scripts
-     uint public issuedExternallyTokens = 0;
-
-     bool public foundersRewardsMinted = false;
-
-     enum State{
-          Init,
-
-          ICORunning,
-          ICOPaused,
-         
-          Normal
-          // TODO...
-     }
-     State public currentState = State.Init;
-
-     // this is who deployed this contract
      address public creator = 0x0;
-
-     // this is where FOUNDERS_REWARD will be allocated
-     address public foundersRewardsAccount = 0x0;
+     address public icoContractAddress = 0x0;
 
      // this is where 50% of all GOLD rewards will be transferred
      // (this is Goldmint foundation fund)
@@ -272,10 +239,14 @@ contract MNT is StdToken {
 
      // this is where all GOLD rewards are kept
      address public tempGoldAccount = 0x0;
+
      // this is charity account (we send what was not withdrawn by token holders)
      address public charityAccount = 0x0;
 
      GOLD public gold;
+
+     // TODO: who sets this to true?
+     bool public blockTransfers = false;
 
      // TODO: combine with 'balances' map...
      struct TokenHolder {
@@ -299,37 +270,17 @@ contract MNT is StdToken {
 
 /// Modifiers:
      modifier onlyCreator() { if(msg.sender != creator) throw; _; }
-     modifier onlyInState(State state){ if(state != currentState) throw; _; }
+     modifier byCreatorOrIcoContract() { if((msg.sender != creator) && (msg.sender != icoContractAddress)) throw; _; }
+     modifier allowTransfer(){if(blockTransfers) throw; _; }
      modifier allowSendingRewards(){if((lastDivideRewardsTime + (DIVIDE_REWARDS_INTERVAL_DAYS * 1 days)) > now) throw; _; }
-
-/// Events:
-     event LogBuy(address indexed owner, uint value);
-     event LogStateSwitch(State newState);
-
-/// Access methods:
-     function setState(State _nextState) public onlyCreator {
-          bool canSwitchState
-               =  (currentState == State.Init && _nextState == State.ICORunning)
-               || (currentState == State.ICORunning && _nextState == State.ICOPaused)
-               || (currentState == State.ICOPaused && _nextState == State.ICORunning)
-               || (currentState == State.ICORunning && _nextState == State.Normal);
-
-          if(!canSwitchState) throw;
-
-          currentState = _nextState;
-          LogStateSwitch(_nextState);
-
-          if(currentState==State.ICORunning){
-               startICO();
-          }
-     }
-
-     function getCurrentPrice() returns (uint){
-          return PRICE;
-     }
 
      function setCreator(address _creator) onlyCreator {
           creator = _creator;
+     }
+
+/// Setters/Getters
+     function setIcoContractAddress(address _icoContractAddress) onlyCreator {
+          icoContractAddress = _icoContractAddress;
      }
 
      function setTempGoldAccount(address _tempGoldAccount) onlyCreator {
@@ -354,10 +305,8 @@ contract MNT is StdToken {
 
 /// Functions:
      /// @dev Constructor
-     /// @param _tempGoldAccount - should be equal to GOLD's tempGoldAccount
      function MNT(
           address _goldTokenContractAddress,
-          address _foundersRewardsAccount,
           
           address _tempGoldAccount, 
           address _goldmintRewardsAccount,
@@ -367,49 +316,13 @@ contract MNT is StdToken {
 
           gold = GOLD(_goldTokenContractAddress);
 
-          foundersRewardsAccount = _foundersRewardsAccount;
-
           tempGoldAccount = _tempGoldAccount;
           goldmintRewardsAccount = _goldmintRewardsAccount;
 
           charityAccount = _charityAccount;
-
-          assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
      }
 
-     function buyTokens(address _buyer) public payable onlyInState(State.ICORunning) {
-          if(msg.value == 0) throw;
-          uint newTokens = msg.value * getCurrentPrice();
-
-          if (totalSupply + newTokens > ICO_TOKEN_SUPPLY_LIMIT) throw;
-
-          issueTokens(_buyer,newTokens);
-
-          LogBuy(_buyer, newTokens);
-     }
-
-     /// @dev This function is automatically called when ICO is started
-     /// WARNING: can be called multiple times!
-     function startICO()internal onlyCreator {
-          mintFoundersRewards(foundersRewardsAccount);
-     }
-
-     function mintFoundersRewards(address _whereToMint) internal onlyCreator {
-          if(!foundersRewardsMinted){
-               foundersRewardsMinted = true;
-               issueTokens(_whereToMint,FOUNDERS_REWARD);
-          }
-     }
-
-     /// @dev This can be called to manually issue new tokens
-     // TODO: test it
-     function issueTokensExternal(address _to, uint _tokens) onlyCreator {
-          issueTokens(_to,_tokens);
-
-          issuedExternallyTokens+=_tokens;
-     }
-
-     function issueTokens(address _who, uint _tokens) internal {
+     function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {
           // TODO: check this...
           tokenHolders[_who].balanceAtLastReward = 0;
           tokenHolders[_who].lastBalanceUpdateTime = now;
@@ -419,14 +332,14 @@ contract MNT is StdToken {
           totalSupply += _tokens;
      }
 
-     function transfer(address _to, uint256 _value) onlyInState(State.Normal) {
+     function transfer(address _to, uint256 _value) allowTransfer {
           updateLastBalancesMap(msg.sender);
           updateLastBalancesMap(_to);
 
           super.transfer(_to, _value);
      }
 
-     function transferFrom(address _from, address _to, uint256 _value) onlyInState(State.Normal) {
+     function transferFrom(address _from, address _to, uint256 _value) allowTransfer {
           updateLastBalancesMap(_from);
           updateLastBalancesMap(_to);
 
@@ -434,7 +347,7 @@ contract MNT is StdToken {
      }
 
      // this is called BEFORE balance update from transfer() 
-     function updateLastBalancesMap(address _who) private {
+     function updateLastBalancesMap(address _who) internal {
           // if 'last update time' is BEFORE 'last rewards were divided'...
           if(tokenHolders[_who].lastBalanceUpdateTime <= lastDivideRewardsTime) {
                tokenHolders[_who].lastBalanceUpdateTime = now;
@@ -443,7 +356,7 @@ contract MNT is StdToken {
      }
 
      // This should be called by Goldmint staff
-     function sendRewards() onlyCreator onlyInState(State.Normal) allowSendingRewards{
+     function sendRewards() onlyCreator allowSendingRewards {
           lastDivideRewardsTime = now;
 
           // 0 - send the rest of rewards to charity account
@@ -454,7 +367,7 @@ contract MNT is StdToken {
                }
           }
 
-          // 1 - send half of all rewards to GoldmintDAO
+          // 1 - send half of all rewards to Goldmint
           uint totalRewardsLeft = gold.balanceOf(tempGoldAccount);
           uint half = totalRewardsLeft / 2;
           gold.transferRewardWithoutFee(goldmintRewardsAccount,half);
@@ -500,33 +413,129 @@ contract MNT is StdToken {
           lastIntervalTokenHoldersWithdrawn+=myReward;
      }
 
-     // Default fallback function
-     function() payable {
-          buyTokens(msg.sender);
+     // Do not allow to send money directly to this contract
+     function() {
+          throw;
      }
 }
 
-contract GoldmintDAO is MNT {
+contract Goldmint is SafeMath {
+     address public creator = 0x0;
+
+     MNT public mntToken; 
+
+     // TODO:
+     uint public constant PRICE = 1000;  // per 1 Ether
+     
+     // we sell only this amount of tokens during the ICO
+     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 6200000 * (1 ether / 1 wei); 
+     // this is bounty rewards + presale tokens migration + advisors, etc
+     uint public constant BONUS_REWARD = (310000 + 800000 + 467500 + 222500) * (1 ether/ 1 wei);
+     uint public constant FOUNDERS_REWARD = 2000000 * (1 ether / 1 wei);
+
+     uint public constant TOTAL_TOKEN_SUPPLY = 
+          BONUS_REWARD + 
+          ICO_TOKEN_SUPPLY_LIMIT + 
+          FOUNDERS_REWARD;
+
+     // this is total that was issued by a scripts
+     uint public issuedExternallyTokens = 0;
+
+     bool public foundersRewardsMinted = false;
+
+     // this is where FOUNDERS_REWARD will be allocated
+     address public foundersRewardsAccount = 0x0;
+
+     enum State{
+          Init,
+
+          ICORunning,
+          ICOPaused,
+         
+          Normal
+          // TODO...
+     }
+     State public currentState = State.Init;
+
+/// Modifiers:
+     modifier onlyCreator() { if(msg.sender != creator) throw; _; }
+     modifier onlyInState(State state){ if(state != currentState) throw; _; }
+
+/// Events:
+     event LogStateSwitch(State newState);
+     event LogBuy(address indexed owner, uint value);
      
 /// Functions:
      /// @dev Constructor
-     function GoldmintDAO(
-          address _foundersRewardsAccount,
-          
-          address _tempGoldAccount, 
-          address _goldmintRewardsAccount,
-          address _charityAccount) 
+     function Goldmint(
+          address _mntTokenAddress,
+          address _foundersRewardsAccount) 
      {
           creator = msg.sender;
 
+          mntToken = MNT(_mntTokenAddress);
+
           foundersRewardsAccount = _foundersRewardsAccount;
-
-          tempGoldAccount = _tempGoldAccount;
-          goldmintRewardsAccount = _goldmintRewardsAccount;
-
-          charityAccount = _charityAccount;
 
           assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
      }
 
+     /// @dev This function is automatically called when ICO is started
+     /// WARNING: can be called multiple times!
+     function startICO() internal onlyCreator {
+          mintFoundersRewards(foundersRewardsAccount);
+     }
+
+     function mintFoundersRewards(address _whereToMint) internal onlyCreator {
+          if(!foundersRewardsMinted){
+               foundersRewardsMinted = true;
+               mntToken.issueTokens(_whereToMint,FOUNDERS_REWARD);
+          }
+     }
+
+/// Access methods:
+     function setState(State _nextState) public onlyCreator {
+          bool canSwitchState
+               =  (currentState == State.Init && _nextState == State.ICORunning)
+               || (currentState == State.ICORunning && _nextState == State.ICOPaused)
+               || (currentState == State.ICOPaused && _nextState == State.ICORunning)
+               || (currentState == State.ICORunning && _nextState == State.Normal);
+
+          if(!canSwitchState) throw;
+
+          currentState = _nextState;
+          LogStateSwitch(_nextState);
+
+          if(currentState==State.ICORunning){
+               startICO();
+          }
+     }
+
+     function getCurrentPrice() returns (uint){
+          return PRICE;
+     }
+
+     function buyTokens(address _buyer) public payable onlyInState(State.ICORunning) {
+          if(msg.value == 0) throw;
+          uint newTokens = msg.value * getCurrentPrice();
+
+          if(mntToken.totalSupply() + newTokens > ICO_TOKEN_SUPPLY_LIMIT) throw;
+
+          mntToken.issueTokens(_buyer,newTokens);
+
+          LogBuy(_buyer, newTokens);
+     }
+
+     /// @dev This can be called to manually issue new tokens
+     // TODO: test it
+     function issueTokensExternal(address _to, uint _tokens) onlyCreator {
+          mntToken.issueTokens(_to,_tokens);
+          
+          issuedExternallyTokens+=_tokens;
+     }
+
+     // Default fallback function
+     function() payable {
+          buyTokens(msg.sender);
+     }
 }

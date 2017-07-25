@@ -143,8 +143,9 @@ function deployMntContract(data,cb){
           var alreadyCalled = false;
 
           tempContract.new(
+               goldContractAddress,
+
                foundersRewardAccount,
-               //manualUploadAccount,
 
                creator,            // temp account to keep all GOLD rewards here 
                goldmintTeam,       // Goldmint foundation account
@@ -220,12 +221,11 @@ describe('Contracts 0 - GOLD setters and getters', function() {
 
      it('should deploy token contract',function(done){
           var data = {};
-          deployMntContract(data,function(err){
+          deployGoldContract(data,function(err){
                assert.equal(err,null);
 
-               deployGoldContract(data,function(err){
+               deployMntContract(data,function(err){
                     assert.equal(err,null);
-
                     done();
                });
           });
@@ -379,10 +379,10 @@ describe('Contracts 1 - calculate reward', function() {
 
      it('should deploy token contract',function(done){
           var data = {};
-          deployMntContract(data,function(err){
-               assert.equal(err,null);
 
-               deployGoldContract(data,function(err){
+          deployGoldContract(data,function(err){
+               assert.equal(err,null);
+               deployMntContract(data,function(err){
                     assert.equal(err,null);
 
                     done();
@@ -415,41 +415,6 @@ describe('Contracts 1 - calculate reward', function() {
           var state = mntContract.currentState();
           assert.equal(state,0);
           done();
-     });
-
-     it('should not set GOLD token address if not creator',function(done){
-          mntContract.setGoldTokenAddress(
-               goldContractAddress,
-               {
-                    from: buyer,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.notEqual(err,null);
-
-                    web3.eth.getTransactionReceipt(result, function(err, r2){
-                         assert.notEqual(err, null);
-                         done();
-                    });
-               }
-          );
-     });
-
-     it('should set GOLD token address',function(done){
-          mntContract.setGoldTokenAddress(
-               goldContractAddress,
-               {
-                    from: creator,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.equal(err,null);
-
-                    web3.eth.getTransactionReceipt(result, function(err, r2){
-                         assert.equal(err, null);
-
-                         done();
-                    });
-               }
-          );
      });
 
      it('should not move state if not owner',function(done){
@@ -772,10 +737,10 @@ describe('Contracts 2 - test MNT getters and setters', function() {
 
      it('should deploy token contract',function(done){
           var data = {};
-          deployMntContract(data,function(err){
+          deployGoldContract(data,function(err){
                assert.equal(err,null);
 
-               deployGoldContract(data,function(err){
+               deployMntContract(data,function(err){
                     assert.equal(err,null);
 
                     done();
@@ -842,28 +807,45 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should not set gold token address if from bad account', function(done){
+     it('should not change gold token address if from bad account', function(done){
           mntContract.gold((err, gold)=>{
                assert.equal(err, null);
-               assert.equal(gold, 0);
+               assert.notEqual(gold, 0);
 
                var params = {from: creator, gas: 2900000};
-               mntContract.setGoldTokenAddress(goldContractAddress, params, (err,res)=>{
+               mntContract.setGoldTokenAddress(123, params, (err,res)=>{
                     assert.notEqual(err, null);
 
                     mntContract.gold((err, gold)=>{
                          assert.equal(err, null);
-                         assert.equal(gold, 0);
+                         assert.notEqual(gold, 123);
                          done();
                     });
                });
           });
      });
 
-     it('should set gold token address', function(done){
+     it('should change gold token address', function(done){
           mntContract.gold((err, gold)=>{
                assert.equal(err, null);
-               assert.equal(gold, 0);
+               assert.notEqual(gold, 0);
+
+               var params = {from: creator2, gas: 2900000};
+               mntContract.setGoldTokenAddress(123, params, (err,res)=>{
+                    assert.equal(err, null);
+                    mntContract.gold((err, gold)=>{
+                         assert.equal(err, null);
+                         assert.equal(gold, 123);
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should change back gold token address', function(done){
+          mntContract.gold((err, gold)=>{
+               assert.equal(err, null);
+               assert.notEqual(gold, 0);
 
                var params = {from: creator2, gas: 2900000};
                mntContract.setGoldTokenAddress(goldContractAddress, params, (err,res)=>{

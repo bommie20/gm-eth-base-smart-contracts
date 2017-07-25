@@ -356,6 +356,7 @@ contract MNT is StdToken {
      /// @dev Constructor
      /// @param _tempGoldAccount - should be equal to GOLD's tempGoldAccount
      function MNT(
+          address _goldTokenContractAddress,
           address _foundersRewardsAccount,
           
           address _tempGoldAccount, 
@@ -363,6 +364,8 @@ contract MNT is StdToken {
           address _charityAccount) 
      {
           creator = msg.sender;
+
+          gold = GOLD(_goldTokenContractAddress);
 
           foundersRewardsAccount = _foundersRewardsAccount;
 
@@ -501,4 +504,29 @@ contract MNT is StdToken {
      function() payable {
           buyTokens(msg.sender);
      }
+}
+
+contract GoldmintDAO is MNT {
+     
+/// Functions:
+     /// @dev Constructor
+     function GoldmintDAO(
+          address _foundersRewardsAccount,
+          
+          address _tempGoldAccount, 
+          address _goldmintRewardsAccount,
+          address _charityAccount) 
+     {
+          creator = msg.sender;
+
+          foundersRewardsAccount = _foundersRewardsAccount;
+
+          tempGoldAccount = _tempGoldAccount;
+          goldmintRewardsAccount = _goldmintRewardsAccount;
+
+          charityAccount = _charityAccount;
+
+          assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
+     }
+
 }

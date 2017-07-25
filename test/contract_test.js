@@ -144,7 +144,7 @@ function deployMntContract(data,cb){
 
           tempContract.new(
                foundersRewardAccount,
-               manualUploadAccount,
+               //manualUploadAccount,
 
                creator,            // temp account to keep all GOLD rewards here 
                goldmintTeam,       // Goldmint foundation account
@@ -706,8 +706,8 @@ describe('Contracts 1 - calculate reward', function() {
           var total = mntContract.totalSupply();
 
           var FOUNDERS_REWARD = 2000000; 
-          var BONUS_REWARD = 1800000; 
-          assert.equal(total/ 1000000000000000000,600 + FOUNDERS_REWARD + BONUS_REWARD);   // 600 tokens (converted)
+          //var BONUS_REWARD = 1800000; 
+          assert.equal(total/ 1000000000000000000,600 + FOUNDERS_REWARD);   // 600 tokens (converted)
 
           // half of all rewards
           var totalRewards = mntContract.lastIntervalTokenHoldersRewards();
@@ -1026,7 +1026,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
 
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
-               assert.equal(res.toString(10), 3800000000000000000001000);
+               assert.equal(res.toString(10), 2000000000000000000001000);
                done();                              
           });
      });
@@ -1048,7 +1048,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
 
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
-               assert.equal(res.toString(10), 3800000000000000000001000);
+               assert.equal(res.toString(10), 2000000000000000000001000);
                done();                              
           });
      });

@@ -244,8 +244,10 @@ contract MNT is StdToken {
           ICO_TOKEN_SUPPLY_LIMIT + 
           FOUNDERS_REWARD;
 
+     // this is total that was issued by a scripts
+     uint public issuedExternallyTokens = 0;
+
      bool public foundersRewardsMinted = false;
-     bool public bonusRewardsMinted = false;
 
      enum State{
           Init,
@@ -263,8 +265,6 @@ contract MNT is StdToken {
 
      // this is where FOUNDERS_REWARD will be allocated
      address public foundersRewardsAccount = 0x0;
-     // this is where BONUS_REWARD will be allocated
-     address public bonusRewardsAccount = 0x0;
 
      // this is where 50% of all GOLD rewards will be transferred
      // (this is Goldmint foundation fund)
@@ -288,7 +288,6 @@ contract MNT is StdToken {
           uint lastRewardWithdrawTime;
      }
 
-     uint tokenHoldersCount = 0;
      mapping(address => TokenHolder) tokenHolders;
 
      // Divide rewards
@@ -358,7 +357,6 @@ contract MNT is StdToken {
      /// @param _tempGoldAccount - should be equal to GOLD's tempGoldAccount
      function MNT(
           address _foundersRewardsAccount,
-          address _bonusRewardsAccount,
           
           address _tempGoldAccount, 
           address _goldmintRewardsAccount,
@@ -367,7 +365,6 @@ contract MNT is StdToken {
           creator = msg.sender;
 
           foundersRewardsAccount = _foundersRewardsAccount;
-          bonusRewardsAccount = _bonusRewardsAccount;
 
           tempGoldAccount = _tempGoldAccount;
           goldmintRewardsAccount = _goldmintRewardsAccount;
@@ -392,7 +389,6 @@ contract MNT is StdToken {
      /// WARNING: can be called multiple times!
      function startICO()internal onlyCreator {
           mintFoundersRewards(foundersRewardsAccount);
-          mintBonusRewards(bonusRewardsAccount);
      }
 
      function mintFoundersRewards(address _whereToMint) internal onlyCreator {
@@ -402,32 +398,19 @@ contract MNT is StdToken {
           }
      }
 
-     function mintBonusRewards(address _whereToMint) internal onlyCreator {
-          if(!bonusRewardsMinted){
-               bonusRewardsMinted = true;
-               issueTokens(_whereToMint,BONUS_REWARD);
-          }
-     }
-
      /// @dev This can be called to manually issue new tokens
      // TODO: test it
      function issueTokensExternal(address _to, uint _tokens) onlyCreator {
           issueTokens(_to,_tokens);
+
+          issuedExternallyTokens+=_tokens;
      }
 
-     /// @dev This can be called to move tokens from bonusRewardsAccount to _who
-     // TODO: test it
-     function moveBonusTokens(address _to, uint _tokens) onlyCreator {
-          transferFrom(bonusRewardsAccount,_to,_tokens);
-     }
-
-     // TODO: test it
-     function issueTokens(address _who, uint _tokens) private {
-          // TODO:
-          // TODO: holder can buy again)))
-
-          //tokenHolders[_who] = _tokens;
-          //tokenHoldersCount = tokenHoldersCount + 1;
+     function issueTokens(address _who, uint _tokens) internal {
+          // TODO: check this...
+          tokenHolders[_who].balanceAtLastReward = 0;
+          tokenHolders[_who].lastBalanceUpdateTime = now;
+          tokenHolders[_who].lastRewardWithdrawTime = 0;
 
           balances[_who] += _tokens;
           totalSupply += _tokens;

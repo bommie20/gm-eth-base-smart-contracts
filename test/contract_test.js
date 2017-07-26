@@ -545,6 +545,18 @@ describe('Contracts 1 - calculate reward', function() {
           );
      });
 
+     it('should get initial price', function(done){
+          goldmintContract.getMntTokensPerEth((err,res)=>{
+               assert.equal(err,null);
+               assert.equal(res,37962962962962962962);
+
+               console.log('RES: ');
+               console.log(res);
+
+               done();
+          });
+     });
+
      it('should buy some MNT tokens for buyer1',function(done){
           // 0.2 ETH
           var amount = 200000000000000000;
@@ -572,7 +584,7 @@ describe('Contracts 1 - calculate reward', function() {
                     from: buyer2,               
                     to: goldmintContractAddress,
                     value: amount,
-                    gas: 2900000 
+                    gas: 4900000 
                },function(err,result){
                     assert.equal(err,null);
 
@@ -581,6 +593,7 @@ describe('Contracts 1 - calculate reward', function() {
           );
      });
 
+
      /////// 
      it('should get updated Buyers balance',function(done){
           // 0 - estimate gas costs
@@ -588,12 +601,15 @@ describe('Contracts 1 - calculate reward', function() {
           //var gas = mntContract.buyTokens.estimateGas(amount);
           //console.log('GAS: ' + gas);
 
+          var shouldBe1 = (37962962962962962962 * 0.2);
+          var shouldBe2 = (37962962962962962962 * 0.4);
+
           // 1 - tokens
           var tokens = mntContract.balanceOf(buyer);
-          assert.equal(tokens / 1000000000000000000,200);   // 200 tokens (converted)
+          assert.equal(tokens,shouldBe1);  
 
           tokens = mntContract.balanceOf(buyer2);
-          assert.equal(tokens / 1000000000000000000,400);   // 400 tokens (converted)
+          assert.equal(tokens,shouldBe2);   
 
           // 2 - ETHs
           var currentBalance = web3.eth.getBalance(buyer);
@@ -701,20 +717,22 @@ describe('Contracts 1 - calculate reward', function() {
      it('should get my rewards 1',function(done){
           // check the balance
           var balance = mntContract.balanceOf(buyer);
-          assert.equal(balance / 1000000000000000000,200);   // 200 tokens (converted)
+     
+          var shouldBe1 = (37962962962962962962 * 0.2);
+          var shouldBe2 = (37962962962962962962 * 0.4);
+          assert.equal(balance,shouldBe1);   
 
           var total = mntContract.totalSupply();
 
-          var FOUNDERS_REWARD = 2000000; 
-          //var BONUS_REWARD = 1800000; 
-          assert.equal(total/ 1000000000000000000,600 + FOUNDERS_REWARD);   // 600 tokens (converted)
+          var FOUNDERS_REWARD = 2000000 * 1000000000000000000;
+          assert.equal(total,shouldBe1 + shouldBe2 + FOUNDERS_REWARD);
 
           // half of all rewards
           var totalRewards = mntContract.lastIntervalTokenHoldersRewards();
           assert.equal(totalRewards,0.025 * 1000000000000000000);   
 
           var withdrawn = mntContract.lastIntervalTokenHoldersWithdrawn();
-          assert.equal(withdrawn/ 1000000000000000000,0);   
+          assert.equal(withdrawn,0);   
 
           var myRewards = mntContract.calculateMyReward(buyer);
 
@@ -798,18 +816,6 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                     done();
                }
           );
-     });
-
-     it('should get initial price', function(done){
-          goldmintContract.getMntTokensPerEth((err,res)=>{
-               assert.equal(err,null);
-               assert.equal(res,37962962962962962962);
-
-               console.log('RES: ');
-               console.log(res);
-
-               done();
-          });
      });
 
      it('should not set creator if from bad account', function(done){

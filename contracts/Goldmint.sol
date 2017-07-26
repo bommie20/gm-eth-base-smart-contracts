@@ -522,10 +522,9 @@ contract Goldmint is SafeMath {
           }
      }
 
-     // TODO: test
-     function getMntTokensPerEth() public constant returns (uint){
+     function getMntTokensPerEth(uint tokensSold) public constant returns (uint){
           // 10 buckets
-          uint priceIndex = (icoTokensSold / (1 ether/ 1 wei)) / 700000;
+          uint priceIndex = (tokensSold / (1 ether/ 1 wei)) / 700000;
           assert(priceIndex>=0 && (priceIndex<=9));
           
           uint8[10] memory discountPercents = [10,8,6,4,3,2,1,0,0,0];
@@ -541,7 +540,7 @@ contract Goldmint is SafeMath {
      // TODO: test
      function buyTokens(address _buyer) public payable onlyInState(State.ICORunning) {
           if(msg.value == 0) throw;
-          uint newTokens = (msg.value * getMntTokensPerEth()) / (1 ether / 1 wei);
+          uint newTokens = (msg.value * getMntTokensPerEth(icoTokensSold)) / (1 ether / 1 wei);
 
           if(icoTokensSold + newTokens > ICO_TOKEN_SUPPLY_LIMIT) throw;
 

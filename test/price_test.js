@@ -37,6 +37,8 @@ var goldmintContract;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
+// If ETH_PRICE_IN_USD or STD_PRICE_USD_PER_1000_TOKENS or discountPercents table changes ->
+// these test will fail...
 describe('Contracts 3 - prices tests', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
@@ -202,6 +204,15 @@ describe('Contracts 3 - prices tests', function() {
                assert.equal(err,null);
                assert.equal(res,34166666666666666666);
 
+               done();
+          });
+     });
+
+     it('should not get eleventh bucket price', function(done){
+          var icoTokensSold = ((10 * 700000) + 1) * 1000000000000000000;
+
+          goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
+               assert.notEqual(err,null);
                done();
           });
      });

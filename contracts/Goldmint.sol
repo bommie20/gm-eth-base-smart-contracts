@@ -540,6 +540,12 @@ contract Goldmint is SafeMath {
      // TODO: test
      function buyTokens(address _buyer) public payable onlyInState(State.ICORunning) {
           if(msg.value == 0) throw;
+
+          // The price is selected based on current sold tokens.
+          // Price can 'overlap'. For example:
+          //   1. if currently we sold 699950 tokens (the price is 10% discount)
+          //   2. buyer buys 1000 tokens
+          //   3. the price of all 1000 tokens would be with 10% discount!!!
           uint newTokens = (msg.value * getMntTokensPerEth(icoTokensSold)) / (1 ether / 1 wei);
 
           if(icoTokensSold + newTokens > ICO_TOKEN_SUPPLY_LIMIT) throw;

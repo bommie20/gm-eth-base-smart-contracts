@@ -429,16 +429,12 @@ contract Goldmint is SafeMath {
      // coinmarketcap.com 25.07.2017
      uint constant ETH_PRICE_IN_USD = 205;
           
-     uint constant TOKENS_PREICO_SOLD = 310000;
-     uint constant TOKENS_EARLY_INVESTORS = 700000;
-     uint constant TOKENS_ADVISORS = 690000;
-
-     // 1 700 000 tokens
-     uint public constant BONUS_REWARD = (TOKENS_PREICO_SOLD + TOKENS_EARLY_INVESTORS + TOKENS_ADVISORS) * (1 ether/ 1 wei);
+     // 1 000 000 tokens
+     uint public constant BONUS_REWARD = 1000000 * (1 ether/ 1 wei);
      // 2 000 000 tokens
      uint public constant FOUNDERS_REWARD = 2000000 * (1 ether / 1 wei);
-     // we sell only this amount of tokens during the ICO
-     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 6300000 * (1 ether / 1 wei); 
+     // 7 000 000 we sell only this amount of tokens during the ICO
+     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7000000 * (1 ether / 1 wei); 
 
      uint public constant TOTAL_TOKEN_SUPPLY = 
           BONUS_REWARD + 
@@ -566,7 +562,7 @@ contract Goldmint is SafeMath {
           }
 
           mntToken.issueTokens(_to,_tokens);
-          
+
           issuedExternallyTokens+=_tokens;
      }
 

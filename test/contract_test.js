@@ -276,7 +276,6 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     /*
      it('should update total supply', function(done){
           var params = {from: creator2, gas: 2900000};
 
@@ -288,15 +287,18 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      });
 
      /*
-     it('should not issue tokens if more than max', function(done){
+     // TODO
+     it('should issue additional tokens', function(done){
           var params = {from: tokenManager, gas: 2900000};
 
-          var additional = 1;
+          // 1 mln
+          var additional = 1000000000000000000000000 - 1000;
           var total = 1000000000000000000000000;
-          goldmintContract.issueTokensExternal(creator2, additional, params, (err,res)=>{
+
+          goldmintContract.issueTokensExternal(buyer2, additional, params, (err,res)=>{
                assert.equal(err, null);
 
-               mntContract.balanceOf(creator2, (err,res)=>{
+               mntContract.balanceOf(buyer2, (err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res.toString(10),total);
                     done();
@@ -304,6 +306,18 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
      */
+
+     it('should not issue additional tokens if more than max', function(done){
+          var params = {from: tokenManager, gas: 2900000};
+
+          // 1 mln
+          var additional = 1000000000000000000000000;
+
+          goldmintContract.issueTokensExternal(buyer2, additional, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
 })
 
 

@@ -236,6 +236,74 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                done();                              
           });
      });
+
+     it('should not burn creator2 tokens if not from token manager', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.burnTokens(creator2, 1000, params, (err,res)=>{
+               assert.notEqual(err, null);
+
+               mntContract.balanceOf(creator2, (err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10),1000);
+                    done();
+               });
+          });
+     });
+
+     it('should not burn creator2 tokens if bigger than balance', function(done){
+          var params = {from: tokenManager, gas: 2900000};
+          goldmintContract.burnTokens(creator2, 1010, params, (err,res)=>{
+               assert.notEqual(err, null);
+
+               mntContract.balanceOf(creator2, (err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10),1000);
+                    done();
+               });
+          });
+     });
+
+     it('should burn creator2 tokens', function(done){
+          var params = {from: tokenManager, gas: 2900000};
+          goldmintContract.burnTokens(creator2, 1000, params, (err,res)=>{
+               assert.equal(err, null);
+
+               mntContract.balanceOf(creator2, (err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10),0);
+                    done();
+               });
+          });
+     });
+
+     /*
+     it('should update total supply', function(done){
+          var params = {from: creator2, gas: 2900000};
+
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), 2000000000000000000000000);
+               done();                              
+          });
+     });
+
+     /*
+     it('should not issue tokens if more than max', function(done){
+          var params = {from: tokenManager, gas: 2900000};
+
+          var additional = 1;
+          var total = 1000000000000000000000000;
+          goldmintContract.issueTokensExternal(creator2, additional, params, (err,res)=>{
+               assert.equal(err, null);
+
+               mntContract.balanceOf(creator2, (err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10),total);
+                    done();
+               });
+          });
+     });
+     */
 })
 
 

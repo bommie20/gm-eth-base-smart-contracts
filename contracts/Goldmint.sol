@@ -150,6 +150,11 @@ contract MNT is StdToken {
           totalSupply += _tokens;
      }
 
+     function burnTokens(address _who, uint _tokens) byCreatorOrIcoContract {
+          balances[_who] = safeSub(balances[_who], _tokens);
+          totalSupply = safeSub(totalSupply, _tokens);
+     }
+
      // Do not allow to send money directly to this contract
      function() {
           throw;
@@ -297,10 +302,11 @@ contract Goldmint is SafeMath {
           LogBuy(_buyer, newTokens);
      }
 
-     /// @dev This can be called to manually issue new tokens
+     /// @dev This can be called to manually issue new tokens 
+     /// from the bonus reward
      function issueTokensExternal(address _to, uint _tokens) onlyInState(State.ICOFinished) onlyTokenManager {
           // can not issue more than BONUS_REWARD
-          if(issuedExternallyTokens + _tokens>BONUS_REWARD){
+          if((issuedExternallyTokens + _tokens)>BONUS_REWARD){
                throw;
           }
 
@@ -309,8 +315,8 @@ contract Goldmint is SafeMath {
           issuedExternallyTokens+=_tokens;
      }
 
-     function burnTokens(address _to, uint _tokens) onlyInState(State.ICOFinished) onlyTokenManager {
-          // TODO
+     function burnTokens(address _from, uint _tokens) onlyInState(State.ICOFinished) onlyTokenManager {
+          mntToken.burnTokens(_from,_tokens);
      }
 
      // Default fallback function

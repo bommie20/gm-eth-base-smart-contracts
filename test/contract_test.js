@@ -219,6 +219,9 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           goldmintContract.issueTokensExternal(creator2, 1000, params, (err,res)=>{
                assert.equal(err, null);
 
+               var issuedExt = goldmintContract.issuedExternallyTokens();
+               assert.equal(issuedExt,1000);
+
                mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res.toString(10),1000);
@@ -228,8 +231,6 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      });
 
      it('should not update total supply after ->running->paused->running', function(done){
-          var params = {from: creator2, gas: 2900000};
-
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
                assert.equal(res.toString(10), 2000000000000000000001000);
@@ -245,6 +246,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res.toString(10),1000);
+
                     done();
                });
           });
@@ -271,41 +273,21 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res.toString(10),0);
-                    done();
+
+                    // should be still 1000
+                    var issuedExt = goldmintContract.issuedExternallyTokens();
+                    assert.equal(issuedExt,1000);
+
+                    // should update total supply
+                    mntContract.totalSupply((err,res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res.toString(10), 2000000000000000000000000);
+
+                         done();
+                    });
                });
           });
      });
-
-     it('should update total supply', function(done){
-          var params = {from: creator2, gas: 2900000};
-
-          mntContract.totalSupply((err,res)=>{
-               assert.equal(err, null);
-               assert.equal(res.toString(10), 2000000000000000000000000);
-               done();                              
-          });
-     });
-
-     /*
-     // TODO
-     it('should issue additional tokens', function(done){
-          var params = {from: tokenManager, gas: 2900000};
-
-          // 1 mln
-          var additional = 1000000000000000000000000 - 1000;
-          var total = 1000000000000000000000000;
-
-          goldmintContract.issueTokensExternal(buyer2, additional, params, (err,res)=>{
-               assert.equal(err, null);
-
-               mntContract.balanceOf(buyer2, (err,res)=>{
-                    assert.equal(err, null);
-                    assert.equal(res.toString(10),total);
-                    done();
-               });
-          });
-     });
-     */
 
      it('should not issue additional tokens if more than max', function(done){
           var params = {from: tokenManager, gas: 2900000};
@@ -316,6 +298,27 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           goldmintContract.issueTokensExternal(buyer2, additional, params, (err,res)=>{
                assert.notEqual(err, null);
                done();
+          });
+     });
+
+     it('should issue additional tokens', function(done){
+          var params = {from: tokenManager, gas: 3900000};
+
+          // 1 mln - 1000
+          var additional = 1000000000000000000000000 - 1000;
+          var total = 1000000000000000000000000;
+
+          var bonusReward = goldmintContract.BONUS_REWARD();
+          assert.equal(bonusReward,total);
+
+          goldmintContract.issueTokensExternal(buyer2, additional, params, (err,res)=>{
+               assert.equal(err, null);
+
+               mntContract.balanceOf(buyer2, (err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10),total);
+                    done();
+               });
           });
      });
 })

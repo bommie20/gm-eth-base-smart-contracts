@@ -126,6 +126,9 @@ contract MNT is StdToken {
      address public creator = 0x0;
      address public icoContractAddress = 0x0;
 
+     // 10 mln
+     uint public constant TOTAL_TOKEN_SUPPLY = 10000000 * (1 ether / 1 wei);
+
 /// Modifiers:
      modifier onlyCreator() { if(msg.sender != creator) throw; _; }
      modifier byCreatorOrIcoContract() { if((msg.sender != creator) && (msg.sender != icoContractAddress)) throw; _; }
@@ -143,9 +146,16 @@ contract MNT is StdToken {
      /// @dev Constructor
      function MNT() {
           creator = msg.sender;
+
+          // 10 mln tokens total
+          assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
      }
 
      function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {
+          if((totalSupply + _tokens) > TOTAL_TOKEN_SUPPLY){
+               throw;
+          }
+
           balances[_who] += _tokens;
           totalSupply += _tokens;
      }
@@ -178,11 +188,6 @@ contract Goldmint is SafeMath {
      uint public constant FOUNDERS_REWARD = 2000000 * (1 ether / 1 wei);
      // 7 000 000 we sell only this amount of tokens during the ICO
      uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7000000 * (1 ether / 1 wei); 
-
-     uint public constant TOTAL_TOKEN_SUPPLY = 
-          BONUS_REWARD + 
-          ICO_TOKEN_SUPPLY_LIMIT + 
-          FOUNDERS_REWARD;
 
      // this is total number of tokens sold during ICO
      uint public icoTokensSold = 0;
@@ -227,9 +232,6 @@ contract Goldmint is SafeMath {
           mntToken = MNT(_mntTokenAddress);
 
           foundersRewardsAccount = _foundersRewardsAccount;
-
-          // 10 mln tokens total
-          assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
      }
 
      /// @dev This function is automatically called when ICO is started

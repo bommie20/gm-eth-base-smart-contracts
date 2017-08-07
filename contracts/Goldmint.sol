@@ -158,6 +158,7 @@ contract MNT is StdToken {
 
 contract Goldmint is SafeMath {
      address public creator = 0x0;
+     address public tokenManager = 0x0;
 
      MNT public mntToken; 
 
@@ -195,13 +196,13 @@ contract Goldmint is SafeMath {
           ICORunning,
           ICOPaused,
          
-          Normal
-          // TODO...
+          ICOFinished
      }
      State public currentState = State.Init;
 
 /// Modifiers:
      modifier onlyCreator() { if(msg.sender != creator) throw; _; }
+     modifier onlyTokenManager() { if(msg.sender != tokenManager) throw; _; }
      modifier onlyInState(State state){ if(state != currentState) throw; _; }
 
 /// Events:
@@ -211,10 +212,12 @@ contract Goldmint is SafeMath {
 /// Functions:
      /// @dev Constructor
      function Goldmint(
+          address _tokenManager,
           address _mntTokenAddress,
           address _foundersRewardsAccount) 
      {
           creator = msg.sender;
+          tokenManager = _tokenManager;
 
           mntToken = MNT(_mntTokenAddress);
 
@@ -238,12 +241,17 @@ contract Goldmint is SafeMath {
      }
 
 /// Access methods:
+     function setTokenManager(address _new) public onlyTokenManager {
+          tokenManager = _new;
+     }
+
      function setState(State _nextState) public onlyCreator {
           bool canSwitchState
                =  (currentState == State.Init && _nextState == State.ICORunning)
                || (currentState == State.ICORunning && _nextState == State.ICOPaused)
                || (currentState == State.ICOPaused && _nextState == State.ICORunning)
-               || (currentState == State.ICORunning && _nextState == State.Normal);
+               || (currentState == State.ICORunning && _nextState == State.ICOFinished)
+               || (currentState == State.ICOFinished && _nextState == State.ICORunning);
 
           if(!canSwitchState) throw;
 
@@ -270,7 +278,6 @@ contract Goldmint is SafeMath {
           return mntPerEth;
      }
 
-     // TODO: test
      function buyTokens(address _buyer) public payable onlyInState(State.ICORunning) {
           if(msg.value == 0) throw;
 
@@ -291,8 +298,7 @@ contract Goldmint is SafeMath {
      }
 
      /// @dev This can be called to manually issue new tokens
-     // TODO: test it
-     function issueTokensExternal(address _to, uint _tokens) onlyCreator {
+     function issueTokensExternal(address _to, uint _tokens) onlyInState(State.ICOFinished) onlyTokenManager {
           // can not issue more than BONUS_REWARD
           if(issuedExternallyTokens + _tokens>BONUS_REWARD){
                throw;
@@ -301,6 +307,10 @@ contract Goldmint is SafeMath {
           mntToken.issueTokens(_to,_tokens);
 
           issuedExternallyTokens+=_tokens;
+     }
+
+     function burnTokens(address _to, uint _tokens) onlyInState(State.ICOFinished) onlyTokenManager {
+          // TODO
      }
 
      // Default fallback function

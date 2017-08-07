@@ -108,6 +108,7 @@ function deployGoldmintContract(data,cb){
           var alreadyCalled = false;
 
           tempContract.new(
+               tokenManager,
                mntContractAddress,
                goldmintTeam,       // _foundersRewardsAccount 
                {

@@ -117,113 +117,6 @@ contract StdToken is Token {
      }
 }
 
-contract GOLD is StdToken {
-/// Fields:
-     string public constant name = "Goldmint GOLD Token";
-     string public constant symbol = "GOLD";
-     uint public constant decimals = 18;
-
-     uint public constant CURRENT_FEE_MODIFIER_MIN = 100;
-     uint public constant CURRENT_FEE_MODIFIER_MAX = 100000;
-     uint public currentFeeModifier = 400;   // 0.25%
-
-     uint public constant MIN_FEE = 0.001 * (1 ether / 1 wei);
-     uint public constant MAX_FEE = 0.01 * (1 ether / 1 wei);
-     uint public currentMinFee = 0.0025 * (1 ether / 1 wei);  
-
-     enum State{
-          Init
-     }
-
-     State public currentState = State.Init;
-
-     address public creator = 0x0;
-     // this is used to send fees (that is then distributed as rewards to all MNT token holders)
-     address public tempGoldAccount = 0x0;
-
-/// Modifiers:
-     modifier onlyCreator() { if(msg.sender != creator) throw; _; }
-     modifier onlyInState(State state){ if(state != currentState) throw; _; }
-
-/// Access methods:
-     // TODO: test
-     function setCreator(address _creator) onlyCreator {
-          creator = _creator;
-     }
-
-     // TODO: test
-     function setTempGoldAccount(address _tempGoldAccount) onlyCreator {
-          tempGoldAccount = _tempGoldAccount;
-     }
-     
-     function setCurrentFeeModifier(uint _value)onlyCreator{
-          // 0.001% (100000) .. 1% (100)
-          // 0.25% (400) by default
-          if((_value<CURRENT_FEE_MODIFIER_MIN) || (_value>CURRENT_FEE_MODIFIER_MAX)){
-               throw;
-          }
-          currentFeeModifier = _value;
-     }
-
-     function setCurrentMinFee(uint _value)onlyCreator{
-          // 0.001 .. 0.01
-          if((_value<MIN_FEE) || (_value>MAX_FEE)){
-               throw;
-          }
-          currentMinFee = _value;
-     }
-
-///
-     function GOLD(address _tempGoldAccount) {
-          creator = msg.sender;
-          tempGoldAccount = _tempGoldAccount;
-     }
-
-     function calculateFee(uint _value) returns(uint) {
-          // 0.25% by default
-          uint fee = (_value / currentFeeModifier);  
-
-          if(fee < currentMinFee){
-               fee = currentMinFee;
-          }
-          return fee;
-     }
-
-     // Send GOLD tokens from A (msg.sender) -> B (_to)
-     function transfer(address _to, uint _value) onlyPayloadSize(2 * 32) {
-          uint fee = calculateFee(_value);
-          // if fee is bigger than _value -> this will throw
-          uint sendThis = safeSub(_value,fee);
-          
-          // 1.Transfer fee
-          // A -> rewards account
-          super.transfer(tempGoldAccount, fee);
-
-          // 2.Transfer
-          // A -> B
-          return super.transfer(_to, sendThis);
-     }
-
-     // TODO: msg.sender should be only MNT contract
-     function transferRewardWithoutFee(address _to, uint _value) onlyPayloadSize(2*32) {
-          if((balances[tempGoldAccount] < _value) || (balances[_to] + _value <= balances[_to])) {
-               throw;
-          }
-
-          balances[tempGoldAccount] -= _value;
-          balances[_to] += _value;
-
-          Transfer(tempGoldAccount, _to, _value);
-     }
-
-     // TODO: warning!!!! Just for tests!!!
-     // should be removed in production
-     function TEST_issueTokens(address _for, uint _amount) /*onlyCreator*/ {
-          balances[_for] += _amount;
-          totalSupply += _amount;
-     }
-}
-
 contract MNT is StdToken {
 /// Fields:
      string public constant name = "Goldmint MNT Token";
@@ -233,46 +126,9 @@ contract MNT is StdToken {
      address public creator = 0x0;
      address public icoContractAddress = 0x0;
 
-     // this is where 50% of all GOLD rewards will be transferred
-     // (this is Goldmint foundation fund)
-     address public goldmintRewardsAccount = 0x0;
-
-     // this is where all GOLD rewards are kept
-     address public tempGoldAccount = 0x0;
-
-     // this is charity account (we send what was not withdrawn by token holders)
-     address public charityAccount = 0x0;
-
-     GOLD public gold;
-
-     // TODO: who sets this to true?
-     bool public blockTransfers = false;
-
-     // TODO: combine with 'balances' map...
-     struct TokenHolder {
-          uint balanceAtLastReward;
-
-          // this helps to mantain the 'last balance' map
-          uint lastBalanceUpdateTime;
-
-          // do not allow multiple withdraws in a single reward period
-          uint lastRewardWithdrawTime;
-     }
-
-     mapping(address => TokenHolder) tokenHolders;
-
-     // Divide rewards
-     uint public lastDivideRewardsTime = 0;
-     uint public DIVIDE_REWARDS_INTERVAL_DAYS = 7;
-
-     uint public lastIntervalTokenHoldersRewards = 0;
-     uint public lastIntervalTokenHoldersWithdrawn = 0;
-
 /// Modifiers:
      modifier onlyCreator() { if(msg.sender != creator) throw; _; }
      modifier byCreatorOrIcoContract() { if((msg.sender != creator) && (msg.sender != icoContractAddress)) throw; _; }
-     modifier allowTransfer(){if(blockTransfers) throw; _; }
-     modifier allowSendingRewards(){if((lastDivideRewardsTime + (DIVIDE_REWARDS_INTERVAL_DAYS * 1 days)) > now) throw; _; }
 
      function setCreator(address _creator) onlyCreator {
           creator = _creator;
@@ -283,134 +139,15 @@ contract MNT is StdToken {
           icoContractAddress = _icoContractAddress;
      }
 
-     function setTempGoldAccount(address _tempGoldAccount) onlyCreator {
-          tempGoldAccount = _tempGoldAccount;
-     }
-
-     function setGoldTokenAddress(address _goldTokenContractAddress) onlyCreator {
-          gold = GOLD(_goldTokenContractAddress);
-     }
-
-     function setGoldmintRewardsAccount(address _goldmintRewardsAccount) onlyCreator {
-          goldmintRewardsAccount = _goldmintRewardsAccount;
-     }
-
-     function setDivideRewardsInterval(uint _days) onlyCreator {
-          DIVIDE_REWARDS_INTERVAL_DAYS = _days;
-     }
-
-     function setCharityAccount(address _charityAccount) onlyCreator {
-          charityAccount = _charityAccount;
-     }
-
 /// Functions:
      /// @dev Constructor
-     function MNT(
-          address _goldTokenContractAddress,
-          
-          address _tempGoldAccount, 
-          address _goldmintRewardsAccount,
-          address _charityAccount) 
-     {
+     function MNT() {
           creator = msg.sender;
-
-          gold = GOLD(_goldTokenContractAddress);
-
-          tempGoldAccount = _tempGoldAccount;
-          goldmintRewardsAccount = _goldmintRewardsAccount;
-
-          charityAccount = _charityAccount;
      }
 
      function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {
-          // TODO: check this...
-          tokenHolders[_who].balanceAtLastReward = 0;
-          tokenHolders[_who].lastBalanceUpdateTime = now;
-          tokenHolders[_who].lastRewardWithdrawTime = 0;
-
           balances[_who] += _tokens;
           totalSupply += _tokens;
-     }
-
-     function transfer(address _to, uint256 _value) allowTransfer {
-          updateLastBalancesMap(msg.sender);
-          updateLastBalancesMap(_to);
-
-          super.transfer(_to, _value);
-     }
-
-     function transferFrom(address _from, address _to, uint256 _value) allowTransfer {
-          updateLastBalancesMap(_from);
-          updateLastBalancesMap(_to);
-
-          super.transferFrom(_from, _to, _value);
-     }
-
-     // this is called BEFORE balance update from transfer() 
-     function updateLastBalancesMap(address _who) internal {
-          // if 'last update time' is BEFORE 'last rewards were divided'...
-          if(tokenHolders[_who].lastBalanceUpdateTime <= lastDivideRewardsTime) {
-               tokenHolders[_who].lastBalanceUpdateTime = now;
-               tokenHolders[_who].balanceAtLastReward = balances[_who];
-          }
-     }
-
-     // This should be called by Goldmint staff
-     function sendRewards() onlyCreator allowSendingRewards {
-          lastDivideRewardsTime = now;
-
-          // 0 - send the rest of rewards to charity account
-          if(lastIntervalTokenHoldersRewards>=lastIntervalTokenHoldersWithdrawn){
-               uint leftForCharity = lastIntervalTokenHoldersRewards - lastIntervalTokenHoldersWithdrawn;
-               if(leftForCharity!=0){
-                    gold.transferRewardWithoutFee(charityAccount,leftForCharity);
-               }
-          }
-
-          // 1 - send half of all rewards to Goldmint
-          uint totalRewardsLeft = gold.balanceOf(tempGoldAccount);
-          uint half = totalRewardsLeft / 2;
-          gold.transferRewardWithoutFee(goldmintRewardsAccount,half);
-
-          // 2 - send other half to token holders
-          // save total rewards at this time
-          uint rest = totalRewardsLeft - half;
-          lastIntervalTokenHoldersRewards = rest;
-          lastIntervalTokenHoldersWithdrawn = 0;
-     }
-
-     // This should be called by token holder
-     function calculateMyReward(address _addr)constant returns(uint){
-          uint256 balance;
-
-          if(tokenHolders[_addr].lastBalanceUpdateTime <= lastDivideRewardsTime) {
-               // if balance was NOT updated since last reward
-               // get current balance
-               balance = balances[_addr];
-          } else {
-               // if balance was updated since last reward
-               // get the balance at 'lastDivideRewardsTime' 
-               balance = tokenHolders[_addr].balanceAtLastReward;
-          }
-          
-          return (balance * lastIntervalTokenHoldersRewards / totalSupply);
-     }
-
-     // This should be called by token holder
-     function getMyReward(){
-          // if you already got your reward since last time 'sendRewards' was called
-          if(tokenHolders[msg.sender].lastRewardWithdrawTime >= lastDivideRewardsTime) {
-               throw;
-          }
-
-          uint myReward = calculateMyReward(msg.sender);
-          tokenHolders[msg.sender].lastRewardWithdrawTime = now;
-
-          // send rewards to the MNT token holder
-          // rewardAccount -> _mntTokenHolder
-          gold.transferRewardWithoutFee(msg.sender,myReward);
-
-          lastIntervalTokenHoldersWithdrawn+=myReward;
      }
 
      // Do not allow to send money directly to this contract

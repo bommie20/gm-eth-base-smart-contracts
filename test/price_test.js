@@ -69,16 +69,12 @@ describe('Contracts 3 - prices tests', function() {
      it('should deploy token contract',function(done){
           var data = {};
 
-          deployGoldContract(data,function(err){
+          deployMntContract(data,function(err){
                assert.equal(err,null);
 
-               deployMntContract(data,function(err){
+               deployGoldmintContract(data,function(err){
                     assert.equal(err,null);
-
-                    deployGoldmintContract(data,function(err){
-                         assert.equal(err,null);
-                         done();
-                    });
+                    done();
                });
           });
      });

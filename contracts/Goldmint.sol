@@ -302,6 +302,22 @@ contract Goldmint is SafeMath {
           tokenManager = _new;
      }
 
+     function getTokensIcoSold() public returns (uint){
+          return icoTokensSold;
+     }
+
+     function getTotalIcoTokens() public returns (uint){
+          return ICO_TOKEN_SUPPLY_LIMIT;
+     }
+
+     function getMntTokenBalance(address _of) public returns (uint){
+          return mntToken.balanceOf(_of);
+     }
+
+     function getCurrentPrice()public returns (uint){
+          return getMntTokensPerEth(icoTokensSold);
+     }
+
      function setState(State _nextState) public onlyCreator {
           bool canSwitchState
                =  (currentState == State.Init && _nextState == State.ICORunning)

@@ -17,6 +17,7 @@ var goldmintTeam;
 var buyer;
 var buyer2;
 var buyers = [];
+var unsoldTokensReward;
 
 var initialBalanceCreator = 0;
 var initialBalanceBuyer = 0;
@@ -30,6 +31,9 @@ var goldContract;
 
 var goldmintContractAddress;
 var goldmintContract;
+
+var unsoldContractAddress;
+var unsoldContract;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
@@ -48,6 +52,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                goldmintTeam = accounts[3];
                creator2 = accounts[4];
                tokenManager = accounts[5];
+               unsoldTokensReward = accounts[6];
 
                var contractName = ':MNT';
                getContractAbi(contractName,function(err,abi){
@@ -68,9 +73,13 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           deployMntContract(data,function(err){
                assert.equal(err,null);
 
-               deployGoldmintContract(data,function(err){
+               deployUnsoldContract(data,function(err){
                     assert.equal(err,null);
-                    done();
+
+                    deployGoldmintContract(data,function(err){
+                         assert.equal(err,null);
+                         done();
+                    });
                });
           });
      });
@@ -199,6 +208,24 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
+     it('should transfer unsold tokens to GoldmintUnsold contract', function(done){
+          // check that unsold tokens are transferred to GoldmintUnsold contract
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), 9000000000000000000000000);
+
+               var moved = goldmintContract.icoTokensUnsold();
+               assert.equal(moved,7000000000000000000000000);
+
+               assert.equal(goldmintContract.restTokensMoved(),true);
+
+               var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
+               assert.equal(unsoldBalance,7000000000000000000000000);
+
+               done();                              
+          });
+     });
+
      it('should not issue tokens if not token manager', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.issueTokensExternal(creator2, 1000, params, (err,res)=>{
@@ -229,7 +256,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      it('should not update total supply after ->running->paused->running', function(done){
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
-               assert.equal(res.toString(10), 2000001000000000000000000);
+               assert.equal(res.toString(10), 9000001000000000000000000);
                done();                              
           });
      });
@@ -290,7 +317,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                     // should update total supply
                     mntContract.totalSupply((err,res)=>{
                          assert.equal(err, null);
-                         assert.equal(res.toString(10), 2000000000000000000000000);
+                         assert.equal(res.toString(10), 9000000000000000000000000);
 
                          done();
                     });
@@ -329,8 +356,8 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                assert.equal(ext2,total);
 
                mntContract.balanceOf(buyer2, (err,res)=>{
-                    console.log('RES: ');
-                    console.log(res);
+                    //console.log('RES: ');
+                    //console.log(res);
 
                     assert.equal(err, null);
                     assert.equal(res.toString(10),additional);

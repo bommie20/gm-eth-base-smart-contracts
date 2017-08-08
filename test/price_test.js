@@ -13,8 +13,7 @@ var accounts;
 
 var creator;
 var goldmintTeam;
-var charityAccount;
-var charityAccount2;
+var unsoldTokensReward;
 
 var foundersRewardAccount;
 
@@ -35,6 +34,9 @@ var goldContract;
 var goldmintContractAddress;
 var goldmintContract;
 
+var unsoldContractAddress;
+var unsoldContract;
+
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
 // If ETH_PRICE_IN_USD or STD_PRICE_USD_PER_1000_TOKENS or discountPercents table changes ->
@@ -52,6 +54,7 @@ describe('Contracts 3 - prices tests', function() {
                buyer = accounts[1];
                buyer2 = accounts[2];
                foundersRewardAccount = accounts[4];
+               unsoldTokensReward = accounts[5];
 
                var contractName = ':MNT';
                getContractAbi(contractName,function(err,abi){
@@ -72,9 +75,13 @@ describe('Contracts 3 - prices tests', function() {
           deployMntContract(data,function(err){
                assert.equal(err,null);
 
-               deployGoldmintContract(data,function(err){
+               deployUnsoldContract(data,function(err){
                     assert.equal(err,null);
-                    done();
+
+                    deployGoldmintContract(data,function(err){
+                         assert.equal(err,null);
+                         done();
+                    });
                });
           });
      });

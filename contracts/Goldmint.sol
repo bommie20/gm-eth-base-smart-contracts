@@ -152,11 +152,9 @@ contract MNT is StdToken {
      }
 
      function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {
-          /*
           if((totalSupply + _tokens) > TOTAL_TOKEN_SUPPLY){
                throw;
           }
-          */
 
           balances[_who] += _tokens;
           totalSupply += _tokens;
@@ -173,11 +171,42 @@ contract MNT is StdToken {
      }
 }
 
+// This contract will hold all tokens that were unsold during ICO
+// (Goldmint should be able to withdraw them and sold only 1 year post-ICO)
+contract GoldmintUnsold is SafeMath {
+     address public creator;
+     address public teamAccountAddress;
+
+     MNT public mntToken;
+
+     function GoldmintUnsold(address _teamAccountAddress,address _mntTokenAddress){
+          creator = msg.sender;
+          teamAccountAddress = _teamAccountAddress;
+
+          mntToken = MNT(_mntTokenAddress);          
+     }
+
+     // can be called by anyone...
+     function withdrawTokens() public {
+          // TODO: wait for 1 year!
+
+          // transfer all tokens from this contract to the teamAccountAddress
+          uint total = mntToken.balanceOf(this);
+          mntToken.transfer(teamAccountAddress,total);
+     }
+
+     // Default fallback function
+     function() payable {
+          throw;
+     }
+}
+
 contract Goldmint is SafeMath {
      address public creator = 0x0;
      address public tokenManager = 0x0;
 
      MNT public mntToken; 
+     GoldmintUnsold public unsoldContract;
 
      // These can be changed before ICO start ($6USD/MNT)
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 6000;
@@ -193,11 +222,14 @@ contract Goldmint is SafeMath {
 
      // this is total number of tokens sold during ICO
      uint public icoTokensSold = 0;
+     // this is total number of tokens sent to GoldmintUnsold contract after ICO is finished
+     uint public icoTokensUnsold = 0;
 
      // this is total number of tokens that were issued by a scripts
      uint public issuedExternallyTokens = 0;
 
      bool public foundersRewardsMinted = false;
+     bool public restTokensMoved = false;
 
      // this is where FOUNDERS_REWARD will be allocated
      address public foundersRewardsAccount = 0x0;
@@ -226,12 +258,14 @@ contract Goldmint is SafeMath {
      function Goldmint(
           address _tokenManager,
           address _mntTokenAddress,
-          address _foundersRewardsAccount) 
+          address _unsoldContractAddress,
+          address _foundersRewardsAccount)
      {
           creator = msg.sender;
           tokenManager = _tokenManager;
 
           mntToken = MNT(_mntTokenAddress);
+          unsoldContract = GoldmintUnsold(_unsoldContractAddress);
 
           foundersRewardsAccount = _foundersRewardsAccount;
      }
@@ -240,6 +274,20 @@ contract Goldmint is SafeMath {
      /// WARNING: can be called multiple times!
      function startICO() internal onlyCreator {
           mintFoundersRewards(foundersRewardsAccount);
+     }
+
+     /// @dev This function is automatically called when ICO is finished 
+     /// WARNING: can be called multiple times!
+     function finishICO() internal onlyCreator {
+          if(!restTokensMoved){
+               restTokensMoved = true;
+
+               // move all unsold tokens to unsoldTokens contract
+               icoTokensUnsold = safeSub(ICO_TOKEN_SUPPLY_LIMIT,icoTokensSold);
+               if(icoTokensUnsold>0){
+                    mntToken.issueTokens(unsoldContract,icoTokensUnsold);
+               }
+          }
      }
 
      function mintFoundersRewards(address _whereToMint) internal onlyCreator {
@@ -269,6 +317,8 @@ contract Goldmint is SafeMath {
 
           if(currentState==State.ICORunning){
                startICO();
+          }else if(currentState==State.ICOFinished){
+               finishICO();
           }
      }
 

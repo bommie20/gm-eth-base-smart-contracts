@@ -84,6 +84,70 @@ function deployMntContract(data,cb){
      });
 }
 
+function deployUnsoldContract(data,cb){
+     var file = './contracts/Goldmint.sol';
+     var contractName = ':GoldmintUnsold';
+
+     fs.readFile(file, function(err, result){
+          assert.equal(err,null);
+
+          var source = result.toString();
+          assert.notEqual(source.length,0);
+
+          assert.equal(err,null);
+
+          var output = solc.compile(source, 0); // 1 activates the optimiser
+
+          //console.log('OUTPUT: ');
+          //console.log(output.contracts);
+
+          var abi = JSON.parse(output.contracts[contractName].interface);
+          var bytecode = output.contracts[contractName].bytecode;
+          var tempContract = web3.eth.contract(abi);
+
+          var alreadyCalled = false;
+
+          tempContract.new(
+               unsoldTokensReward, // _teamAccountAddress 
+               mntContractAddress,
+               {
+                    from: creator, 
+                    // should not exceed 5000000 for Kovan by default
+                    gas: 4995000,
+                    //gasPrice: 120000000000,
+                    data: '0x' + bytecode
+               }, 
+               function(err, c){
+                    assert.equal(err, null);
+
+                    console.log('TX HASH: ');
+                    console.log(c.transactionHash);
+
+                    // TX can be processed in 1 minute or in 30 minutes...
+                    // So we can not be sure on this -> result can be null.
+                    web3.eth.getTransactionReceipt(c.transactionHash, function(err, result){
+                         //console.log('RESULT: ');
+                         //console.log(result);
+
+                         assert.equal(err, null);
+                         assert.notEqual(result, null);
+
+                         unsoldContractAddress = result.contractAddress;
+                         unsoldContract = web3.eth.contract(abi).at(unsoldContractAddress);
+
+                         console.log('Unsold Contract address: ');
+                         console.log(unsoldContractAddress);
+
+                         if(!alreadyCalled){
+                              alreadyCalled = true;
+
+                              return cb(null);
+                         }
+                    });
+               });
+     });
+}
+
 function deployGoldmintContract(data,cb){
      var file = './contracts/Goldmint.sol';
      var contractName = ':Goldmint';
@@ -110,7 +174,8 @@ function deployGoldmintContract(data,cb){
           tempContract.new(
                tokenManager,
                mntContractAddress,
-               goldmintTeam,       // _foundersRewardsAccount 
+               unsoldContractAddress,
+               goldmintTeam,            // _foundersRewardsAccount 
                {
                     from: creator, 
                     // should not exceed 5000000 for Kovan by default

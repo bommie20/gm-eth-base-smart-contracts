@@ -196,6 +196,14 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      });
 
      it('should change state to ICOFinished', function(done){
+          // check preconditions
+          var moved = goldmintContract.icoTokensUnsold();
+          assert.equal(moved,0);
+          assert.equal(goldmintContract.restTokensMoved(),false);
+          var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
+          assert.equal(unsoldBalance,0);
+
+          // finish
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(3, params, (err,res)=>{
                assert.equal(err, null);
@@ -209,6 +217,50 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      });
 
      it('should transfer unsold tokens to GoldmintUnsold contract', function(done){
+          // check that unsold tokens are transferred to GoldmintUnsold contract
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), 9000000000000000000000000);
+
+               moved = goldmintContract.icoTokensUnsold();
+               assert.equal(moved,7000000000000000000000000);
+
+               assert.equal(goldmintContract.restTokensMoved(),true);
+
+               unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
+               assert.equal(unsoldBalance,7000000000000000000000000);
+
+               done();                              
+          });
+     });
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(1, params, (err,res)=>{
+               assert.equal(err, null);
+
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should change state to ICOFinished again', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(3, params, (err,res)=>{
+               assert.equal(err, null);
+
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,3);
+                    done();
+               });
+          });
+     });
+
+     it('should not transfer unsold tokens again', function(done){
           // check that unsold tokens are transferred to GoldmintUnsold contract
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);

@@ -421,3 +421,138 @@ describe('Contracts 2 - test MNT getters and setters', function() {
 })
 
 
+describe('Contracts 3 - ICO buy tests', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+               creator2 = accounts[4];
+               tokenManager = accounts[5];
+               unsoldTokensReward = accounts[6];
+
+               var contractName = ':MNT';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployUnsoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployGoldmintContract(data,function(err){
+                         assert.equal(err,null);
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should set Goldmint token address to MNT contract',function(done){
+          mntContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(1, params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should buy tokens 1',function(done){
+          // 1 ETH
+          var amount = 1000000000000000000;
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    // 37.9 MNT tokens per 1 ETH
+                    var balance = mntContract.balanceOf(buyer);
+                    assert.equal(balance,37962962962962962962);
+                    done();
+               }
+          );
+     });
+
+     it('should change state to ICOFinished', function(done){
+          // check preconditions
+          var moved = goldmintContract.icoTokensUnsold();
+          assert.equal(moved,0);
+          assert.equal(goldmintContract.restTokensMoved(),false);
+          var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
+          assert.equal(unsoldBalance,0);
+
+          // finish
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(3, params, (err,res)=>{
+               assert.equal(err, null);
+
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,3);
+                    done();
+               });
+          });
+     });
+
+     it('should transfer unsold tokens to GoldmintUnsold contract', function(done){
+          // check that unsold tokens are transferred to GoldmintUnsold contract
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), 9000000000000000000000000);
+
+               moved = goldmintContract.icoTokensUnsold();
+               assert.equal(moved,7000000000000000000000000 - 37962962962962962962);
+
+               assert.equal(goldmintContract.restTokensMoved(),true);
+
+               unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
+               assert.equal(unsoldBalance,7000000000000000000000000 - 37962962962962962962);
+
+               done();                              
+          });
+     });
+})
+
+

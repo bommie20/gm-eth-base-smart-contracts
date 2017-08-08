@@ -152,9 +152,11 @@ contract MNT is StdToken {
      }
 
      function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {
+          /*
           if((totalSupply + _tokens) > TOTAL_TOKEN_SUPPLY){
                throw;
           }
+          */
 
           balances[_who] += _tokens;
           totalSupply += _tokens;
@@ -314,7 +316,7 @@ contract Goldmint is SafeMath {
 
           mntToken.issueTokens(_to,_tokens);
 
-          issuedExternallyTokens+=_tokens;
+          issuedExternallyTokens = issuedExternallyTokens + _tokens;
      }
 
      function burnTokens(address _from, uint _tokens) onlyInState(State.ICOFinished) onlyTokenManager {

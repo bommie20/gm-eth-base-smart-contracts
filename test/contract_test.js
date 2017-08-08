@@ -119,7 +119,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should return 1000 for total supply', function(done){
+     it('should return 0 for total supply', function(done){
           var params = {from: creator2, gas: 2900000};
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
@@ -155,7 +155,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      it('should not update total supply after ->running->paused', function(done){
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
-               assert.equal(res.toString(10), 2000000000000000000001000);
+               assert.equal(res.toString(10), 2000000000000000000000000);
                done();                              
           });
      });
@@ -179,8 +179,6 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      });
 
      it('should not issue tokens externally if in wrong state', function(done){
-          assert.notEqual(typeof mntContract.issueTokens, 'undefined');
-
           var params = {from: tokenManager, gas: 2900000};
           goldmintContract.issueTokensExternal(creator2, 1000, params, (err,res)=>{
                assert.notEqual(err, null);
@@ -202,8 +200,6 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      });
 
      it('should not issue tokens if not token manager', function(done){
-          assert.notEqual(typeof mntContract.issueTokens, 'undefined');
-
           var params = {from: creator, gas: 2900000};
           goldmintContract.issueTokensExternal(creator2, 1000, params, (err,res)=>{
                assert.notEqual(err, null);
@@ -216,15 +212,15 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           assert.notEqual(typeof mntContract.issueTokens, 'undefined');
 
           var params = {from: tokenManager, gas: 2900000};
-          goldmintContract.issueTokensExternal(creator2, 1000, params, (err,res)=>{
+          goldmintContract.issueTokensExternal(creator2, 1000000000000000000, params, (err,res)=>{
                assert.equal(err, null);
 
                var issuedExt = goldmintContract.issuedExternallyTokens();
-               assert.equal(issuedExt,1000);
+               assert.equal(issuedExt,1000000000000000000);
 
                mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
-                    assert.equal(res.toString(10),1000);
+                    assert.equal(res.toString(10),1000000000000000000);
                     done();
                });
           });
@@ -233,19 +229,19 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      it('should not update total supply after ->running->paused->running', function(done){
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
-               assert.equal(res.toString(10), 2000000000000000000001000);
+               assert.equal(res.toString(10), 2000001000000000000000000);
                done();                              
           });
      });
 
      it('should not burn creator2 tokens if not from token manager', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.burnTokens(creator2, 1000, params, (err,res)=>{
+          goldmintContract.burnTokens(creator2, 1000000000000000000, params, (err,res)=>{
                assert.notEqual(err, null);
 
                mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
-                    assert.equal(res.toString(10),1000);
+                    assert.equal(res.toString(10),1000000000000000000);
 
                     done();
                });
@@ -254,12 +250,25 @@ describe('Contracts 2 - test MNT getters and setters', function() {
 
      it('should not burn creator2 tokens if bigger than balance', function(done){
           var params = {from: tokenManager, gas: 2900000};
-          goldmintContract.burnTokens(creator2, 1010, params, (err,res)=>{
+          goldmintContract.burnTokens(creator2, 2000000000000000000, params, (err,res)=>{
                assert.notEqual(err, null);
 
                mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
-                    assert.equal(res.toString(10),1000);
+                    assert.equal(res.toString(10),1000000000000000000);
+                    done();
+               });
+          });
+     });
+
+     it('should not burn creator2 tokens if bigger than balance 2', function(done){
+          var params = {from: tokenManager, gas: 2900000};
+          goldmintContract.burnTokens(creator2, 1000000000000000100, params, (err,res)=>{
+               assert.notEqual(err, null);
+
+               mntContract.balanceOf(creator2, (err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10),1000000000000000000);
                     done();
                });
           });
@@ -267,7 +276,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
 
      it('should burn creator2 tokens', function(done){
           var params = {from: tokenManager, gas: 2900000};
-          goldmintContract.burnTokens(creator2, 1000, params, (err,res)=>{
+          goldmintContract.burnTokens(creator2, 1000000000000000000, params, (err,res)=>{
                assert.equal(err, null);
 
                mntContract.balanceOf(creator2, (err,res)=>{
@@ -276,7 +285,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
 
                     // should be still 1000
                     var issuedExt = goldmintContract.issuedExternallyTokens();
-                    assert.equal(issuedExt,1000);
+                    assert.equal(issuedExt,1000000000000000000);
 
                     // should update total supply
                     mntContract.totalSupply((err,res)=>{
@@ -304,19 +313,28 @@ describe('Contracts 2 - test MNT getters and setters', function() {
      it('should issue additional tokens', function(done){
           var params = {from: tokenManager, gas: 3900000};
 
-          // 1 mln - 1000
-          var additional = 1000000000000000000000000 - 1000;
-          var total = 1000000000000000000000000;
-
           var bonusReward = goldmintContract.BONUS_REWARD();
+          var total = 1000000000000000000000000;
           assert.equal(bonusReward,total);
 
+          var ext = goldmintContract.issuedExternallyTokens();
+          assert.equal(ext,1000000000000000000);
+          
+          // issue more!
+          var additional = bonusReward - ext; 
           goldmintContract.issueTokensExternal(buyer2, additional, params, (err,res)=>{
                assert.equal(err, null);
 
+               var ext2 = goldmintContract.issuedExternallyTokens();
+               assert.equal(ext2,total);
+
                mntContract.balanceOf(buyer2, (err,res)=>{
+                    console.log('RES: ');
+                    console.log(res);
+
                     assert.equal(err, null);
-                    assert.equal(res.toString(10),total);
+                    assert.equal(res.toString(10),additional);
+
                     done();
                });
           });

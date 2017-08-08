@@ -176,6 +176,8 @@ contract MNT is StdToken {
 contract GoldmintUnsold is SafeMath {
      address public creator;
      address public teamAccountAddress;
+     address public icoContractAddress;
+     uint64 public icoIsFinishedDate;
 
      MNT public mntToken;
 
@@ -186,9 +188,29 @@ contract GoldmintUnsold is SafeMath {
           mntToken = MNT(_mntTokenAddress);          
      }
 
+/// Setters/Getters
+     function setIcoContractAddress(address _icoContractAddress) {
+          if(msg.sender!=creator){
+               throw;
+          }
+
+          icoContractAddress = _icoContractAddress;
+     }
+
+     function icoIsFinished() public {
+          // only by Goldmint contract 
+          if(msg.sender!=icoContractAddress){
+               throw;
+          }
+
+          icoIsFinishedDate = uint64(now);
+     }
+
      // can be called by anyone...
      function withdrawTokens() public {
-          // TODO: wait for 1 year!
+          // wait for 1 year!
+          uint64 oneYearPassed = icoIsFinishedDate + 365 days;  
+          if(uint(now) < oneYearPassed) throw;
 
           // transfer all tokens from this contract to the teamAccountAddress
           uint total = mntToken.balanceOf(this);
@@ -286,6 +308,7 @@ contract Goldmint is SafeMath {
                icoTokensUnsold = safeSub(ICO_TOKEN_SUPPLY_LIMIT,icoTokensSold);
                if(icoTokensUnsold>0){
                     mntToken.issueTokens(unsoldContract,icoTokensUnsold);
+                    unsoldContract.icoIsFinished();
                }
           }
      }

@@ -84,8 +84,22 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should set Goldmint token address to MNT contract',function(done){
+     it('should set Goldmint address to MNT contract',function(done){
           mntContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should set Goldmint token address to Unsold contract',function(done){
+          unsoldContract.setIcoContractAddress(
                goldmintContractAddress,
                {
                     from: creator,               
@@ -482,6 +496,20 @@ describe('Contracts 3 - ICO buy tests', function() {
           );
      });
 
+     it('should set Goldmint token address to Unsold contract',function(done){
+          unsoldContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(1, params, (err,res)=>{
@@ -553,6 +581,41 @@ describe('Contracts 3 - ICO buy tests', function() {
                done();                              
           });
      });
+
+     it('should not withdraw unsold tokens if time hasnt passed', function(done){
+          var params = {from: creator, gas: 2900000};
+
+          unsoldContract.withdrawTokens(params,(err,res)=>{
+               assert.notEqual(err, null);
+
+               var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
+               assert.equal(unsoldBalance,7000000000000000000000000 - 37962962962962962962);
+
+               var transferred = mntContract.balanceOf(unsoldTokensReward);
+               assert.equal(transferred,0);
+
+               done();              
+          });
+     });
+
+     // TODO: test -> move time in 1 year!
+     /*
+     it('should not withdraw unsold tokens if time hasnt passed', function(done){
+          var params = {from: creator, gas: 2900000};
+
+          unsoldContract.withdrawTokens(params,(err,res)=>{
+               assert.notEqual(err, null);
+
+               var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
+               assert.equal(unsoldBalance,7000000000000000000000000 - 37962962962962962962);
+
+               var transferred = mntContract.balanceOf(unsoldTokensReward);
+               assert.equal(transferred,0);
+
+               done();              
+          });
+     });
+     */
 })
 
 

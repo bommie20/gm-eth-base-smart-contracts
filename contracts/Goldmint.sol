@@ -117,10 +117,10 @@ contract StdToken is Token {
      }
 }
 
-contract MNT is StdToken {
+contract MNTP is StdToken {
 /// Fields:
-     string public constant name = "Goldmint MNT Token";
-     string public constant symbol = "MNT";
+     string public constant name = "Goldmint MNT Prelaunch Token";
+     string public constant symbol = "MNTP";
      uint public constant decimals = 18;
 
      address public creator = 0x0;
@@ -145,7 +145,7 @@ contract MNT is StdToken {
 
 /// Functions:
      /// @dev Constructor
-     function MNT() {
+     function MNTP() {
           creator = msg.sender;
 
           // 10 mln tokens total
@@ -200,13 +200,13 @@ contract GoldmintUnsold is SafeMath {
      address public icoContractAddress;
      uint64 public icoIsFinishedDate;
 
-     MNT public mntToken;
+     MNTP public mntToken;
 
      function GoldmintUnsold(address _teamAccountAddress,address _mntTokenAddress){
           creator = msg.sender;
           teamAccountAddress = _teamAccountAddress;
 
-          mntToken = MNT(_mntTokenAddress);          
+          mntToken = MNTP(_mntTokenAddress);          
      }
 
 /// Setters/Getters
@@ -248,10 +248,10 @@ contract Goldmint is SafeMath {
      address public creator = 0x0;
      address public tokenManager = 0x0;
 
-     MNT public mntToken; 
+     MNTP public mntToken; 
      GoldmintUnsold public unsoldContract;
 
-     // These can be changed before ICO start ($6USD/MNT)
+     // These can be changed before ICO start ($6USD/MNTP)
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 6000;
      // coinmarketcap.com 25.07.2017
      uint constant ETH_PRICE_IN_USD = 205;
@@ -307,7 +307,7 @@ contract Goldmint is SafeMath {
           creator = msg.sender;
           tokenManager = _tokenManager;
 
-          mntToken = MNT(_mntTokenAddress);
+          mntToken = MNTP(_mntTokenAddress);
           unsoldContract = GoldmintUnsold(_unsoldContractAddress);
 
           foundersRewardsAccount = _foundersRewardsAccount;
@@ -399,7 +399,7 @@ contract Goldmint is SafeMath {
           
           uint8[10] memory discountPercents = [10,8,6,4,3,2,1,0,0,0];
 
-          // Example: $5400 / 1000 MNT
+          // Example: $5400 / 1000 MNTP
           uint pricePer1000tokensUsd = 
                (STD_PRICE_USD_PER_1000_TOKENS - (discountPercents[priceIndex] * STD_PRICE_USD_PER_1000_TOKENS / 100));
 

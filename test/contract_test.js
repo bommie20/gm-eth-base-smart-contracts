@@ -38,7 +38,7 @@ var unsoldContract;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
-describe('Contracts 2 - test MNT getters and setters', function() {
+describe('Contracts 2 - test MNTP getters and setters', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
                if(err) {
@@ -55,7 +55,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
 
-               var contractName = ':MNT';
+               var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
                     ledgerAbi = abi;
 
@@ -85,7 +85,7 @@ describe('Contracts 2 - test MNT getters and setters', function() {
           });
      });
 
-     it('should set Goldmint address to MNT contract',function(done){
+     it('should set Goldmint address to MNTP contract',function(done){
           mntContract.setIcoContractAddress(
                goldmintContractAddress,
                {
@@ -453,7 +453,7 @@ describe('Contracts 3 - ICO buy tests', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
 
-               var contractName = ':MNT';
+               var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
                     ledgerAbi = abi;
 
@@ -483,7 +483,7 @@ describe('Contracts 3 - ICO buy tests', function() {
           });
      });
 
-     it('should set Goldmint token address to MNT contract',function(done){
+     it('should set Goldmint token address to MNTP contract',function(done){
           mntContract.setIcoContractAddress(
                goldmintContractAddress,
                {
@@ -536,7 +536,7 @@ describe('Contracts 3 - ICO buy tests', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    // 37.9 MNT tokens per 1 ETH
+                    // 37.9 MNTP tokens per 1 ETH
                     var balance = mntContract.balanceOf(buyer);
                     assert.equal(balance,37962962962962962962);
                     done();
@@ -619,7 +619,7 @@ describe('Contracts 3 - ICO buy tests', function() {
      */
 })
 
-describe('Contracts 4 - lock MNT transfers', function() {
+describe('Contracts 4 - lock MNTP transfers', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
                if(err) {
@@ -636,7 +636,7 @@ describe('Contracts 4 - lock MNT transfers', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
 
-               var contractName = ':MNT';
+               var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
                     ledgerAbi = abi;
 
@@ -666,7 +666,7 @@ describe('Contracts 4 - lock MNT transfers', function() {
           });
      });
 
-     it('should set Goldmint token address to MNT contract',function(done){
+     it('should set Goldmint token address to MNTP contract',function(done){
           mntContract.setIcoContractAddress(
                goldmintContractAddress,
                {
@@ -719,7 +719,7 @@ describe('Contracts 4 - lock MNT transfers', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    // 37.9 MNT tokens per 1 ETH
+                    // 37.9 MNTP tokens per 1 ETH
                     var balance = mntContract.balanceOf(buyer);
                     assert.equal(balance,37962962962962962962);
                     done();
@@ -727,7 +727,7 @@ describe('Contracts 4 - lock MNT transfers', function() {
           );
      });
 
-     it('should not transfer MNT tokens if ICO is not finished',function(done){
+     it('should not transfer MNTP tokens if ICO is not finished',function(done){
           var params = {from: buyer, gas: 2900000};
 
           var balance1 = mntContract.balanceOf(buyer2);
@@ -759,7 +759,7 @@ describe('Contracts 4 - lock MNT transfers', function() {
           });
      });
 
-     it('should transfer MNT tokens if ICO is finished',function(done){
+     it('should transfer MNTP tokens if ICO is finished',function(done){
           var params = {from: buyer, gas: 2900000};
 
           var balance = mntContract.balanceOf(buyer);
@@ -795,7 +795,7 @@ describe('Contracts 4 - lock MNT transfers', function() {
           });
      });
 
-     it('should not transfer MNT tokens if ICO is not finished',function(done){
+     it('should not transfer MNTP tokens if ICO is not finished',function(done){
           var params = {from: buyer, gas: 2900000};
 
           var amount = 10;
@@ -818,7 +818,7 @@ describe('Contracts 4 - lock MNT transfers', function() {
           });
      });
 
-     it('should transfer MNT tokens if ICO is finished 2',function(done){
+     it('should transfer MNTP tokens if ICO is finished 2',function(done){
           var params = {from: buyer, gas: 2900000};
 
           var balance = mntContract.balanceOf(buyer);

@@ -58,7 +58,7 @@ describe('Contracts 1 - prices tests', function() {
                unsoldTokensReward = accounts[5];
                tokenManager = accounts[6];
 
-               var contractName = ':MNT';
+               var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
                     ledgerAbi = abi;
 
@@ -88,7 +88,7 @@ describe('Contracts 1 - prices tests', function() {
           });
      });
 
-     it('should set Goldmint token address to MNT contract',function(done){
+     it('should set Goldmint token address to MNTP contract',function(done){
           mntContract.setIcoContractAddress(
                goldmintContractAddress,
                {

@@ -24,7 +24,7 @@ function getContractAbi(contractName,cb){
 
 function deployMntContract(data,cb){
      var file = './contracts/Goldmint.sol';
-     var contractName = ':MNT';
+     var contractName = ':MNTP';
 
      fs.readFile(file, function(err, result){
           assert.equal(err,null);
@@ -71,7 +71,7 @@ function deployMntContract(data,cb){
                          mntContractAddress = result.contractAddress;
                          mntContract = web3.eth.contract(abi).at(mntContractAddress);
 
-                         console.log('MNT Contract address: ');
+                         console.log('MNTP Contract address: ');
                          console.log(mntContractAddress);
 
                          if(!alreadyCalled){

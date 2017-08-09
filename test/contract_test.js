@@ -18,6 +18,7 @@ var buyer;
 var buyer2;
 var buyers = [];
 var unsoldTokensReward;
+var tokenManager;
 
 var initialBalanceCreator = 0;
 var initialBalanceBuyer = 0;

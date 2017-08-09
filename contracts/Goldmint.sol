@@ -125,6 +125,7 @@ contract MNT is StdToken {
 
      address public creator = 0x0;
      address public icoContractAddress = 0x0;
+     bool public lockTransfers = false;
 
      // 10 mln
      uint public constant TOTAL_TOKEN_SUPPLY = 10000000 * (1 ether / 1 wei);
@@ -151,6 +152,22 @@ contract MNT is StdToken {
           assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
      }
 
+     /// @dev Override
+     function transfer(address _to, uint256 _value) public {
+          if(lockTransfers){
+               throw;
+          }
+          super.transfer(_to,_value);
+     }
+
+     /// @dev Override
+     function transferFrom(address _from, address _to, uint256 _value)public{
+          if(lockTransfers){
+               throw;
+          }
+          super.transferFrom(_from,_to,_value);
+     }
+
      function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {
           if((totalSupply + _tokens) > TOTAL_TOKEN_SUPPLY){
                throw;
@@ -163,6 +180,10 @@ contract MNT is StdToken {
      function burnTokens(address _who, uint _tokens) byCreatorOrIcoContract {
           balances[_who] = safeSub(balances[_who], _tokens);
           totalSupply = safeSub(totalSupply, _tokens);
+     }
+
+     function lockTransfer(bool _lock) byCreatorOrIcoContract {
+          lockTransfers = _lock;
      }
 
      // Do not allow to send money directly to this contract
@@ -296,11 +317,19 @@ contract Goldmint is SafeMath {
      /// WARNING: can be called multiple times!
      function startICO() internal onlyCreator {
           mintFoundersRewards(foundersRewardsAccount);
+
+          mntToken.lockTransfer(true);
+     }
+
+     function pauseICO() internal onlyCreator {
+          mntToken.lockTransfer(false);
      }
 
      /// @dev This function is automatically called when ICO is finished 
      /// WARNING: can be called multiple times!
      function finishICO() internal onlyCreator {
+          mntToken.lockTransfer(false);
+
           if(!restTokensMoved){
                restTokensMoved = true;
 
@@ -358,6 +387,8 @@ contract Goldmint is SafeMath {
                startICO();
           }else if(currentState==State.ICOFinished){
                finishICO();
+          }else if(currentState==State.ICOPaused){
+               pauseICO();
           }
      }
 

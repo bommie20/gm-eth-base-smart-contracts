@@ -124,6 +124,117 @@ describe('Contracts 5 - GOLD token holder', function() {
                });
           });
      });
+
+     it('should not lock if from bad account', function(done){
+          var params = {from: creator, gas: 2900000};
+
+          goldContract.lockContract(true,params,(err,res)=>{
+               assert.notEqual(err, null);
+               done();                              
+          });
+     });
+
+     it('should lock', function(done){
+          var params = {from: creator2, gas: 2900000};
+
+          goldContract.lockContract(true,params,(err,res)=>{
+               assert.equal(err, null);
+               done();                              
+          });
+     });
 })
 
 
+describe('Contracts 6 - GOLD token manager', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               creator2 = accounts[1];
+               buyer = accounts[2];
+
+               deployGoldContract(null,function(err){
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+
+          done();
+     });
+
+     // creator == tokenManager by default.
+     // even if contract is locked he can call different methods 
+     it('should issue tokens if token manager', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldContract.issueTokens(buyer, 1000, params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balance = goldContract.balanceOf(buyer);
+               assert.equal(balance,1000);
+
+               goldContract.totalSupply((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10), 1000);
+
+                    done();                              
+               });
+          });
+     });
+
+     it('should not set token manager if from bad account', function(done){
+          var params = {from: buyer, gas: 2900000};
+          goldContract.setTokenManager(creator2, params, (err,res)=>{
+               assert.notEqual(err,null);
+
+               done();
+          });
+     });
+
+     // only creator can update token manager
+     it('should set token manager', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldContract.setTokenManager(creator2, params, (err,res)=>{
+               assert.equal(err,null);
+               done();
+          });
+     });
+
+     it('should not issue tokens if not a token manager and contract is locked', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldContract.issueTokens(buyer, 1000, params, (err,res)=>{
+               assert.notEqual(err, null);
+
+               done();                              
+          });
+     });
+
+     it('should issue tokens again if token manager', function(done){
+          assert.equal(goldContract.tokenManager(),creator2);
+
+          var params = {from: creator2, gas: 2900000};
+          goldContract.issueTokens(buyer, 1000, params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balance = goldContract.balanceOf(buyer);
+               assert.equal(balance,2000);
+
+               goldContract.totalSupply((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10), 2000);
+
+                    done();                              
+               });
+          });
+     });
+})

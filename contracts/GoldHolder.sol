@@ -124,14 +124,21 @@ contract GOLD is StdToken {
      uint public constant decimals = 18;
 
      address public creator = 0x0;
+     address public tokenManager = 0x0;
+
      // lock by default all methods
      bool public lock = true;
 
 /// Modifiers:
      modifier onlyCreator() { if(msg.sender != creator) throw; _; }
+     modifier onlyCreatorOrTokenManager() { if((msg.sender!=creator) && (msg.sender!=tokenManager)) throw; _; }
 
      function setCreator(address _creator) onlyCreator {
           creator = _creator;
+     }
+
+     function setTokenManager(address _manager) onlyCreator {
+          tokenManager = _manager;
      }
 
      function lockContract(bool _lock) onlyCreator {
@@ -142,11 +149,12 @@ contract GOLD is StdToken {
      /// @dev Constructor
      function GOLD() {
           creator = msg.sender;
+          tokenManager = msg.sender;
      }
 
      /// @dev Override
      function transfer(address _to, uint256 _value) public {
-          if(lock){
+          if(lock && (msg.sender!=tokenManager)){
                throw;
           }
 
@@ -155,7 +163,7 @@ contract GOLD is StdToken {
 
      /// @dev Override
      function transferFrom(address _from, address _to, uint256 _value)public{
-          if(lock){
+          if(lock && (msg.sender!=tokenManager)){
                throw;
           }
 
@@ -164,15 +172,15 @@ contract GOLD is StdToken {
 
      /// @dev Override
      function approve(address _spender, uint256 _value) public returns (bool) {
-          if(lock){
+          if(lock && (msg.sender!=tokenManager)){
                throw;
           }
 
           return super.approve(_spender,_value);
      }
 
-     function issueTokens(address _who, uint _tokens) onlyCreator {
-          if(lock){
+     function issueTokens(address _who, uint _tokens) onlyCreatorOrTokenManager {
+          if(lock && (msg.sender!=tokenManager)){
                throw;
           }
 
@@ -180,8 +188,8 @@ contract GOLD is StdToken {
           totalSupply += _tokens;
      }
 
-     function burnTokens(address _who, uint _tokens) onlyCreator {
-          if(lock){
+     function burnTokens(address _who, uint _tokens) onlyCreatorOrTokenManager {
+          if(lock && (msg.sender!=tokenManager)){
                throw;
           }
 

@@ -536,9 +536,9 @@ describe('Contracts 3 - ICO buy tests', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    // 37.9 MNTP tokens per 1 ETH
+                    // 53.5 MNTP tokens per 1 ETH
                     var balance = mntContract.balanceOf(buyer);
-                    assert.equal(balance,37962962962962962962);
+                    assert.equal(balance,53571428571428571428);
                     done();
                }
           );
@@ -572,12 +572,12 @@ describe('Contracts 3 - ICO buy tests', function() {
                assert.equal(res.toString(10), 9000000000000000000000000);
 
                moved = goldmintContract.icoTokensUnsold();
-               assert.equal(moved,7000000000000000000000000 - 37962962962962962962);
+               assert.equal(moved,7000000000000000000000000 - 53571428571428571428);
 
                assert.equal(goldmintContract.restTokensMoved(),true);
 
                unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
-               assert.equal(unsoldBalance,7000000000000000000000000 - 37962962962962962962);
+               assert.equal(unsoldBalance,7000000000000000000000000 - 53571428571428571428);
 
                done();                              
           });
@@ -590,7 +590,7 @@ describe('Contracts 3 - ICO buy tests', function() {
                assert.notEqual(err, null);
 
                var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
-               assert.equal(unsoldBalance,7000000000000000000000000 - 37962962962962962962);
+               assert.equal(unsoldBalance,7000000000000000000000000 - 53571428571428571428);
 
                var transferred = mntContract.balanceOf(unsoldTokensReward);
                assert.equal(transferred,0);
@@ -719,9 +719,9 @@ describe('Contracts 4 - lock MNTP transfers', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    // 37.9 MNTP tokens per 1 ETH
+                    // 53.5 MNTP tokens per 1 ETH
                     var balance = mntContract.balanceOf(buyer);
-                    assert.equal(balance,37962962962962962962);
+                    assert.equal(balance,53571428571428571428);
                     done();
                }
           );
@@ -733,13 +733,13 @@ describe('Contracts 4 - lock MNTP transfers', function() {
           var balance1 = mntContract.balanceOf(buyer2);
           assert.equal(balance1,0);
 
-          //var amount = 37962962962962962962;
+          //var amount = 53571428571428571428;
           var amount = 10;
           mntContract.transfer(buyer2, amount, params, (err,res)=>{
                assert.notEqual(err, null);
 
                var balance = mntContract.balanceOf(buyer);
-               assert.equal(balance,37962962962962962962);
+               assert.equal(balance,53571428571428571428);
                
                done();
           });
@@ -763,7 +763,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
           var params = {from: buyer, gas: 2900000};
 
           var balance = mntContract.balanceOf(buyer);
-          assert.equal(balance,37962962962962962962);
+          assert.equal(balance,53571428571428571428);
 
           var balance1 = mntContract.balanceOf(buyer2);
           assert.equal(balance1,0);
@@ -830,7 +830,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
                assert.equal(err, null);
 
                balance1 = mntContract.balanceOf(buyer2);
-               assert.equal(balance1,37962962962962962962);
+               assert.equal(balance1,53571428571428571428);
                
                var balanceNew = mntContract.balanceOf(buyer);
                assert.equal(balanceNew,0);

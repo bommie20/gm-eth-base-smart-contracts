@@ -251,10 +251,10 @@ contract Goldmint is SafeMath {
      MNTP public mntToken; 
      GoldmintUnsold public unsoldContract;
 
-     // These can be changed before ICO start ($6USD/MNTP)
-     uint constant STD_PRICE_USD_PER_1000_TOKENS = 6000;
-     // coinmarketcap.com 25.07.2017
-     uint constant ETH_PRICE_IN_USD = 205;
+     // These can be changed before ICO start ($7USD/MNTP)
+     uint constant STD_PRICE_USD_PER_1000_TOKENS = 7000;
+     // coinmarketcap.com 14.08.2017
+     uint constant ETH_PRICE_IN_USD = 300;
           
      // 1 000 000 tokens
      uint public constant BONUS_REWARD = 1000000 * (1 ether/ 1 wei);
@@ -397,7 +397,7 @@ contract Goldmint is SafeMath {
           uint priceIndex = (tokensSold / (1 ether/ 1 wei)) / 700000;
           assert(priceIndex>=0 && (priceIndex<=9));
           
-          uint8[10] memory discountPercents = [10,8,6,4,3,2,1,0,0,0];
+          uint8[10] memory discountPercents = [20,15,10,8,6,4,2,0,0,0];
 
           // Example: $5400 / 1000 MNTP
           uint pricePer1000tokensUsd = 

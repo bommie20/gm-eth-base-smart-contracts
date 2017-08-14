@@ -511,6 +511,25 @@ describe('Contracts 3 - ICO buy tests', function() {
           );
      });
 
+     it('should get all frontend data', function(done){
+          goldmintContract.getTokensIcoSold((err,res)=>{
+               assert.equal(err,null);
+               assert.equal(res,0);
+
+               goldmintContract.getTotalIcoTokens((err,res)=>{
+                    assert.equal(err,null);
+                    assert.equal(res,7000000 * 1000000000000000000);
+
+                    goldmintContract.getCurrentPrice((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,53571428571428571428);
+
+                         done();
+                    });
+               });
+          });
+     });
+
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(1, params, (err,res)=>{
@@ -539,7 +558,14 @@ describe('Contracts 3 - ICO buy tests', function() {
                     // 53.5 MNTP tokens per 1 ETH
                     var balance = mntContract.balanceOf(buyer);
                     assert.equal(balance,53571428571428571428);
-                    done();
+
+                    // new check
+                    goldmintContract.getTokensIcoSold((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,53571428571428571428);
+
+                         done();
+                    });
                }
           );
      });

@@ -36,6 +36,9 @@ var goldmintContract;
 var unsoldContractAddress;
 var unsoldContract;
 
+var foundersVestingContractAddress;
+var foundersVestingContract;
+
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
 describe('Contracts 2 - test MNTP getters and setters', function() {
@@ -77,9 +80,13 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                deployUnsoldContract(data,function(err){
                     assert.equal(err,null);
 
-                    deployGoldmintContract(data,function(err){
+                    deployFoundersVestingContract(data,function(err){
                          assert.equal(err,null);
-                         done();
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+                              done();
+                         });
                     });
                });
           });
@@ -217,6 +224,9 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           assert.equal(goldmintContract.restTokensMoved(),false);
           var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
           assert.equal(unsoldBalance,0);
+
+          var foundersBalance = mntContract.balanceOf(foundersVestingContractAddress);
+          assert.equal(foundersBalance.toString(10), 2000000000000000000000000);
 
           // finish
           var params = {from: creator, gas: 2900000};
@@ -433,8 +443,134 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                });
           });
      });
-})
 
+     it('should not get vested founders tokens if no time elapsed', function(done){
+          var params = {from: creator, gas: 3900000};
+          foundersVestingContract.withdrawTokens(params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should move time 29 days',function(done){
+          var hours = 24 * 29;
+          var seconds = 60 * 60 * hours;
+
+          web3.currentProvider.sendAsync({
+               jsonrpc: '2.0', 
+               method: 'evm_increaseTime',
+               params: [seconds],       
+               id: new Date().getTime() 
+          }, function(err) {
+               assert.equal(err,null);
+               done(err);
+          });
+     });
+
+     it('should not get vested founders tokens if not enough time elapsed', function(done){
+          var params = {from: creator, gas: 3900000};
+          foundersVestingContract.withdrawTokens(params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should move time 2 more days',function(done){
+          var hours = 24 * 2;
+          var seconds = 60 * 60 * hours;
+
+          web3.currentProvider.sendAsync({
+               jsonrpc: '2.0', 
+               method: 'evm_increaseTime',
+               params: [seconds],       
+               id: new Date().getTime() 
+          }, function(err) {
+               assert.equal(err,null);
+               done(err);
+          });
+     });
+
+     it('should get 1/10 vested founders tokens if >30 days elapsed', function(done){
+          // check precondition
+          var teamBalance = mntContract.balanceOf(goldmintTeam);
+          assert.equal(teamBalance.toString(10), 0);
+
+          var foundersBalance = mntContract.balanceOf(foundersVestingContractAddress);
+          assert.equal(foundersBalance.toString(10), 2000000000000000000000000);
+
+          var params = {from: creator, gas: 3900000};
+          foundersVestingContract.withdrawTokens(params, (err,res)=>{
+               assert.equal(err, null);
+
+               // 1/10th
+               var mustMove = 2000000000000000000000000 / 10;
+               var left = mntContract.balanceOf(foundersVestingContractAddress);
+               assert.equal(left.toString(10), 2000000000000000000000000 - mustMove);
+
+               var teamBalance = mntContract.balanceOf(goldmintTeam);
+               assert.equal(teamBalance.toString(10), mustMove);
+
+               done();
+          });
+     });
+
+     it('should not get vested founders tokens again', function(done){
+          var params = {from: creator, gas: 3900000};
+          foundersVestingContract.withdrawTokens(params, (err,res)=>{
+               assert.notEqual(err, null);
+
+               // Check balances again!
+               // 1/10th
+               var mustMove = 2000000000000000000000000 / 10;
+               var left = mntContract.balanceOf(foundersVestingContractAddress);
+               assert.equal(left.toString(10), 2000000000000000000000000 - mustMove);
+
+               var teamBalance = mntContract.balanceOf(goldmintTeam);
+               assert.equal(teamBalance.toString(10), mustMove);
+               done();
+          });
+     });
+
+     it('should move time 31 days',function(done){
+          var hours = 24 * 31;
+          var seconds = 60 * 60 * hours;
+
+          web3.currentProvider.sendAsync({
+               jsonrpc: '2.0', 
+               method: 'evm_increaseTime',
+               params: [seconds],       
+               id: new Date().getTime() 
+          }, function(err) {
+               assert.equal(err,null);
+               done(err);
+          });
+     });
+
+     it('should get 1/10 vested founders tokens again', function(done){
+          var params = {from: creator, gas: 3900000};
+          foundersVestingContract.withdrawTokens(params, (err,res)=>{
+               assert.equal(err, null);
+
+               // Check balances again!
+               // 2/10th
+               var mustMove = 2 * (2000000000000000000000000 / 10);
+               var left = mntContract.balanceOf(foundersVestingContractAddress);
+               assert.equal(left.toString(10), 2000000000000000000000000 - mustMove);
+
+               var teamBalance = mntContract.balanceOf(goldmintTeam);
+               assert.equal(teamBalance.toString(10), mustMove);
+               done();
+          });
+     });
+
+     it('should not get vested founders tokens if not enough time elapsed', function(done){
+          var params = {from: creator, gas: 3900000};
+          foundersVestingContract.withdrawTokens(params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+})
 
 describe('Contracts 3 - ICO buy tests', function() {
      before("Initialize everything", function(done) {
@@ -475,9 +611,13 @@ describe('Contracts 3 - ICO buy tests', function() {
                deployUnsoldContract(data,function(err){
                     assert.equal(err,null);
 
-                    deployGoldmintContract(data,function(err){
+                    deployFoundersVestingContract(data,function(err){
                          assert.equal(err,null);
-                         done();
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+                              done();
+                         });
                     });
                });
           });
@@ -684,9 +824,13 @@ describe('Contracts 4 - lock MNTP transfers', function() {
                deployUnsoldContract(data,function(err){
                     assert.equal(err,null);
 
-                    deployGoldmintContract(data,function(err){
+                    deployFoundersVestingContract(data,function(err){
                          assert.equal(err,null);
-                         done();
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+                              done();
+                         });
                     });
                });
           });

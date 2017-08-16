@@ -58,7 +58,10 @@ function deployMain(creator,abi,bytecode){
      var foundersRewardAddress = '0xB4c421275218C1Ae64292322FA0890E5b9D68BEa';
 
      // TODO: for coinmarketcap 
-     var encoded      = '000000000000000000000000B4c421275218C1Ae64292322FA0890E5b9D68BEa';
+     var encoded      = '000000000000000000000000312C43cBF189a4750395ab16fEf8227266dF8a57';
+     var encoded      = '0000000000000000000000000138ae2c27b548d9149e1012a30de32e7317291f';
+     var encoded      = '000000000000000000000000519113ded548279061be6e4329759119edb98bb3';
+     var encoded      = '000000000000000000000000E9ae01D74F2939aEb1Fa652462E7ad878358d4e5';
 
      console.log('Deploying from: ' + creator);
 

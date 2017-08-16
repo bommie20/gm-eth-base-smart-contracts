@@ -244,6 +244,49 @@ contract GoldmintUnsold is SafeMath {
      }
 }
 
+contract FoundersVesting is SafeMath {
+     address public creator;
+     address public teamAccountAddress;
+     uint64 public lastWithdrawTime;
+
+     uint public withdrawsCount = 0;
+     uint public amountToSend = 0;
+
+     MNTP public mntToken;
+
+     function FoundersVesting(address _teamAccountAddress,address _mntTokenAddress){
+          creator = msg.sender;
+          teamAccountAddress = _teamAccountAddress;
+          lastWithdrawTime = uint64(now);
+
+          mntToken = MNTP(_mntTokenAddress);          
+     }
+
+     // can be called by anyone...
+     function withdrawTokens() public {
+          // 1 - wait for next month!
+          uint64 oneMonth = lastWithdrawTime + 30 days;  
+          if(uint(now) < oneMonth) throw;
+
+          // 2 - calculate amount (only first time)
+          if(withdrawsCount==0){
+               amountToSend = mntToken.balanceOf(this) / 10;
+          }
+
+          // 3 - send 1/10th
+          assert(amountToSend!=0);
+          mntToken.transfer(teamAccountAddress,amountToSend);
+
+          withdrawsCount++;
+          lastWithdrawTime = uint64(now);
+     }
+
+     // Default fallback function
+     function() payable {
+          throw;
+     }
+}
+
 contract Goldmint is SafeMath {
      address public creator = 0x0;
      address public tokenManager = 0x0;
@@ -302,7 +345,7 @@ contract Goldmint is SafeMath {
           address _tokenManager,
           address _mntTokenAddress,
           address _unsoldContractAddress,
-          address _foundersRewardsAccount)
+          address _foundersVestingAddress)
      {
           creator = msg.sender;
           tokenManager = _tokenManager;
@@ -310,7 +353,8 @@ contract Goldmint is SafeMath {
           mntToken = MNTP(_mntTokenAddress);
           unsoldContract = GoldmintUnsold(_unsoldContractAddress);
 
-          foundersRewardsAccount = _foundersRewardsAccount;
+          // slight rename
+          foundersRewardsAccount = _foundersVestingAddress;
      }
 
      /// @dev This function is automatically called when ICO is started

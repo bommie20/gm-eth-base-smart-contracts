@@ -41,6 +41,35 @@ var foundersVestingContract;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
+// recursive
+function getMoreVestedTokens(index,maxIndex,cb){
+     // 1 - stop recursion?
+     if(index>maxIndex){
+          return cb(null);
+     }
+
+     // 2 - move time one month
+     var hours = 24 * 31;
+     var seconds = 60 * 60 * hours;
+
+     web3.currentProvider.sendAsync({
+          jsonrpc: '2.0', 
+          method: 'evm_increaseTime',
+          params: [seconds],       
+          id: new Date().getTime() 
+     }, function(err) {
+          if(err)return cb(err);
+
+          var params = {from: creator, gas: 3900000};
+          foundersVestingContract.withdrawTokens(params, (err,res)=>{
+               if(err)return cb(err);
+
+               // 3 - continue recursion
+               getMoreVestedTokens(index + 1,maxIndex,cb);
+          });
+     });
+}
+
 describe('Contracts 2 - test MNTP getters and setters', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
@@ -567,6 +596,42 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           var params = {from: creator, gas: 3900000};
           foundersVestingContract.withdrawTokens(params, (err,res)=>{
                assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should get vested tokens in a loop', function(done){
+          var index = 3;
+          var maxIndex = 10;
+          getMoreVestedTokens(index,maxIndex,function(err){
+               assert.equal(err,null);
+
+               // Check final balances
+               var left = mntContract.balanceOf(foundersVestingContractAddress);
+               assert.equal(left.toString(10), 0);
+
+               var mustMove = 2000000000000000000000000;
+               var teamBalance = mntContract.balanceOf(goldmintTeam);
+               assert.equal(teamBalance.toString(10), mustMove);
+
+               done();
+          });
+     });
+
+     it('should not get vested tokens again!', function(done){
+          var index = 0;
+          var maxIndex = 0;
+          getMoreVestedTokens(index,maxIndex,function(err){
+               assert.notEqual(err,null);
+
+               // Final balances should not be changed
+               var left = mntContract.balanceOf(foundersVestingContractAddress);
+               assert.equal(left.toString(10), 0);
+
+               var mustMove = 2000000000000000000000000;
+               var teamBalance = mntContract.balanceOf(goldmintTeam);
+               assert.equal(teamBalance.toString(10), mustMove);
+
                done();
           });
      });

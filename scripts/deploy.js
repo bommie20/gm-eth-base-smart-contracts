@@ -59,17 +59,22 @@ function deployMain(creator,abi,bytecode){
 
      // TODO: for coinmarketcap 
      var encoded      = '000000000000000000000000312C43cBF189a4750395ab16fEf8227266dF8a57';
+     var encoded      = '000000000000000000000000b9Af8aA42c97f5A1F73C6e1a683c4Bf6353B83E7';
      var encoded      = '0000000000000000000000000138ae2c27b548d9149e1012a30de32e7317291f';
      var encoded      = '000000000000000000000000519113ded548279061be6e4329759119edb98bb3';
-     var encoded      = '000000000000000000000000E9ae01D74F2939aEb1Fa652462E7ad878358d4e5';
+     var encoded      = '0000000000000000000000006c9da790ca93b4e055f978501749a9594400f3a6';
 
      console.log('Deploying from: ' + creator);
 
+     var otherCurrenciesChecker = '';
+
      tempContract.new(
           tokenManager,
-          escrow,
+          otherCurrenciesChecker,  // other currencies checker
+
+          mntTokenAddress,
           unsoldContractAddress,
-          foundersRewardAddress,
+          foundersVestingAddress,
           {
                from: creator, 
                gas: 4330000,

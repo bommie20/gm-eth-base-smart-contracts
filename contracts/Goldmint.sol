@@ -481,8 +481,10 @@ contract Goldmint is SafeMath {
      }
 
      /// @dev This is called by other currency processors to issue new tokens 
-     function issueTokensFromOtherCurrency(address _to, uint _tokens) onlyInState(State.ICORunning) public onlyOtherCurrenciesChecker {
-          issueTokensInternal(_to,_tokens);
+     function issueTokensFromOtherCurrency(address _to, uint _wei_count) onlyInState(State.ICORunning) public onlyOtherCurrenciesChecker {
+          if(_wei_count== 0) throw;
+          uint newTokens = (_wei_count * getMntTokensPerEth(icoTokensSold)) / (1 ether / 1 wei);
+          issueTokensInternal(_to,newTokens);
      }
 
      /// @dev This can be called to manually issue new tokens 

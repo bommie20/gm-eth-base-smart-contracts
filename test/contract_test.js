@@ -1167,7 +1167,9 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
 
      it('should not issue tokens if in wrong state', function(done){
           var params = {from: tokenManager, gas: 2900000};
-          goldmintContract.issueTokensFromOtherCurrency(creator2, 1000, params, (err,res)=>{
+
+          var amount = 1000000000000000000;
+          goldmintContract.issueTokensFromOtherCurrency(creator2, amount, params, (err,res)=>{
                assert.notEqual(err, null);
                done();
           });
@@ -1193,7 +1195,9 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
 
      it('should not issue tokens from other account', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.issueTokensFromOtherCurrency(creator2, 1000, params, (err,res)=>{
+
+          var amount = 1000000000000000000;
+          goldmintContract.issueTokensFromOtherCurrency(creator2, amount, params, (err,res)=>{
                assert.notEqual(err, null);
                done();
           });
@@ -1209,18 +1213,20 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
 
      it('should issue tokens with issueTokensFromOtherCurrency function to creator', function(done){
           var params = {from: tokenManager, gas: 2900000};
-          goldmintContract.issueTokensFromOtherCurrency(creator2, 1000000000000000000, params, (err,res)=>{
+
+          var amount = 1000000000000000000;
+          goldmintContract.issueTokensFromOtherCurrency(creator2, amount, params, (err,res)=>{
                assert.equal(err, null);
 
                var issuedExt = goldmintContract.issuedExternallyTokens();
                assert.equal(issuedExt,0);
 
                var tokensSold = goldmintContract.icoTokensSold();
-               assert.equal(tokensSold,1000000000000000000);
+               assert.equal(tokensSold,53571428571428571428);
 
                mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
-                    assert.equal(res.toString(10),1000000000000000000);
+                    assert.equal(res.toString(10),53571428571428571428);
                     done();
                });
           });

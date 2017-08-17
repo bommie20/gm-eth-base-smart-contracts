@@ -290,6 +290,7 @@ contract FoundersVesting is SafeMath {
 contract Goldmint is SafeMath {
      address public creator = 0x0;
      address public tokenManager = 0x0;
+     address public otherCurrenciesChecker = 0x0;
 
      MNTP public mntToken; 
      GoldmintUnsold public unsoldContract;
@@ -333,22 +334,28 @@ contract Goldmint is SafeMath {
 /// Modifiers:
      modifier onlyCreator() { if(msg.sender != creator) throw; _; }
      modifier onlyTokenManager() { if(msg.sender != tokenManager) throw; _; }
+     modifier onlyOtherCurrenciesChecker() { if(msg.sender != otherCurrenciesChecker) throw; _; }
+
      modifier onlyInState(State state){ if(state != currentState) throw; _; }
 
 /// Events:
      event LogStateSwitch(State newState);
      event LogBuy(address indexed owner, uint value);
+     event LogBurn(address indexed owner, uint value);
      
 /// Functions:
      /// @dev Constructor
      function Goldmint(
           address _tokenManager,
+          address _otherCurrenciesChecker,
+
           address _mntTokenAddress,
           address _unsoldContractAddress,
           address _foundersVestingAddress)
      {
           creator = msg.sender;
           tokenManager = _tokenManager;
+          otherCurrenciesChecker = _otherCurrenciesChecker; 
 
           mntToken = MNTP(_mntTokenAddress);
           unsoldContract = GoldmintUnsold(_unsoldContractAddress);
@@ -398,6 +405,10 @@ contract Goldmint is SafeMath {
           tokenManager = _new;
      }
 
+     function setOtherCurrenciesChecker(address _new) public onlyOtherCurrenciesChecker {
+          otherCurrenciesChecker = _new;
+     }
+
      function getTokensIcoSold() constant public returns (uint){
           return icoTokensSold;
      }
@@ -412,6 +423,10 @@ contract Goldmint is SafeMath {
 
      function getCurrentPrice()constant public returns (uint){
           return getMntTokensPerEth(icoTokensSold);
+     }
+
+     function getBlockLength()constant public returns (uint){
+          return 700000;
      }
 
 ////
@@ -462,18 +477,17 @@ contract Goldmint is SafeMath {
           //   3. the price of all 1000 tokens would be with 10% discount!!!
           uint newTokens = (msg.value * getMntTokensPerEth(icoTokensSold)) / (1 ether / 1 wei);
 
-          if(icoTokensSold + newTokens > ICO_TOKEN_SUPPLY_LIMIT) throw;
+          issueTokensInternal(_buyer,newTokens);
+     }
 
-          mntToken.issueTokens(_buyer,newTokens);
-
-          icoTokensSold+=newTokens;
-
-          LogBuy(_buyer, newTokens);
+     /// @dev This is called by other currency processors to issue new tokens 
+     function issueTokensFromOtherCurrency(address _to, uint _tokens) onlyInState(State.ICORunning) public onlyOtherCurrenciesChecker {
+          issueTokensInternal(_to,_tokens);
      }
 
      /// @dev This can be called to manually issue new tokens 
      /// from the bonus reward
-     function issueTokensExternal(address _to, uint _tokens) onlyInState(State.ICOFinished) onlyTokenManager {
+     function issueTokensExternal(address _to, uint _tokens) public onlyInState(State.ICOFinished) onlyTokenManager {
           // can not issue more than BONUS_REWARD
           if((issuedExternallyTokens + _tokens)>BONUS_REWARD){
                throw;
@@ -484,12 +498,27 @@ contract Goldmint is SafeMath {
           issuedExternallyTokens = issuedExternallyTokens + _tokens;
      }
 
-     function burnTokens(address _from, uint _tokens) onlyInState(State.ICOFinished) onlyTokenManager {
+     function issueTokensInternal(address _to, uint _tokens) internal {
+          if((icoTokensSold + _tokens)>ICO_TOKEN_SUPPLY_LIMIT){
+               throw;
+          }
+
+          mntToken.issueTokens(_to,_tokens);
+
+          icoTokensSold+=_tokens;
+
+          LogBuy(_to,_tokens);
+     }
+
+     function burnTokens(address _from, uint _tokens) public onlyInState(State.ICOFinished) onlyTokenManager {
           mntToken.burnTokens(_from,_tokens);
+
+          LogBurn(_from,_tokens);
      }
 
      // Default fallback function
      function() payable {
+          // buyTokens -> issueTokensInternal
           buyTokens(msg.sender);
      }
 }

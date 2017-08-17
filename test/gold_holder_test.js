@@ -21,7 +21,7 @@ var goldContract;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
-describe('Contracts 5 - GOLD token holder', function() {
+describe('GOLD token 1', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
                if(err) {
@@ -145,7 +145,7 @@ describe('Contracts 5 - GOLD token holder', function() {
 })
 
 
-describe('Contracts 6 - GOLD token manager', function() {
+describe('GOLD token 2', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
                if(err) {

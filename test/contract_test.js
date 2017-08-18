@@ -727,7 +727,7 @@ describe('Contracts 3 - ICO buy tests', function() {
 
                     goldmintContract.getCurrentPrice((err,res)=>{
                          assert.equal(err,null);
-                         assert.equal(res,51431510372021258357);
+                         assert.equal(res,51428571428571428571);
 
                          done();
                     });
@@ -762,12 +762,12 @@ describe('Contracts 3 - ICO buy tests', function() {
 
                     // 51.43 MNTP tokens per 1 ETH
                     var balance = mntContract.balanceOf(buyer);
-                    assert.equal(balance,51431510372021258357);
+                    assert.equal(balance,51428571428571428571);
 
                     // new check
                     goldmintContract.getTokensIcoSold((err,res)=>{
                          assert.equal(err,null);
-                         assert.equal(res,51431510372021258357);
+                         assert.equal(res,51428571428571428571);
 
                          done();
                     });
@@ -803,12 +803,12 @@ describe('Contracts 3 - ICO buy tests', function() {
                assert.equal(res.toString(10), 9000000000000000000000000);
 
                moved = goldmintContract.icoTokensUnsold();
-               assert.equal(moved,7000000000000000000000000 - 51431510372021258357);
+               assert.equal(moved,7000000000000000000000000 - 51428571428571428571);
 
                assert.equal(goldmintContract.restTokensMoved(),true);
 
                unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
-               assert.equal(unsoldBalance,7000000000000000000000000 - 51431510372021258357);
+               assert.equal(unsoldBalance,7000000000000000000000000 - 51428571428571428571);
 
                done();                              
           });
@@ -821,7 +821,7 @@ describe('Contracts 3 - ICO buy tests', function() {
                assert.notEqual(err, null);
 
                var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
-               assert.equal(unsoldBalance,7000000000000000000000000 - 51431510372021258357);
+               assert.equal(unsoldBalance,7000000000000000000000000 - 51428571428571428571);
 
                var transferred = mntContract.balanceOf(unsoldTokensReward);
                assert.equal(transferred,0);
@@ -956,7 +956,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
 
                     // 53.5 MNTP tokens per 1 ETH
                     var balance = mntContract.balanceOf(buyer);
-                    assert.equal(balance,51431510372021258357);
+                    assert.equal(balance,51428571428571428571);
                     done();
                }
           );
@@ -968,13 +968,13 @@ describe('Contracts 4 - lock MNTP transfers', function() {
           var balance1 = mntContract.balanceOf(buyer2);
           assert.equal(balance1,0);
 
-          //var amount = 51431510372021258357;
+          //var amount = 51428571428571428571;
           var amount = 10;
           mntContract.transfer(buyer2, amount, params, (err,res)=>{
                assert.notEqual(err, null);
 
                var balance = mntContract.balanceOf(buyer);
-               assert.equal(balance,51431510372021258357);
+               assert.equal(balance,51428571428571428571);
                
                done();
           });
@@ -998,7 +998,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
           var params = {from: buyer, gas: 2900000};
 
           var balance = mntContract.balanceOf(buyer);
-          assert.equal(balance,51431510372021258357);
+          assert.equal(balance,51428571428571428571);
 
           var balance1 = mntContract.balanceOf(buyer2);
           assert.equal(balance1,0);
@@ -1065,7 +1065,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
                assert.equal(err, null);
 
                balance1 = mntContract.balanceOf(buyer2);
-               assert.equal(balance1,51431510372021258357);
+               assert.equal(balance1,51428571428571428571);
                
                var balanceNew = mntContract.balanceOf(buyer);
                assert.equal(balanceNew,0);
@@ -1222,11 +1222,11 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
                assert.equal(issuedExt,0);
 
                var tokensSold = goldmintContract.icoTokensSold();
-               assert.equal(tokensSold,51431510372021258357);
+               assert.equal(tokensSold,51428571428571428571);
 
                mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
-                    assert.equal(res.toString(10),51431510372021258357);
+                    assert.equal(res.toString(10),51428571428571428571);
                     done();
                });
           });

@@ -115,7 +115,8 @@ describe('Contracts 1 - prices tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,51431510372021258357);
+               // 1 ETH = 51.4285 tokens
+               assert.equal(res,51428571428571428571);
 
                done();
           });
@@ -126,7 +127,7 @@ describe('Contracts 1 - prices tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,49293460400920144594);
+               assert.equal(res,49285714285714285714);
 
                done();
           });
@@ -137,7 +138,7 @@ describe('Contracts 1 - prices tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,47147571900047147571);
+               assert.equal(res,47142857142857142857);
 
                done();
           });
@@ -148,7 +149,7 @@ describe('Contracts 1 - prices tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,46289152908501774417);
+               assert.equal(res,46285714285714285714);
 
                done();
           });
@@ -159,7 +160,7 @@ describe('Contracts 1 - prices tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,45433893684688777828);
+               assert.equal(res,45428571428571428571);
 
                done();
           });
@@ -170,7 +171,7 @@ describe('Contracts 1 - prices tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,44576523031203566121);
+               assert.equal(res,44571428571428571428);
 
                done();
           });
@@ -181,7 +182,7 @@ describe('Contracts 1 - prices tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,43719032352083940542);
+               assert.equal(res,43714285714285714285);
 
                done();
           });

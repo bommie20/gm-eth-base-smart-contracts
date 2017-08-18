@@ -462,11 +462,14 @@ contract Goldmint is SafeMath {
           
           uint8[10] memory discountPercents = [20,15,10,8,6,4,2,0,0,0];
 
-          // Example: ($7000 * 100) / 120 = $5830
+          // We have to multiply by '1 ether' to avoid float truncations
+          // Example: ($7000 * 100) / 120 = $5833.33333
           uint pricePer1000tokensUsd = 
-               (STD_PRICE_USD_PER_1000_TOKENS * 100) / (100 + discountPercents[priceIndex]);
+               ((STD_PRICE_USD_PER_1000_TOKENS * 100) * (1 ether / 1 wei)) / (100 + discountPercents[priceIndex]);
 
-          uint mntPerEth = (ETH_PRICE_IN_USD * 1000 * (1 ether / 1 wei)) / pricePer1000tokensUsd;
+          // Correct: 300000 / 5833.33333333 = 51.42857142
+          // We have to multiply by '1 ether' to avoid float truncations
+          uint mntPerEth = (ETH_PRICE_IN_USD * 1000 * (1 ether / 1 wei) * (1 ether / 1 wei)) / pricePer1000tokensUsd;
           return mntPerEth;
      }
 

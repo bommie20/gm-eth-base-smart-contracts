@@ -299,7 +299,10 @@ contract Goldmint is SafeMath {
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 7000;
      // coinmarketcap.com 14.08.2017
      uint constant ETH_PRICE_IN_USD = 300;
-          
+     // price changes from block to block
+     uint public constant SINGLE_BLOCK_LEN = 700000;
+
+///////     
      // 1 000 000 tokens
      uint public constant BONUS_REWARD = 1000000 * (1 ether/ 1 wei);
      // 2 000 000 tokens
@@ -426,7 +429,7 @@ contract Goldmint is SafeMath {
      }
 
      function getBlockLength()constant public returns (uint){
-          return 700000;
+          return SINGLE_BLOCK_LEN;
      }
 
 ////
@@ -454,14 +457,14 @@ contract Goldmint is SafeMath {
 
      function getMntTokensPerEth(uint tokensSold) public constant returns (uint){
           // 10 buckets
-          uint priceIndex = (tokensSold / (1 ether/ 1 wei)) / 700000;
+          uint priceIndex = (tokensSold / (1 ether/ 1 wei)) / SINGLE_BLOCK_LEN;
           assert(priceIndex>=0 && (priceIndex<=9));
           
           uint8[10] memory discountPercents = [20,15,10,8,6,4,2,0,0,0];
 
-          // Example: $5400 / 1000 MNTP
+          // Example: ($7000 * 100) / 120 = $5830
           uint pricePer1000tokensUsd = 
-               (STD_PRICE_USD_PER_1000_TOKENS - (discountPercents[priceIndex] * STD_PRICE_USD_PER_1000_TOKENS / 100));
+               (STD_PRICE_USD_PER_1000_TOKENS * 100) / (100 + discountPercents[priceIndex]);
 
           uint mntPerEth = (ETH_PRICE_IN_USD * 1000 * (1 ether / 1 wei)) / pricePer1000tokensUsd;
           return mntPerEth;

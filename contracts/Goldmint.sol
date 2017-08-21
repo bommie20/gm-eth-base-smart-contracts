@@ -293,6 +293,8 @@ contract Goldmint is SafeMath {
      address public multisigAddress = 0x0;
      address public otherCurrenciesChecker = 0x0;
 
+     uint64 public icoStartedTime = 0;
+
      MNTP public mntToken; 
      GoldmintUnsold public unsoldContract;
 
@@ -377,6 +379,10 @@ contract Goldmint is SafeMath {
           mintFoundersRewards(foundersRewardsAccount);
 
           mntToken.lockTransfer(true);
+
+          if(icoStartedTime==0){
+               icoStartedTime = uint64(now);
+          }
      }
 
      function pauseICO() internal onlyCreator {
@@ -385,7 +391,7 @@ contract Goldmint is SafeMath {
 
      /// @dev This function is automatically called when ICO is finished 
      /// WARNING: can be called multiple times!
-     function finishICO() internal onlyCreator {
+     function finishICO() internal {
           mntToken.lockTransfer(false);
 
           if(!restTokensMoved){
@@ -442,7 +448,29 @@ contract Goldmint is SafeMath {
      }
 
 ////
-     function setState(State _nextState) public onlyCreator {
+     function isIcoFinished() public returns(bool){
+          if(icoStartedTime==0){return false;}          
+
+          // 1 - if time elapsed
+          uint64 oneMonth = icoStartedTime + 30 days;  
+          if(uint(now) > oneMonth){return true;}
+
+          // 2 - if all tokens are sold
+          if(icoTokensSold>=ICO_TOKEN_SUPPLY_LIMIT){
+               return true;
+          }
+
+          return false;
+     }
+
+     function setState(State _nextState) public {
+          // only creator can change state
+          // but in case ICOFinished -> anyone can do that after all time is elapsed
+          bool icoShouldBeFinished = isIcoFinished();
+          if((msg.sender!=creator) && !(icoShouldBeFinished && State.ICOFinished==_nextState)){
+               throw;
+          }
+
           bool canSwitchState
                =  (currentState == State.Init && _nextState == State.ICORunning)
                || (currentState == State.ICORunning && _nextState == State.ICOPaused)

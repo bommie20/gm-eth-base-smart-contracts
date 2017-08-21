@@ -191,6 +191,14 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           })
      });
 
+     it('should not change state if not from creator', function(done){
+          var params = {from: creator2, gas: 2900000};
+          goldmintContract.setState(1, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(1, params, (err,res)=>{
@@ -885,6 +893,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
+               multisig = accounts[7];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -1111,6 +1120,7 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
+               multisig = accounts[7];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -1250,5 +1260,140 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
                });
           });
      });
+});
 
+describe('Contracts 6 - ICO finished test', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+               creator2 = accounts[4];
+               tokenManager = accounts[5];
+               unsoldTokensReward = accounts[6];
+               multisig = accounts[7];
+
+               var contractName = ':MNTP';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployUnsoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployFoundersVestingContract(data,function(err){
+                         assert.equal(err,null);
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+
+                              mntContract.setIcoContractAddress(
+                                   goldmintContractAddress,
+                                   {
+                                        from: creator,               
+                                        gas: 2900000 
+                                   },function(err,result){
+
+                                        unsoldContract.setIcoContractAddress(
+                                             goldmintContractAddress,
+                                             {
+                                                  from: creator,               
+                                                  gas: 2900000 
+                                             },function(err,result){
+                                                  assert.equal(err,null);
+                                                  done();
+                                        });
+                                   });
+                         });
+                    });
+               });
+          });
+     });
+
+     it('should set creator', function(done){
+          var params = {from: creator, gas: 2900000};
+          mntContract.setCreator(creator2, params, (err,res)=>{
+               assert.equal(err,null);
+               mntContract.creator((err,res)=>{
+                    assert.equal(err,null);
+                    assert.equal(res,creator2);
+                    done();
+               });
+          });
+     });
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(1, params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should not change state if not creator', function(done){
+          var params = {from: creator2, gas: 2900000};
+          goldmintContract.setState(3, params, (err,res)=>{
+               assert.notEqual(err, null);
+
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+     
+     it('should move time 1 month', function(done){
+          var hours = 24 * 31;
+          var seconds = 60 * 60 * hours;
+
+          web3.currentProvider.sendAsync({
+               jsonrpc: '2.0', 
+               method: 'evm_increaseTime',
+               params: [seconds],       
+               id: new Date().getTime() 
+          }, function(err) {
+               assert.equal(err,null);
+               done();
+          });
+     });
+
+     it('should change state if not creator if ICO is finished', function(done){
+          assert.equal(typeof(goldmintContract.finishICO),'undefined');
+
+          var params = {from: creator2, gas: 2900000};
+          goldmintContract.setState(3, params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,3);
+                    done();
+               });
+          });
+     });
 });

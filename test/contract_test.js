@@ -19,10 +19,12 @@ var buyer2;
 var buyers = [];
 var unsoldTokensReward;
 var tokenManager;
+var multisig;
 
 var initialBalanceCreator = 0;
 var initialBalanceBuyer = 0;
 var initialBalanceBuyer2 = 0;
+var initialMultisigBalance = 0;
 
 var mntContractAddress;
 var mntContract;
@@ -86,6 +88,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
+               multisig = accounts[7];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -257,6 +260,8 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           var foundersBalance = mntContract.balanceOf(foundersVestingContractAddress);
           assert.equal(foundersBalance.toString(10), 2000000000000000000000000);
 
+          initialMultisigBalance = web3.eth.getBalance(multisig);
+
           // finish
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(3, params, (err,res)=>{
@@ -265,6 +270,11 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res,3);
+
+                    // check multisig ETH balance
+                    var balanceAfter = web3.eth.getBalance(multisig);
+                    assert.equal(balanceAfter.toString(10),initialMultisigBalance.toString(10));
+
                     done();
                });
           });
@@ -653,6 +663,9 @@ describe('Contracts 3 - ICO buy tests', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
+               multisig = accounts[7];
+
+               initialMultisigBalance = web3.eth.getBalance(multisig);
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -791,6 +804,12 @@ describe('Contracts 3 - ICO buy tests', function() {
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res,3);
+
+                    // check multisig ETH balance
+                    var balanceAfter = web3.eth.getBalance(multisig);
+                    assert.equal(balanceAfter.toString(10),
+                                 parseInt(initialMultisigBalance.toString(10)) + 1000000000000000000);
+
                     done();
                });
           });

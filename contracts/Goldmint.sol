@@ -290,6 +290,7 @@ contract FoundersVesting is SafeMath {
 contract Goldmint is SafeMath {
      address public creator = 0x0;
      address public tokenManager = 0x0;
+     address public multisigAddress = 0x0;
      address public otherCurrenciesChecker = 0x0;
 
      MNTP public mntToken; 
@@ -349,6 +350,7 @@ contract Goldmint is SafeMath {
 /// Functions:
      /// @dev Constructor
      function Goldmint(
+          address _multisigAddress,
           address _tokenManager,
           address _otherCurrenciesChecker,
 
@@ -357,6 +359,8 @@ contract Goldmint is SafeMath {
           address _foundersVestingAddress)
      {
           creator = msg.sender;
+
+          multisigAddress = _multisigAddress;
           tokenManager = _tokenManager;
           otherCurrenciesChecker = _otherCurrenciesChecker; 
 
@@ -393,6 +397,11 @@ contract Goldmint is SafeMath {
                     mntToken.issueTokens(unsoldContract,icoTokensUnsold);
                     unsoldContract.icoIsFinished();
                }
+          }
+
+          // send all ETH to multisig
+          if(this.balance>0){
+               if(!multisigAddress.send(this.balance)) throw;
           }
      }
 

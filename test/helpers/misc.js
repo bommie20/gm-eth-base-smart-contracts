@@ -236,6 +236,7 @@ function deployGoldmintContract(data,cb){
           var alreadyCalled = false;
 
           tempContract.new(
+               multisig,
                tokenManager,
                tokenManager,  // _otherCurrenciesChecker
                mntContractAddress,

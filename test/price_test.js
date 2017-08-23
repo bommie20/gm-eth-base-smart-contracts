@@ -46,7 +46,7 @@ eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
 // If ETH_PRICE_IN_USD or STD_PRICE_USD_PER_1000_TOKENS or discountPercents table changes ->
 // these test will fail...
-describe('Contracts 1 - prices tests', function() {
+describe('Price tests', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
                if(err) {

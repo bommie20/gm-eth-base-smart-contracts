@@ -44,6 +44,10 @@ var foundersVestingContract;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
+var ONE_BLOCK = 700000;
+
+//var ONE_BLOCK = 100;
+
 var PRICE_1 = 51428571428571428571;
 var PRICE_2 = 49285714285714285714;
 var PRICE_3 = 47142857142857142857;
@@ -136,7 +140,7 @@ describe('Price tests', function() {
      });
 
      it('should get second bucket price', function(done){
-          var icoTokensSold = 700001 * 1000000000000000000;
+          var icoTokensSold = (ONE_BLOCK + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
@@ -147,7 +151,7 @@ describe('Price tests', function() {
      });
 
      it('should get third bucket price', function(done){
-          var icoTokensSold = ((2 * 700000) + 1) * 1000000000000000000;
+          var icoTokensSold = ((2 * ONE_BLOCK) + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
@@ -158,7 +162,7 @@ describe('Price tests', function() {
      });
 
      it('should get fourth bucket price', function(done){
-          var icoTokensSold = ((3 * 700000) + 1) * 1000000000000000000;
+          var icoTokensSold = ((3 * ONE_BLOCK) + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
@@ -169,7 +173,7 @@ describe('Price tests', function() {
      });
 
      it('should get fifth bucket price', function(done){
-          var icoTokensSold = ((4 * 700000) + 1) * 1000000000000000000;
+          var icoTokensSold = ((4 * ONE_BLOCK) + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
@@ -180,7 +184,7 @@ describe('Price tests', function() {
      });
 
      it('should get sixth bucket price', function(done){
-          var icoTokensSold = ((5 * 700000) + 1) * 1000000000000000000;
+          var icoTokensSold = ((5 * ONE_BLOCK) + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
@@ -191,7 +195,7 @@ describe('Price tests', function() {
      });
 
      it('should get seventh bucket price', function(done){
-          var icoTokensSold = ((6 * 700000) + 1) * 1000000000000000000;
+          var icoTokensSold = ((6 * ONE_BLOCK) + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
@@ -202,7 +206,7 @@ describe('Price tests', function() {
      });
 
      it('should get eight bucket price', function(done){
-          var icoTokensSold = ((7 * 700000) + 1) * 1000000000000000000;
+          var icoTokensSold = ((7 * ONE_BLOCK) + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
@@ -213,7 +217,7 @@ describe('Price tests', function() {
      });
 
      it('should get nineth bucket price', function(done){
-          var icoTokensSold = ((8 * 700000) + 1) * 1000000000000000000;
+          var icoTokensSold = ((8 * ONE_BLOCK) + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
@@ -224,7 +228,7 @@ describe('Price tests', function() {
      });
 
      it('should get tenth bucket price', function(done){
-          var icoTokensSold = ((9 * 700000) + 1) * 1000000000000000000;
+          var icoTokensSold = ((9 * ONE_BLOCK) + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
@@ -235,7 +239,7 @@ describe('Price tests', function() {
      });
 
      it('should not get eleventh bucket price', function(done){
-          var icoTokensSold = ((10 * 700000) + 1) * 1000000000000000000;
+          var icoTokensSold = ((10 * ONE_BLOCK) + 1) * 1000000000000000000;
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.notEqual(err,null);

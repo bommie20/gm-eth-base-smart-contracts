@@ -44,6 +44,17 @@ var foundersVestingContract;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
+var PRICE_1 = 51428571428571428571;
+var PRICE_2 = 49285714285714285714;
+var PRICE_3 = 47142857142857142857;
+var PRICE_4 = 46285714285714285714;
+var PRICE_5 = 45428571428571428571;
+var PRICE_6 = 44571428571428571428;
+var PRICE_7 = 43714285714285714285;
+var PRICE_8 = 42857142857142857142;
+var PRICE_9 = 42857142857142857142;
+var PRICE_10= 42857142857142857142;
+
 // If ETH_PRICE_IN_USD or STD_PRICE_USD_PER_1000_TOKENS or discountPercents table changes ->
 // these test will fail...
 describe('Price tests', function() {
@@ -118,7 +129,7 @@ describe('Price tests', function() {
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
                // 1 ETH = 51.4285 tokens
-               assert.equal(res,51428571428571428571);
+               assert.equal(res,PRICE_1);
 
                done();
           });
@@ -129,7 +140,7 @@ describe('Price tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,49285714285714285714);
+               assert.equal(res,PRICE_2);
 
                done();
           });
@@ -140,7 +151,7 @@ describe('Price tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,47142857142857142857);
+               assert.equal(res,PRICE_3);
 
                done();
           });
@@ -151,7 +162,7 @@ describe('Price tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,46285714285714285714);
+               assert.equal(res,PRICE_4);
 
                done();
           });
@@ -162,7 +173,7 @@ describe('Price tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,45428571428571428571);
+               assert.equal(res,PRICE_5);
 
                done();
           });
@@ -173,7 +184,7 @@ describe('Price tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,44571428571428571428);
+               assert.equal(res,PRICE_6);
 
                done();
           });
@@ -184,7 +195,7 @@ describe('Price tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,43714285714285714285);
+               assert.equal(res,PRICE_7);
 
                done();
           });
@@ -195,7 +206,7 @@ describe('Price tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,42857142857142857142);
+               assert.equal(res,PRICE_8);
 
                done();
           });
@@ -206,7 +217,7 @@ describe('Price tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,42857142857142857142);
+               assert.equal(res,PRICE_9);
 
                done();
           });
@@ -217,7 +228,7 @@ describe('Price tests', function() {
 
           goldmintContract.getMntTokensPerEth(icoTokensSold,(err,res)=>{
                assert.equal(err,null);
-               assert.equal(res,42857142857142857142);
+               assert.equal(res,PRICE_10);
 
                done();
           });

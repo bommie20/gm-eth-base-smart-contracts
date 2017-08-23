@@ -52,7 +52,7 @@ var TOKENS_PER_ETH = 51428571428571428571;
 
 // TEST:
 /*
-var ICO_TOTAL_SELLING_SHOULD_BE = 20000000 * 100000000000000000;
+var ICO_TOTAL_SELLING_SHOULD_BE = 250 * 1000000000000000000;
 var FOUNDERS_BALANCE_SHOULD_BE = 2000000 * 1000000000000000000;
 var BONUS_SHOULD_BE = 1000000 * 1000000000000000000;
 var TOTAL_SUPPLY_SHOULD_BE = new BigNumber(FOUNDERS_BALANCE_SHOULD_BE).plus(new BigNumber(ICO_TOTAL_SELLING_SHOULD_BE));
@@ -61,7 +61,7 @@ var TOKENS_PER_ETH = 51428571428571428571;
 
 /////////////////////////////////////////////
 // 1000 tokens
-var ISSUE_EXTERNALLY = 1000000000000000000;
+var ISSUE_EXTERNALLY = 1000 * 1000000000000000;
 
 // recursive
 function getMoreVestedTokens(index,maxIndex,cb){
@@ -312,6 +312,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           // check that unsold tokens are transferred to GoldmintUnsold contract
           mntContract.totalSupply((err,res)=>{
                assert.equal(err, null);
+
                assert.equal(res.toString(10), TOTAL_SUPPLY_SHOULD_BE.toString(10));
 
                moved = goldmintContract.icoTokensUnsold();

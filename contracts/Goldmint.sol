@@ -17,10 +17,6 @@ contract SafeMath {
           assert(c>=a && c>=b);
           return c;
      }
-
-     function assert(bool assertion) internal {
-          if (!assertion) throw;
-     }
 }
 
 // Standard token interface (ERC 20)
@@ -70,26 +66,23 @@ contract StdToken is Token {
 
      // Functions:
      function transfer(address _to, uint256 _value) {
-          if((balances[msg.sender] < _value) || (balances[_to] + _value <= balances[_to])) {
-               throw;
-          }
+          require(balances[msg.sender] >= _value);
+          require(balances[_to] + _value > balances[_to]);
 
-          balances[msg.sender] -= _value;
-          balances[_to] += _value;
+          balances[msg.sender] = safeSub(balances[msg.sender],_value);
+          balances[_to] = safeAdd(balances[_to],_value);
+
           Transfer(msg.sender, _to, _value);
      }
 
      function transferFrom(address _from, address _to, uint256 _value) {
-          if((balances[_from] < _value) || 
-               (allowed[_from][msg.sender] < _value) || 
-               (balances[_to] + _value <= balances[_to])) 
-          {
-               throw;
-          }
+          require(balances[_from] >= _value);
+          require(allowed[_from][msg.sender] >= _value);
+          require(balances[_to] + _value > balances[_to]);
 
-          balances[_to] += _value;
-          balances[_from] -= _value;
-          allowed[_from][msg.sender] -= _value;
+          balances[_to] = safeAdd(balances[_to],_value);
+          balances[_from] = safeSub(balances[_from],_value);
+          allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender],_value);
 
           Transfer(_from, _to, _value);
      }
@@ -110,9 +103,7 @@ contract StdToken is Token {
      }
 
      modifier onlyPayloadSize(uint _size) {
-          if(msg.data.length < _size + 4) {
-               throw;
-          }
+          require(msg.data.length >= _size + 4);
           _;
      }
 }
@@ -131,8 +122,15 @@ contract MNTP is StdToken {
      uint public constant TOTAL_TOKEN_SUPPLY = 10000000 * (1 ether / 1 wei);
 
 /// Modifiers:
-     modifier onlyCreator() { if(msg.sender != creator) throw; _; }
-     modifier byCreatorOrIcoContract() { if((msg.sender != creator) && (msg.sender != icoContractAddress)) throw; _; }
+     modifier onlyCreator() { 
+          require(msg.sender == creator); 
+          _; 
+     }
+
+     modifier byCreatorOrIcoContract() { 
+          require((msg.sender == creator) || (msg.sender == icoContractAddress)); 
+          _; 
+     }
 
      function setCreator(address _creator) onlyCreator {
           creator = _creator;
@@ -154,27 +152,22 @@ contract MNTP is StdToken {
 
      /// @dev Override
      function transfer(address _to, uint256 _value) public {
-          if(lockTransfers){
-               throw;
-          }
+          assert(!lockTransfers);
+
           super.transfer(_to,_value);
      }
 
      /// @dev Override
-     function transferFrom(address _from, address _to, uint256 _value)public{
-          if(lockTransfers){
-               throw;
-          }
+     function transferFrom(address _from, address _to, uint256 _value) public {
+          assert(!lockTransfers);
           super.transferFrom(_from,_to,_value);
      }
 
      function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {
-          if((totalSupply + _tokens) > TOTAL_TOKEN_SUPPLY){
-               throw;
-          }
+          assert((totalSupply + _tokens) <= TOTAL_TOKEN_SUPPLY);
 
-          balances[_who] += _tokens;
-          totalSupply += _tokens;
+          balances[_who] = safeAdd(balances[_who],_tokens);
+          totalSupply = safeAdd(totalSupply,_tokens);
      }
 
      function burnTokens(address _who, uint _tokens) byCreatorOrIcoContract {
@@ -188,7 +181,7 @@ contract MNTP is StdToken {
 
      // Do not allow to send money directly to this contract
      function() {
-          throw;
+          assert(false);
      }
 }
 
@@ -209,21 +202,23 @@ contract GoldmintUnsold is SafeMath {
           mntToken = MNTP(_mntTokenAddress);          
      }
 
-/// Setters/Getters
-     function setIcoContractAddress(address _icoContractAddress) {
-          if(msg.sender!=creator){
-               throw;
-          }
+     modifier onlyCreator() { 
+          require(msg.sender==creator); 
+          _; 
+     }
 
+     modifier onlyIcoContract() { 
+          require(msg.sender==icoContractAddress); 
+          _; 
+     }
+
+/// Setters/Getters
+     function setIcoContractAddress(address _icoContractAddress) onlyCreator {
           icoContractAddress = _icoContractAddress;
      }
 
-     function icoIsFinished() public {
-          // only by Goldmint contract 
-          if(msg.sender!=icoContractAddress){
-               throw;
-          }
-
+     // only by Goldmint contract 
+     function icoIsFinished() public onlyIcoContract {
           icoIsFinishedDate = uint64(now);
      }
 
@@ -231,7 +226,7 @@ contract GoldmintUnsold is SafeMath {
      function withdrawTokens() public {
           // wait for 1 year!
           uint64 oneYearPassed = icoIsFinishedDate + 365 days;  
-          if(uint(now) < oneYearPassed) throw;
+          assert(uint(now) >= oneYearPassed);
 
           // transfer all tokens from this contract to the teamAccountAddress
           uint total = mntToken.balanceOf(this);
@@ -240,7 +235,7 @@ contract GoldmintUnsold is SafeMath {
 
      // Default fallback function
      function() payable {
-          throw;
+          assert(false);
      }
 }
 
@@ -266,7 +261,7 @@ contract FoundersVesting is SafeMath {
      function withdrawTokens() public {
           // 1 - wait for next month!
           uint64 oneMonth = lastWithdrawTime + 30 days;  
-          if(uint(now) < oneMonth) throw;
+          assert(uint(now) >= oneMonth);
 
           // 2 - calculate amount (only first time)
           if(withdrawsCount==0){
@@ -283,7 +278,7 @@ contract FoundersVesting is SafeMath {
 
      // Default fallback function
      function() payable {
-          throw;
+          assert(false);
      }
 }
 
@@ -338,11 +333,22 @@ contract Goldmint is SafeMath {
      State public currentState = State.Init;
 
 /// Modifiers:
-     modifier onlyCreator() { if(msg.sender != creator) throw; _; }
-     modifier onlyTokenManager() { if(msg.sender != tokenManager) throw; _; }
-     modifier onlyOtherCurrenciesChecker() { if(msg.sender != otherCurrenciesChecker) throw; _; }
-
-     modifier onlyInState(State state){ if(state != currentState) throw; _; }
+     modifier onlyCreator() { 
+          require(msg.sender==creator); 
+          _; 
+     }
+     modifier onlyTokenManager() { 
+          require(msg.sender==tokenManager); 
+          _; 
+     }
+     modifier onlyOtherCurrenciesChecker() { 
+          require(msg.sender==otherCurrenciesChecker); 
+          _; 
+     }
+     modifier onlyInState(State state){ 
+          require(state==currentState); 
+          _; 
+     }
 
 /// Events:
      event LogStateSwitch(State newState);
@@ -407,7 +413,7 @@ contract Goldmint is SafeMath {
 
           // send all ETH to multisig
           if(this.balance>0){
-               if(!multisigAddress.send(this.balance)) throw;
+               require(multisigAddress.send(this.balance));
           }
      }
 
@@ -467,9 +473,8 @@ contract Goldmint is SafeMath {
           // only creator can change state
           // but in case ICOFinished -> anyone can do that after all time is elapsed
           bool icoShouldBeFinished = isIcoFinished();
-          if((msg.sender!=creator) && !(icoShouldBeFinished && State.ICOFinished==_nextState)){
-               throw;
-          }
+          bool allow = (msg.sender==creator) || (icoShouldBeFinished && (State.ICOFinished==_nextState));
+          require(allow);
 
           bool canSwitchState
                =  (currentState == State.Init && _nextState == State.ICORunning)
@@ -478,7 +483,7 @@ contract Goldmint is SafeMath {
                || (currentState == State.ICORunning && _nextState == State.ICOFinished)
                || (currentState == State.ICOFinished && _nextState == State.ICORunning);
 
-          if(!canSwitchState) throw;
+          require(canSwitchState);
 
           currentState = _nextState;
           LogStateSwitch(_nextState);
@@ -511,7 +516,7 @@ contract Goldmint is SafeMath {
      }
 
      function buyTokens(address _buyer) public payable onlyInState(State.ICORunning) {
-          if(msg.value == 0) throw;
+          require(msg.value!=0);
 
           // The price is selected based on current sold tokens.
           // Price can 'overlap'. For example:
@@ -525,7 +530,8 @@ contract Goldmint is SafeMath {
 
      /// @dev This is called by other currency processors to issue new tokens 
      function issueTokensFromOtherCurrency(address _to, uint _wei_count) onlyInState(State.ICORunning) public onlyOtherCurrenciesChecker {
-          if(_wei_count== 0) throw;
+          require(_wei_count!=0);
+
           uint newTokens = (_wei_count * getMntTokensPerEth(icoTokensSold)) / (1 ether / 1 wei);
           issueTokensInternal(_to,newTokens);
      }
@@ -534,9 +540,7 @@ contract Goldmint is SafeMath {
      /// from the bonus reward
      function issueTokensExternal(address _to, uint _tokens) public onlyInState(State.ICOFinished) onlyTokenManager {
           // can not issue more than BONUS_REWARD
-          if((issuedExternallyTokens + _tokens)>BONUS_REWARD){
-               throw;
-          }
+          require((issuedExternallyTokens + _tokens)<=BONUS_REWARD);
 
           mntToken.issueTokens(_to,_tokens);
 
@@ -544,9 +548,7 @@ contract Goldmint is SafeMath {
      }
 
      function issueTokensInternal(address _to, uint _tokens) internal {
-          if((icoTokensSold + _tokens)>ICO_TOKEN_SUPPLY_LIMIT){
-               throw;
-          }
+          require((icoTokensSold + _tokens)<=ICO_TOKEN_SUPPLY_LIMIT);
 
           mntToken.issueTokens(_to,_tokens);
 

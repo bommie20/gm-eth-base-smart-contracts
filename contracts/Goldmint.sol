@@ -33,14 +33,14 @@ contract Token is SafeMath {
      /// @notice send `_value` token to `_to` from `msg.sender`
      /// @param _to The address of the recipient
      /// @param _value The amount of token to be transferred
-     function transfer(address _to, uint256 _value) {}
+     function transfer(address _to, uint256 _value) returns(bool) {}
 
      /// @notice send `_value` token to `_to` from `_from` on the condition it is approved by `_from`
      /// @param _from The address of the sender
      /// @param _to The address of the recipient
      /// @param _value The amount of token to be transferred
      /// @return Whether the transfer was successful or not
-     function transferFrom(address _from, address _to, uint256 _value){}
+     function transferFrom(address _from, address _to, uint256 _value)returns(bool){}
 
      /// @notice `msg.sender` approves `_addr` to spend `_value` tokens
      /// @param _spender The address of the account able to transfer the tokens
@@ -65,7 +65,7 @@ contract StdToken is Token {
      uint public totalSupply = 0;
 
      // Functions:
-     function transfer(address _to, uint256 _value) {
+     function transfer(address _to, uint256 _value) returns(bool){
           require(balances[msg.sender] >= _value);
           require(balances[_to] + _value > balances[_to]);
 
@@ -73,9 +73,10 @@ contract StdToken is Token {
           balances[_to] = safeAdd(balances[_to],_value);
 
           Transfer(msg.sender, _to, _value);
+          return true;
      }
 
-     function transferFrom(address _from, address _to, uint256 _value) {
+     function transferFrom(address _from, address _to, uint256 _value) returns(bool){
           require(balances[_from] >= _value);
           require(allowed[_from][msg.sender] >= _value);
           require(balances[_to] + _value > balances[_to]);
@@ -85,6 +86,7 @@ contract StdToken is Token {
           allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender],_value);
 
           Transfer(_from, _to, _value);
+          return true;
      }
 
      function balanceOf(address _owner) constant returns (uint256 balance) {
@@ -94,7 +96,6 @@ contract StdToken is Token {
      function approve(address _spender, uint256 _value) returns (bool success) {
           allowed[msg.sender][_spender] = _value;
           Approval(msg.sender, _spender, _value);
-
           return true;
      }
 
@@ -151,16 +152,15 @@ contract MNTP is StdToken {
      }
 
      /// @dev Override
-     function transfer(address _to, uint256 _value) public {
+     function transfer(address _to, uint256 _value) public returns(bool){
           assert(!lockTransfers);
-
-          super.transfer(_to,_value);
+          return super.transfer(_to,_value);
      }
 
      /// @dev Override
-     function transferFrom(address _from, address _to, uint256 _value) public {
+     function transferFrom(address _from, address _to, uint256 _value) public returns(bool){
           assert(!lockTransfers);
-          super.transferFrom(_from,_to,_value);
+          return super.transferFrom(_from,_to,_value);
      }
 
      function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {

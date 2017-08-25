@@ -396,7 +396,6 @@ contract Goldmint is SafeMath {
      }
 
      function pauseICO() internal onlyCreator {
-          mntToken.lockTransfer(false);
      }
 
      /// @dev This function is automatically called when ICO is finished 

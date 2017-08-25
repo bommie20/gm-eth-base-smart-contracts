@@ -44,9 +44,9 @@ var foundersVestingContract;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
-//var ONE_BLOCK = 700000;
+var ONE_BLOCK = 700000;
 
-var ONE_BLOCK = 100;
+//var ONE_BLOCK = 100;
 
 var PRICE_1 = 51428571428571428571;
 var PRICE_2 = 49285714285714285714;

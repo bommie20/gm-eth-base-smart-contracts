@@ -433,7 +433,7 @@ contract Goldmint is SafeMath {
           tokenManager = _new;
      }
 
-     function setOtherCurrenciesChecker(address _new) public onlyOtherCurrenciesChecker {
+     function setOtherCurrenciesChecker(address _new) public onlyCreator {
           otherCurrenciesChecker = _new;
      }
 

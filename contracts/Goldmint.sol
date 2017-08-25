@@ -266,10 +266,16 @@ contract FoundersVesting is SafeMath {
                amountToSend = mntToken.balanceOf(this) / 10;
           }
 
-          // 3 - send 1/10th
           assert(amountToSend!=0);
+
+          // 3 - send 1/10th
+          uint currentBalance = mntToken.balanceOf(this);
+          if(currentBalance<amountToSend){
+             amountToSend = currentBalance;  
+          }
           mntToken.transfer(teamAccountAddress,amountToSend);
 
+          // 4 - update counter
           withdrawsCount++;
           lastWithdrawTime = uint64(now);
      }

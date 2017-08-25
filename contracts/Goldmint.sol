@@ -240,7 +240,6 @@ contract GoldmintUnsold is SafeMath {
 }
 
 contract FoundersVesting is SafeMath {
-     address public creator;
      address public teamAccountAddress;
      uint64 public lastWithdrawTime;
 
@@ -250,7 +249,6 @@ contract FoundersVesting is SafeMath {
      MNTP public mntToken;
 
      function FoundersVesting(address _teamAccountAddress,address _mntTokenAddress){
-          creator = msg.sender;
           teamAccountAddress = _teamAccountAddress;
           lastWithdrawTime = uint64(now);
 

@@ -49,6 +49,7 @@ var BONUS_SHOULD_BE = 1000000 * 1000000000000000000;
 // 9000000000000000000000000
 var TOTAL_SUPPLY_SHOULD_BE = new BigNumber(FOUNDERS_BALANCE_SHOULD_BE).plus(new BigNumber(ICO_TOTAL_SELLING_SHOULD_BE));
 var TOKENS_PER_ETH = 51428571428571428571;
+var ONE_HALF_TOKENS_PER_ETH = 77142857142857142856;
 
 /*
 // TEST:
@@ -1401,7 +1402,6 @@ describe('Contracts 6 - ICO finished test', function() {
      });
 });
 
-/*
 describe('Contracts 7 - Refund', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
@@ -1487,6 +1487,8 @@ describe('Contracts 7 - Refund', function() {
           // 1 ETH
           var amount = 1000000000000000000;
 
+          initialBalanceBuyer = web3.eth.getBalance(buyer);
+
           web3.eth.sendTransaction(
                {
                     from: buyer,               
@@ -1511,6 +1513,44 @@ describe('Contracts 7 - Refund', function() {
           );
      });
 
+     it('should buy tokens 2',function(done){
+          // 0.5 ETH
+          var amount = 500000000000000000;
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    var totalBalance = web3.eth.getBalance(goldmintContractAddress);
+                    assert.equal(totalBalance,1500000000000000000);
+
+                    var balance = mntContract.balanceOf(buyer);
+                    assert.equal(balance,ONE_HALF_TOKENS_PER_ETH);
+
+                    // new check
+                    goldmintContract.getTokensIcoSold((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,ONE_HALF_TOKENS_PER_ETH);
+
+                         done();
+                    });
+               }
+          );
+     });
+
+     it('should not get money back if not in Refund state',function(done){
+          var params = {from: buyer, gas: 2900000};
+          goldmintContract.getMyRefund(params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
      it('should change state to Refunding', function(done){
           initialMultisigBalance = web3.eth.getBalance(multisig);
 
@@ -1529,5 +1569,35 @@ describe('Contracts 7 - Refund', function() {
                });
           });
      });
+     
+     it('should not get money back if nothing bought',function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.getMyRefund(params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should get my money back if in Refund state',function(done){
+          var params = {from: buyer, gas: 2900000};
+          goldmintContract.getMyRefund(params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balanceTokens = mntContract.balanceOf(buyer);
+               assert.equal(balanceTokens,0);
+
+               var totalBalance = web3.eth.getBalance(goldmintContractAddress);
+               assert.equal(totalBalance,0);
+
+               var balanceAfter = web3.eth.getBalance(buyer);
+
+               // the diff is GAS
+               // 27499999999818470852
+               // 27499999999821560052
+               var gasDiff = 100000000
+               assert.equal((initialBalanceBuyer - balanceAfter <= gasDiff),true);
+
+               done();
+          });
+     });
 });
-*/

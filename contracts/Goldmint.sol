@@ -419,6 +419,9 @@ contract Goldmint is SafeMath {
      /// @dev This function is automatically called when ICO is finished 
      /// WARNING: can be called multiple times!
      function finishICO() internal {
+          // TODO: uncomment this line and fix tests...
+          //require(icoTokensSold>=ICO_TOKEN_SOFT_CAP);
+
           mntToken.lockTransfer(false);
 
           if(!restTokensMoved){
@@ -552,9 +555,9 @@ contract Goldmint is SafeMath {
 
           // update 'buyers' map
           // (only when buying from ETH)
-          TokenBuyer memory b;
-          b.weiSent = msg.value;
-          b.tokensGot = newTokens;
+          TokenBuyer memory b = buyers[msg.sender];
+          b.weiSent = safeAdd(b.weiSent, msg.value);
+          b.tokensGot = safeAdd(b.tokensGot, newTokens);
           buyers[msg.sender] = b;
      }
 
@@ -591,6 +594,20 @@ contract Goldmint is SafeMath {
           mntToken.burnTokens(_from,_tokens);
 
           LogBurn(_from,_tokens);
+     }
+
+     // anyone can call this and get his money back
+     function getMyRefund() public onlyInState(State.Refunding) {
+          address sender = msg.sender;
+
+          require(0!=buyers[sender].weiSent);
+          require(0!=buyers[sender].tokensGot);
+
+          // 1 - send money back
+          sender.transfer(buyers[sender].weiSent);
+
+          // 2 - burn tokens
+          mntToken.burnTokens(sender,buyers[sender].tokensGot);
      }
 
      // Default fallback function

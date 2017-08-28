@@ -86,7 +86,7 @@ contract MNTP is StdToken {
      bool public lockTransfers = false;
 
      // 10 mln
-     uint public constant TOTAL_TOKEN_SUPPLY = 10000000 * (1 ether / 1 wei);
+     uint public constant TOTAL_TOKEN_SUPPLY = 10000000 * 1 ether;
 
 /// Modifiers:
      modifier onlyCreator() { 
@@ -114,7 +114,7 @@ contract MNTP is StdToken {
           creator = msg.sender;
 
           // 10 mln tokens total
-          assert(TOTAL_TOKEN_SUPPLY == (10000000 * (1 ether / 1 wei)));
+          assert(TOTAL_TOKEN_SUPPLY == 10000000 * 1 ether);
      }
 
      /// @dev Override
@@ -278,13 +278,13 @@ contract Goldmint is SafeMath {
 
 ///////     
      // 1 000 000 tokens
-     uint public constant BONUS_REWARD = 1000000 * (1 ether/ 1 wei);
+     uint public constant BONUS_REWARD = 1000000 * 1 ether;
      // 2 000 000 tokens
-     uint public constant FOUNDERS_REWARD = 2000000 * (1 ether / 1 wei);
+     uint public constant FOUNDERS_REWARD = 2000000 * 1 ether;
      // 7 000 000 we sell only this amount of tokens during the ICO
-     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7000000 * (1 ether / 1 wei); 
+     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7000000 * 1 ether;
      // 150 000 tokens soft cap
-     uint public constant ICO_TOKEN_SOFT_CAP = 150000 * (1 ether / 1 wei);
+     uint public constant ICO_TOKEN_SOFT_CAP = 150000 * 1 ether;
      
      // this is total number of tokens sold during ICO
      uint public icoTokensSold = 0;
@@ -488,7 +488,7 @@ contract Goldmint is SafeMath {
 
      function getMntTokensPerEth(uint tokensSold) public constant returns (uint){
           // 10 buckets
-          uint priceIndex = (tokensSold / (1 ether/ 1 wei)) / SINGLE_BLOCK_LEN;
+          uint priceIndex = (tokensSold / 1 ether) / SINGLE_BLOCK_LEN;
           assert(priceIndex>=0 && (priceIndex<=9));
           
           uint8[10] memory discountPercents = [20,15,10,8,6,4,2,0,0,0];
@@ -496,11 +496,11 @@ contract Goldmint is SafeMath {
           // We have to multiply by '1 ether' to avoid float truncations
           // Example: ($7000 * 100) / 120 = $5833.33333
           uint pricePer1000tokensUsd = 
-               ((STD_PRICE_USD_PER_1000_TOKENS * 100) * (1 ether / 1 wei)) / (100 + discountPercents[priceIndex]);
+               ((STD_PRICE_USD_PER_1000_TOKENS * 100) * 1 ether) / (100 + discountPercents[priceIndex]);
 
           // Correct: 300000 / 5833.33333333 = 51.42857142
           // We have to multiply by '1 ether' to avoid float truncations
-          uint mntPerEth = (ETH_PRICE_IN_USD * 1000 * (1 ether / 1 wei) * (1 ether / 1 wei)) / pricePer1000tokensUsd;
+          uint mntPerEth = (ETH_PRICE_IN_USD * 1000 * 1 ether * 1 ether) / pricePer1000tokensUsd;
           return mntPerEth;
      }
 
@@ -512,7 +512,7 @@ contract Goldmint is SafeMath {
           //   1. if currently we sold 699950 tokens (the price is 10% discount)
           //   2. buyer buys 1000 tokens
           //   3. the price of all 1000 tokens would be with 10% discount!!!
-          uint newTokens = (msg.value * getMntTokensPerEth(icoTokensSold)) / (1 ether / 1 wei);
+          uint newTokens = (msg.value * getMntTokensPerEth(icoTokensSold)) / 1 ether;
 
           issueTokensInternal(_buyer,newTokens);
 
@@ -528,7 +528,7 @@ contract Goldmint is SafeMath {
      function issueTokensFromOtherCurrency(address _to, uint _wei_count) onlyInState(State.ICORunning) public onlyOtherCurrenciesChecker {
           require(_wei_count!=0);
 
-          uint newTokens = (_wei_count * getMntTokensPerEth(icoTokensSold)) / (1 ether / 1 wei);
+          uint newTokens = (_wei_count * getMntTokensPerEth(icoTokensSold)) / 1 ether;
           issueTokensInternal(_to,newTokens);
      }
 

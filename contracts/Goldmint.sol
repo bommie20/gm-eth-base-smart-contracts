@@ -502,9 +502,7 @@ contract Goldmint is SafeMath {
                || (currentState == State.ICORunning && _nextState == State.ICOPaused)
                || (currentState == State.ICOPaused && _nextState == State.ICORunning)
                || (currentState == State.ICORunning && _nextState == State.ICOFinished)
-               || (currentState == State.ICORunning && _nextState == State.Refunding)
-               // TODO: don't allow this state change
-               || (currentState == State.ICOFinished && _nextState == State.ICORunning);
+               || (currentState == State.ICORunning && _nextState == State.Refunding);
 
           require(canSwitchState);
 

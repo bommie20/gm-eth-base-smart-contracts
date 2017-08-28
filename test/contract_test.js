@@ -327,23 +327,10 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           });
      });
 
-     it('should change state to ICORunning', function(done){
+     it('should NOT change state to ICORunning again', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(1, params, (err,res)=>{
-               assert.equal(err, null);
-
-               goldmintContract.currentState((err,res)=>{
-                    assert.equal(err, null);
-                    assert.equal(res,1);
-                    done();
-               });
-          });
-     });
-
-     it('should change state to ICOFinished again', function(done){
-          var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(3, params, (err,res)=>{
-               assert.equal(err, null);
+               assert.notEqual(err, null);
 
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -849,6 +836,23 @@ describe('Contracts 3 - ICO buy tests', function() {
           });
      });
 
+     it('should not buy tokens in ICOFinsihed state',function(done){
+          // 0.5 ETH
+          var amount = 500000000000000000;
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
      it('should transfer unsold tokens to GoldmintUnsold contract', function(done){
           // check that unsold tokens are transferred to GoldmintUnsold contract
           mntContract.totalSupply((err,res)=>{
@@ -1044,6 +1048,16 @@ describe('Contracts 4 - lock MNTP transfers', function() {
           });
      });
 
+     it('should not transfer MNTP tokens if ICO is not finished',function(done){
+          var params = {from: buyer, gas: 2900000};
+
+          var amount = 10;
+          mntContract.transfer(buyer2, amount, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
      it('should change state to ICOFinished', function(done){
           // finish
           var params = {from: creator, gas: 2900000};
@@ -1081,33 +1095,10 @@ describe('Contracts 4 - lock MNTP transfers', function() {
           });
      });
 
-     it('should change state to ICORunning again', function(done){
+     it('should not change state to ICORunning again', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(1, params, (err,res)=>{
-               assert.equal(err, null);
-
-               goldmintContract.currentState((err,res)=>{
-                    assert.equal(err, null);
-                    assert.equal(res,1);
-                    done();
-               });
-          });
-     });
-
-     it('should not transfer MNTP tokens if ICO is not finished',function(done){
-          var params = {from: buyer, gas: 2900000};
-
-          var amount = 10;
-          mntContract.transfer(buyer2, amount, params, (err,res)=>{
                assert.notEqual(err, null);
-               done();
-          });
-     });
-
-     it('should change state to ICORunning again', function(done){
-          var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(3, params, (err,res)=>{
-               assert.equal(err, null);
 
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);

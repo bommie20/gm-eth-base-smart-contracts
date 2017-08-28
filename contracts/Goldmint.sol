@@ -55,17 +55,17 @@ contract StdToken is SafeMath {
           return true;
      }
 
-     function balanceOf(address _owner) constant returns (uint256 balance) {
+     function balanceOf(address _owner) constant returns (uint256) {
           return balances[_owner];
      }
 
-     function approve(address _spender, uint256 _value) returns (bool success) {
+     function approve(address _spender, uint256 _value) returns (bool) {
           allowed[msg.sender][_spender] = _value;
           Approval(msg.sender, _spender, _value);
           return true;
      }
 
-     function allowance(address _owner, address _spender) constant returns (uint256 remaining) {
+     function allowance(address _owner, address _spender) constant returns (uint256) {
           return allowed[_owner][_spender];
      }
 

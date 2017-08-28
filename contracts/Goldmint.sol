@@ -153,18 +153,18 @@ contract MNTP is StdToken {
 
      /// @dev Override
      function transfer(address _to, uint256 _value) public returns(bool){
-          assert(!lockTransfers);
+          require(!lockTransfers);
           return super.transfer(_to,_value);
      }
 
      /// @dev Override
      function transferFrom(address _from, address _to, uint256 _value) public returns(bool){
-          assert(!lockTransfers);
+          require(!lockTransfers);
           return super.transferFrom(_from,_to,_value);
      }
 
      function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {
-          assert((totalSupply + _tokens) <= TOTAL_TOKEN_SUPPLY);
+          require((totalSupply + _tokens) <= TOTAL_TOKEN_SUPPLY);
 
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
@@ -181,7 +181,7 @@ contract MNTP is StdToken {
 
      // Do not allow to send money directly to this contract
      function() {
-          assert(false);
+          require(false);
      }
 }
 
@@ -218,7 +218,7 @@ contract GoldmintUnsold is SafeMath {
      }
 
      // only by Goldmint contract 
-     function icoIsFinished() public onlyIcoContract {
+     function finishIco() public onlyIcoContract {
           icoIsFinishedDate = uint64(now);
      }
 
@@ -226,7 +226,7 @@ contract GoldmintUnsold is SafeMath {
      function withdrawTokens() public {
           // wait for 1 year!
           uint64 oneYearPassed = icoIsFinishedDate + 365 days;  
-          assert(uint(now) >= oneYearPassed);
+          require(uint(now) >= oneYearPassed);
 
           // transfer all tokens from this contract to the teamAccountAddress
           uint total = mntToken.balanceOf(this);
@@ -235,7 +235,7 @@ contract GoldmintUnsold is SafeMath {
 
      // Default fallback function
      function() payable {
-          assert(false);
+          require(false);
      }
 }
 
@@ -259,14 +259,14 @@ contract FoundersVesting is SafeMath {
      function withdrawTokens() public {
           // 1 - wait for next month!
           uint64 oneMonth = lastWithdrawTime + 30 days;  
-          assert(uint(now) >= oneMonth);
+          require(uint(now) >= oneMonth);
 
           // 2 - calculate amount (only first time)
           if(withdrawsCount==0){
                amountToSend = mntToken.balanceOf(this) / 10;
           }
 
-          assert(amountToSend!=0);
+          require(amountToSend!=0);
 
           // 3 - send 1/10th
           uint currentBalance = mntToken.balanceOf(this);
@@ -282,7 +282,7 @@ contract FoundersVesting is SafeMath {
 
      // Default fallback function
      function() payable {
-          assert(false);
+          require(false);
      }
 }
 
@@ -410,13 +410,13 @@ contract Goldmint is SafeMath {
                icoTokensUnsold = safeSub(ICO_TOKEN_SUPPLY_LIMIT,icoTokensSold);
                if(icoTokensUnsold>0){
                     mntToken.issueTokens(unsoldContract,icoTokensUnsold);
-                    unsoldContract.icoIsFinished();
+                    unsoldContract.finishIco();
                }
           }
 
           // send all ETH to multisig
           if(this.balance>0){
-               require(multisigAddress.send(this.balance));
+               multisigAddress.transfer(this.balance);
           }
      }
 

@@ -49,6 +49,7 @@ var BONUS_SHOULD_BE = 1000000 * 1000000000000000000;
 // 9000000000000000000000000
 var TOTAL_SUPPLY_SHOULD_BE = new BigNumber(FOUNDERS_BALANCE_SHOULD_BE).plus(new BigNumber(ICO_TOTAL_SELLING_SHOULD_BE));
 var TOKENS_PER_ETH = 51428571428571428571;
+var ONE_HALF_TOKENS_PER_ETH = 77142857142857142856;
 
 /*
 // TEST:
@@ -327,23 +328,10 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           });
      });
 
-     it('should change state to ICORunning', function(done){
+     it('should NOT change state to ICORunning again', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(1, params, (err,res)=>{
-               assert.equal(err, null);
-
-               goldmintContract.currentState((err,res)=>{
-                    assert.equal(err, null);
-                    assert.equal(res,1);
-                    done();
-               });
-          });
-     });
-
-     it('should change state to ICOFinished again', function(done){
-          var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(3, params, (err,res)=>{
-               assert.equal(err, null);
+               assert.notEqual(err, null);
 
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -849,6 +837,23 @@ describe('Contracts 3 - ICO buy tests', function() {
           });
      });
 
+     it('should not buy tokens in ICOFinsihed state',function(done){
+          // 0.5 ETH
+          var amount = 500000000000000000;
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
      it('should transfer unsold tokens to GoldmintUnsold contract', function(done){
           // check that unsold tokens are transferred to GoldmintUnsold contract
           mntContract.totalSupply((err,res)=>{
@@ -1044,6 +1049,16 @@ describe('Contracts 4 - lock MNTP transfers', function() {
           });
      });
 
+     it('should not transfer MNTP tokens if ICO is not finished',function(done){
+          var params = {from: buyer, gas: 2900000};
+
+          var amount = 10;
+          mntContract.transfer(buyer2, amount, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
      it('should change state to ICOFinished', function(done){
           // finish
           var params = {from: creator, gas: 2900000};
@@ -1081,33 +1096,10 @@ describe('Contracts 4 - lock MNTP transfers', function() {
           });
      });
 
-     it('should change state to ICORunning again', function(done){
+     it('should not change state to ICORunning again', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(1, params, (err,res)=>{
-               assert.equal(err, null);
-
-               goldmintContract.currentState((err,res)=>{
-                    assert.equal(err, null);
-                    assert.equal(res,1);
-                    done();
-               });
-          });
-     });
-
-     it('should not transfer MNTP tokens if ICO is not finished',function(done){
-          var params = {from: buyer, gas: 2900000};
-
-          var amount = 10;
-          mntContract.transfer(buyer2, amount, params, (err,res)=>{
                assert.notEqual(err, null);
-               done();
-          });
-     });
-
-     it('should change state to ICORunning again', function(done){
-          var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(3, params, (err,res)=>{
-               assert.equal(err, null);
 
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -1205,18 +1197,6 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
                                    });
                          });
                     });
-               });
-          });
-     });
-
-     it('should set creator', function(done){
-          var params = {from: creator, gas: 2900000};
-          mntContract.setCreator(creator2, params, (err,res)=>{
-               assert.equal(err,null);
-               mntContract.creator((err,res)=>{
-                    assert.equal(err,null);
-                    assert.equal(res,creator2);
-                    done();
                });
           });
      });
@@ -1367,18 +1347,6 @@ describe('Contracts 6 - ICO finished test', function() {
           });
      });
 
-     it('should set creator', function(done){
-          var params = {from: creator, gas: 2900000};
-          mntContract.setCreator(creator2, params, (err,res)=>{
-               assert.equal(err,null);
-               mntContract.creator((err,res)=>{
-                    assert.equal(err,null);
-                    assert.equal(res,creator2);
-                    done();
-               });
-          });
-     });
-
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(1, params, (err,res)=>{
@@ -1430,6 +1398,206 @@ describe('Contracts 6 - ICO finished test', function() {
                     assert.equal(res,3);
                     done();
                });
+          });
+     });
+});
+
+describe('Contracts 7 - Refund', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+               creator2 = accounts[4];
+               tokenManager = accounts[5];
+               unsoldTokensReward = accounts[6];
+               multisig = accounts[7];
+
+               var contractName = ':MNTP';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployUnsoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployFoundersVestingContract(data,function(err){
+                         assert.equal(err,null);
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+
+                              mntContract.setIcoContractAddress(
+                                   goldmintContractAddress,
+                                   {
+                                        from: creator,               
+                                        gas: 2900000 
+                                   },function(err,result){
+
+                                        unsoldContract.setIcoContractAddress(
+                                             goldmintContractAddress,
+                                             {
+                                                  from: creator,               
+                                                  gas: 2900000 
+                                             },function(err,result){
+                                                  assert.equal(err,null);
+                                                  done();
+                                        });
+                                   });
+                         });
+                    });
+               });
+          });
+     });
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(1, params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should buy tokens 1',function(done){
+          // 1 ETH
+          var amount = 1000000000000000000;
+
+          initialBalanceBuyer = web3.eth.getBalance(buyer);
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    // 51.43 MNTP tokens per 1 ETH
+                    var balance = mntContract.balanceOf(buyer);
+                    assert.equal(balance,TOKENS_PER_ETH);
+
+                    // new check
+                    goldmintContract.getTokensIcoSold((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,TOKENS_PER_ETH);
+
+                         done();
+                    });
+               }
+          );
+     });
+
+     it('should buy tokens 2',function(done){
+          // 0.5 ETH
+          var amount = 500000000000000000;
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    var totalBalance = web3.eth.getBalance(goldmintContractAddress);
+                    assert.equal(totalBalance,1500000000000000000);
+
+                    var balance = mntContract.balanceOf(buyer);
+                    assert.equal(balance,ONE_HALF_TOKENS_PER_ETH);
+
+                    // new check
+                    goldmintContract.getTokensIcoSold((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,ONE_HALF_TOKENS_PER_ETH);
+
+                         done();
+                    });
+               }
+          );
+     });
+
+     it('should not get money back if not in Refund state',function(done){
+          var params = {from: buyer, gas: 2900000};
+          goldmintContract.getMyRefund(params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should change state to Refunding', function(done){
+          initialMultisigBalance = web3.eth.getBalance(multisig);
+
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(4, params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,4);
+
+                    // check multisig ETH balance
+                    var balanceAfter = web3.eth.getBalance(multisig);
+                    assert.equal(balanceAfter.toString(10),initialMultisigBalance.toString(10));
+
+                    done();
+               });
+          });
+     });
+     
+     it('should not get money back if nothing bought',function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.getMyRefund(params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should get my money back if in Refund state',function(done){
+          var params = {from: buyer, gas: 2900000};
+          goldmintContract.getMyRefund(params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balanceTokens = mntContract.balanceOf(buyer);
+               assert.equal(balanceTokens,0);
+
+               var totalBalance = web3.eth.getBalance(goldmintContractAddress);
+               assert.equal(totalBalance,0);
+
+               var balanceAfter = web3.eth.getBalance(buyer);
+
+               // the diff is GAS
+               // 27499999999818470852
+               // 27499999999821560052
+               var gasDiff = 100000000
+               assert.equal((initialBalanceBuyer - balanceAfter <= gasDiff),true);
+
+               done();
           });
      });
 });

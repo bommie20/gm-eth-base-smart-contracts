@@ -438,19 +438,9 @@ contract Goldmint is SafeMath {
      }
 
 ////
-     function isIcoFinished() public returns(bool){
-          if(icoStartedTime==0){return false;}          
-
-          // 1 - if time elapsed
-          uint64 oneMonth = icoStartedTime + 30 days;  
-          if(uint(now) > oneMonth){return true;}
-
-          // 2 - if all tokens are sold
-          if(icoTokensSold>=ICO_TOKEN_SUPPLY_LIMIT){
-               return true;
-          }
-
-          return false;
+     function isIcoFinished() constant public returns(bool) {
+          return icoStartedTime > 0
+            && (now > icoStartedTime + 30 days || icoTokensSold >= ICO_TOKEN_SUPPLY_LIMIT);
      }
 
      function setState(State _nextState) public {

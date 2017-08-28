@@ -1209,18 +1209,6 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
           });
      });
 
-     it('should set creator', function(done){
-          var params = {from: creator, gas: 2900000};
-          mntContract.setCreator(creator2, params, (err,res)=>{
-               assert.equal(err,null);
-               mntContract.creator((err,res)=>{
-                    assert.equal(err,null);
-                    assert.equal(res,creator2);
-                    done();
-               });
-          });
-     });
-
      it('should return 0 for total supply', function(done){
           var params = {from: creator2, gas: 2900000};
           mntContract.totalSupply((err,res)=>{
@@ -1367,18 +1355,6 @@ describe('Contracts 6 - ICO finished test', function() {
           });
      });
 
-     it('should set creator', function(done){
-          var params = {from: creator, gas: 2900000};
-          mntContract.setCreator(creator2, params, (err,res)=>{
-               assert.equal(err,null);
-               mntContract.creator((err,res)=>{
-                    assert.equal(err,null);
-                    assert.equal(res,creator2);
-                    done();
-               });
-          });
-     });
-
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
           goldmintContract.setState(1, params, (err,res)=>{
@@ -1433,3 +1409,134 @@ describe('Contracts 6 - ICO finished test', function() {
           });
      });
 });
+
+/*
+describe('Contracts 7 - Refund', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+               creator2 = accounts[4];
+               tokenManager = accounts[5];
+               unsoldTokensReward = accounts[6];
+               multisig = accounts[7];
+
+               var contractName = ':MNTP';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployUnsoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployFoundersVestingContract(data,function(err){
+                         assert.equal(err,null);
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+
+                              mntContract.setIcoContractAddress(
+                                   goldmintContractAddress,
+                                   {
+                                        from: creator,               
+                                        gas: 2900000 
+                                   },function(err,result){
+
+                                        unsoldContract.setIcoContractAddress(
+                                             goldmintContractAddress,
+                                             {
+                                                  from: creator,               
+                                                  gas: 2900000 
+                                             },function(err,result){
+                                                  assert.equal(err,null);
+                                                  done();
+                                        });
+                                   });
+                         });
+                    });
+               });
+          });
+     });
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(1, params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should buy tokens 1',function(done){
+          // 1 ETH
+          var amount = 1000000000000000000;
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    // 51.43 MNTP tokens per 1 ETH
+                    var balance = mntContract.balanceOf(buyer);
+                    assert.equal(balance,TOKENS_PER_ETH);
+
+                    // new check
+                    goldmintContract.getTokensIcoSold((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,TOKENS_PER_ETH);
+
+                         done();
+                    });
+               }
+          );
+     });
+
+     it('should change state to Refunding', function(done){
+          initialMultisigBalance = web3.eth.getBalance(multisig);
+
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.setState(4, params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,4);
+
+                    // check multisig ETH balance
+                    var balanceAfter = web3.eth.getBalance(multisig);
+                    assert.equal(balanceAfter.toString(10),initialMultisigBalance.toString(10));
+
+                    done();
+               });
+          });
+     });
+});
+*/

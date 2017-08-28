@@ -297,6 +297,12 @@ contract Goldmint is SafeMath {
      MNTP public mntToken; 
      GoldmintUnsold public unsoldContract;
 
+     struct TokenBuyer {
+          uint weiSent;
+          uint tokensGot;
+     }
+     mapping(address => TokenBuyer) buyers;
+
      // These can be changed before ICO start ($7USD/MNTP)
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 7000;
      // coinmarketcap.com 14.08.2017
@@ -311,6 +317,8 @@ contract Goldmint is SafeMath {
      uint public constant FOUNDERS_REWARD = 2000000 * (1 ether / 1 wei);
      // 7 000 000 we sell only this amount of tokens during the ICO
      uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7000000 * (1 ether / 1 wei); 
+     // 150 000 tokens soft cap
+     uint public constant ICO_TOKEN_SOFT_CAP = 150000 * (1 ether / 1 wei);
      
      // this is total number of tokens sold during ICO
      uint public icoTokensSold = 0;
@@ -332,7 +340,9 @@ contract Goldmint is SafeMath {
           ICORunning,
           ICOPaused,
          
-          ICOFinished
+          ICOFinished,
+
+          Refunding
      }
      State public currentState = State.Init;
 
@@ -396,6 +406,14 @@ contract Goldmint is SafeMath {
      }
 
      function pauseICO() internal onlyCreator {
+     }
+
+     function startRefunding() internal onlyCreator {
+          // only switch to this state if less than ICO_TOKEN_SOFT_CAP sold
+          require(icoTokensSold<ICO_TOKEN_SOFT_CAP);
+
+          // in this state tokens still shouldn't be transferred
+          assert(mntToken.lockTransfers());
      }
 
      /// @dev This function is automatically called when ICO is finished 
@@ -484,6 +502,8 @@ contract Goldmint is SafeMath {
                || (currentState == State.ICORunning && _nextState == State.ICOPaused)
                || (currentState == State.ICOPaused && _nextState == State.ICORunning)
                || (currentState == State.ICORunning && _nextState == State.ICOFinished)
+               || (currentState == State.ICORunning && _nextState == State.Refunding)
+               // TODO: don't allow this state change
                || (currentState == State.ICOFinished && _nextState == State.ICORunning);
 
           require(canSwitchState);
@@ -497,6 +517,8 @@ contract Goldmint is SafeMath {
                finishICO();
           }else if(currentState==State.ICOPaused){
                pauseICO();
+          }else if(currentState==State.Refunding){
+               startRefunding();
           }
      }
 
@@ -529,6 +551,13 @@ contract Goldmint is SafeMath {
           uint newTokens = (msg.value * getMntTokensPerEth(icoTokensSold)) / (1 ether / 1 wei);
 
           issueTokensInternal(_buyer,newTokens);
+
+          // update 'buyers' map
+          // (only when buying from ETH)
+          TokenBuyer memory b;
+          b.weiSent = msg.value;
+          b.tokensGot = newTokens;
+          buyers[msg.sender] = b;
      }
 
      /// @dev This is called by other currency processors to issue new tokens 

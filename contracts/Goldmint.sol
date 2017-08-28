@@ -248,7 +248,7 @@ contract FoundersVesting is SafeMath {
 
      // Default fallback function
      function() payable {
-          require(false);
+          revert();
      }
 }
 

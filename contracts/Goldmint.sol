@@ -263,11 +263,8 @@ contract Goldmint is SafeMath {
      MNTP public mntToken; 
      GoldmintUnsold public unsoldContract;
 
-     struct TokenBuyer {
-          uint weiSent;
-          uint tokensGot;
-     }
-     mapping(address => TokenBuyer) buyers;
+     // We count ETH invested by person, in case we need to make a refund.
+     mapping(address => uint) ethInvestedBy;
 
      // These can be changed before ICO start ($7USD/MNTP)
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 7000;
@@ -516,12 +513,8 @@ contract Goldmint is SafeMath {
 
           issueTokensInternal(_buyer,newTokens);
 
-          // update 'buyers' map
-          // (only when buying from ETH)
-          TokenBuyer memory b = buyers[msg.sender];
-          b.weiSent = safeAdd(b.weiSent, msg.value);
-          b.tokensGot = safeAdd(b.tokensGot, newTokens);
-          buyers[msg.sender] = b;
+          // Update this only when buying from ETH
+          ethInvestedBy[msg.sender] = safeAdd(ethInvestedBy[msg.sender], msg.value);
      }
 
      /// @dev This is called by other currency processors to issue new tokens 
@@ -562,15 +555,16 @@ contract Goldmint is SafeMath {
      // anyone can call this and get his money back
      function getMyRefund() public onlyInState(State.Refunding) {
           address sender = msg.sender;
+          uint ethValue = ethInvestedBy[sender];
 
-          require(0!=buyers[sender].weiSent);
-          require(0!=buyers[sender].tokensGot);
+          require(ethValue > 0);
 
           // 1 - send money back
-          sender.transfer(buyers[sender].weiSent);
+          sender.transfer(ethValue);
+          ethInvestedBy[sender] = 0;
 
           // 2 - burn tokens
-          mntToken.burnTokens(sender,buyers[sender].tokensGot);
+          mntToken.burnTokens(sender, mntToken.balanceOf(sender));
      }
 
      // Default fallback function

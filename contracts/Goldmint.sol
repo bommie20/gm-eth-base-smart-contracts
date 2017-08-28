@@ -181,7 +181,7 @@ contract MNTP is StdToken {
 
      // Do not allow to send money directly to this contract
      function() {
-          require(false);
+          revert();
      }
 }
 
@@ -235,7 +235,7 @@ contract GoldmintUnsold is SafeMath {
 
      // Default fallback function
      function() payable {
-          require(false);
+          revert();
      }
 }
 

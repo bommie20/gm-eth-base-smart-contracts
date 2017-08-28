@@ -291,9 +291,6 @@ contract Goldmint is SafeMath {
      // this is total number of tokens that were issued by a scripts
      uint public issuedExternallyTokens = 0;
 
-     bool public foundersRewardsMinted = false;
-     bool public restTokensMoved = false;
-
      // this is where FOUNDERS_REWARD will be allocated
      address public foundersRewardsAccount = 0x0;
 
@@ -356,56 +353,52 @@ contract Goldmint is SafeMath {
           foundersRewardsAccount = _foundersVestingAddress;
      }
 
-     /// @dev This function is automatically called when ICO is started
-     /// WARNING: can be called multiple times!
-     function startICO() internal onlyCreator {
-          mintFoundersRewards(foundersRewardsAccount);
-
+     function startICO() public onlyCreator onlyInState(State.Init) {
+          setState(State.ICORunning);
+          icoStartedTime = uint64(now);
           mntToken.lockTransfer(true);
-
-          if(icoStartedTime==0){
-               icoStartedTime = uint64(now);
-          }
+          mntToken.issueTokens(foundersRewardsAccount, FOUNDERS_REWARD);
      }
 
-     function pauseICO() internal onlyCreator {
+     function pauseICO() public onlyCreator onlyInState(State.ICORunning) {
+          setState(State.ICOPaused);
      }
 
-     function startRefunding() internal onlyCreator {
+     function resumeICO() public onlyCreator onlyInState(State.ICOPaused) {
+          setState(State.ICORunning);
+     }
+
+     function startRefunding() public onlyCreator onlyInState(State.ICORunning) {
           // only switch to this state if less than ICO_TOKEN_SOFT_CAP sold
-          require(icoTokensSold<ICO_TOKEN_SOFT_CAP);
+          require(icoTokensSold < ICO_TOKEN_SOFT_CAP);
+          setState(State.Refunding);
 
           // in this state tokens still shouldn't be transferred
           assert(mntToken.lockTransfers());
      }
 
-     /// @dev This function is automatically called when ICO is finished 
-     /// WARNING: can be called multiple times!
-     function finishICO() internal {
+     /// @dev This function can be called by creator at any time,
+     /// or by anyone if ICO has really finished.
+     function finishICO() public onlyInState(State.ICORunning) {
+          require(msg.sender == creator || isIcoFinished());
+
+          setState(State.ICOFinished);
           mntToken.lockTransfer(false);
 
-          if(!restTokensMoved){
-               restTokensMoved = true;
-
-               // move all unsold tokens to unsoldTokens contract
-               icoTokensUnsold = safeSub(ICO_TOKEN_SUPPLY_LIMIT,icoTokensSold);
-               if(icoTokensUnsold>0){
-                    mntToken.issueTokens(unsoldContract,icoTokensUnsold);
-                    unsoldContract.finishIco();
-               }
+          // move all unsold tokens to unsoldTokens contract
+          icoTokensUnsold = safeSub(ICO_TOKEN_SUPPLY_LIMIT,icoTokensSold);
+          if(icoTokensUnsold>0){
+               mntToken.issueTokens(unsoldContract,icoTokensUnsold);
+               unsoldContract.finishIco();
           }
 
           // send all ETH to multisig
-          if(this.balance>0){
-               multisigAddress.transfer(this.balance);
-          }
+          multisigAddress.transfer(this.balance);
      }
 
-     function mintFoundersRewards(address _whereToMint) internal onlyCreator {
-          if(!foundersRewardsMinted){
-               foundersRewardsMinted = true;
-               mntToken.issueTokens(_whereToMint,FOUNDERS_REWARD);
-          }
+     function setState(State _s) internal {
+          currentState = _s;
+          LogStateSwitch(_s);
      }
 
 /// Access methods:
@@ -425,36 +418,6 @@ contract Goldmint is SafeMath {
      function isIcoFinished() constant public returns(bool) {
           return icoStartedTime > 0
             && (now > icoStartedTime + 30 days || icoTokensSold >= ICO_TOKEN_SUPPLY_LIMIT);
-     }
-
-     function setState(State _nextState) public {
-          // only creator can change state
-          // but in case ICOFinished -> anyone can do that after all time is elapsed
-          bool icoShouldBeFinished = isIcoFinished();
-          bool allow = (msg.sender==creator) || (icoShouldBeFinished && (State.ICOFinished==_nextState));
-          require(allow);
-
-          bool canSwitchState
-               =  (currentState == State.Init && _nextState == State.ICORunning)
-               || (currentState == State.ICORunning && _nextState == State.ICOPaused)
-               || (currentState == State.ICOPaused && _nextState == State.ICORunning)
-               || (currentState == State.ICORunning && _nextState == State.ICOFinished)
-               || (currentState == State.ICORunning && _nextState == State.Refunding);
-
-          require(canSwitchState);
-
-          currentState = _nextState;
-          LogStateSwitch(_nextState);
-
-          if(currentState==State.ICORunning){
-               startICO();
-          }else if(currentState==State.ICOFinished){
-               finishICO();
-          }else if(currentState==State.ICOPaused){
-               pauseICO();
-          }else if(currentState==State.Refunding){
-               startRefunding();
-          }
      }
 
      function getMntTokensPerEth(uint tokensSold) public constant returns (uint){

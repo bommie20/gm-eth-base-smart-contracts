@@ -214,7 +214,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
 
      it('should not change state if not from creator', function(done){
           var params = {from: creator2, gas: 2900000};
-          goldmintContract.setState(1, params, (err,res)=>{
+          goldmintContract.startICO(params, (err,res)=>{
                assert.notEqual(err, null);
                done();
           });
@@ -222,7 +222,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
 
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(1, params, (err,res)=>{
+          goldmintContract.startICO(params, (err,res)=>{
                assert.equal(err, null);
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -234,7 +234,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
 
      it('should change state to ICOPaused', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(2, params, (err,res)=>{
+          goldmintContract.pauseICO(params, (err,res)=>{
                assert.equal(err, null);
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -258,7 +258,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                assert.equal(res,2);
 
                var params = {from: creator, gas: 2900000};
-               goldmintContract.setState(1, params, (err,res)=>{
+               goldmintContract.resumeICO(params, (err,res)=>{
                     assert.equal(err, null);
 
                     goldmintContract.currentState((err,res)=>{
@@ -293,7 +293,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
 
           // finish
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(3, params, (err,res)=>{
+          goldmintContract.finishICO(params, (err,res)=>{
                assert.equal(err, null);
 
                goldmintContract.currentState((err,res)=>{
@@ -330,7 +330,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
 
      it('should NOT change state to ICORunning again', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(1, params, (err,res)=>{
+          goldmintContract.startICO(params, (err,res)=>{
                assert.notEqual(err, null);
 
                goldmintContract.currentState((err,res)=>{
@@ -772,7 +772,7 @@ describe('Contracts 3 - ICO buy tests', function() {
 
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(1, params, (err,res)=>{
+          goldmintContract.startICO(params, (err,res)=>{
                assert.equal(err, null);
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -820,7 +820,7 @@ describe('Contracts 3 - ICO buy tests', function() {
 
           // finish
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(3, params, (err,res)=>{
+          goldmintContract.finishICO(params, (err,res)=>{
                assert.equal(err, null);
 
                goldmintContract.currentState((err,res)=>{
@@ -1000,7 +1000,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
 
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(1, params, (err,res)=>{
+          goldmintContract.startICO(params, (err,res)=>{
                assert.equal(err, null);
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -1062,7 +1062,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
      it('should change state to ICOFinished', function(done){
           // finish
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(3, params, (err,res)=>{
+          goldmintContract.finishICO(params, (err,res)=>{
                assert.equal(err, null);
 
                goldmintContract.currentState((err,res)=>{
@@ -1098,7 +1098,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
 
      it('should not change state to ICORunning again', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(1, params, (err,res)=>{
+          goldmintContract.startICO(params, (err,res)=>{
                assert.notEqual(err, null);
 
                goldmintContract.currentState((err,res)=>{
@@ -1226,7 +1226,7 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
                assert.equal(res,0);
 
                var params = {from: creator, gas: 2900000};
-               goldmintContract.setState(1, params, (err,res)=>{
+               goldmintContract.startICO(params, (err,res)=>{
                     assert.equal(err, null);
 
                     goldmintContract.currentState((err,res)=>{
@@ -1349,7 +1349,7 @@ describe('Contracts 6 - ICO finished test', function() {
 
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(1, params, (err,res)=>{
+          goldmintContract.startICO(params, (err,res)=>{
                assert.equal(err, null);
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -1361,7 +1361,7 @@ describe('Contracts 6 - ICO finished test', function() {
 
      it('should not change state if not creator', function(done){
           var params = {from: creator2, gas: 2900000};
-          goldmintContract.setState(3, params, (err,res)=>{
+          goldmintContract.finishICO(params, (err,res)=>{
                assert.notEqual(err, null);
 
                goldmintContract.currentState((err,res)=>{
@@ -1391,7 +1391,7 @@ describe('Contracts 6 - ICO finished test', function() {
           assert.equal(typeof(goldmintContract.finishICO),'undefined');
 
           var params = {from: creator2, gas: 2900000};
-          goldmintContract.setState(3, params, (err,res)=>{
+          goldmintContract.finishICO(params, (err,res)=>{
                assert.equal(err, null);
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -1473,7 +1473,7 @@ describe('Contracts 7 - Refund', function() {
 
      it('should change state to ICORunning', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(1, params, (err,res)=>{
+          goldmintContract.startICO(params, (err,res)=>{
                assert.equal(err, null);
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);
@@ -1555,7 +1555,7 @@ describe('Contracts 7 - Refund', function() {
           initialMultisigBalance = web3.eth.getBalance(multisig);
 
           var params = {from: creator, gas: 2900000};
-          goldmintContract.setState(4, params, (err,res)=>{
+          goldmintContract.startRefunding(params, (err,res)=>{
                assert.equal(err, null);
                goldmintContract.currentState((err,res)=>{
                     assert.equal(err, null);

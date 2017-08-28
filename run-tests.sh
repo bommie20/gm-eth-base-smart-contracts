@@ -5,9 +5,10 @@
 
 env ETH_NODE=http://localhost:8989 mocha --reporter spec -t 90000 
 
+#-g "Contracts 2"
+
 #-g "Price"
 
-#-g "Contracts"
 
 
 

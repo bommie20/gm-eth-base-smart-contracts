@@ -752,11 +752,11 @@ describe('Contracts 3 - ICO buy tests', function() {
      });
 
      it('should get all frontend data', function(done){
-          goldmintContract.getTokensIcoSold((err,res)=>{
+          goldmintContract.icoTokensSold((err,res)=>{
                assert.equal(err,null);
                assert.equal(res,0);
 
-               goldmintContract.getTotalIcoTokens((err,res)=>{
+               goldmintContract.icoTokensSold((err,res)=>{
                     assert.equal(err,null);
                     assert.equal(res,ICO_TOTAL_SELLING_SHOULD_BE);
 
@@ -800,7 +800,7 @@ describe('Contracts 3 - ICO buy tests', function() {
                     assert.equal(balance,TOKENS_PER_ETH);
 
                     // new check
-                    goldmintContract.getTokensIcoSold((err,res)=>{
+                    goldmintContract.icoTokensSold((err,res)=>{
                          assert.equal(err,null);
                          assert.equal(res,TOKENS_PER_ETH);
 
@@ -1503,7 +1503,7 @@ describe('Contracts 7 - Refund', function() {
                     assert.equal(balance,TOKENS_PER_ETH);
 
                     // new check
-                    goldmintContract.getTokensIcoSold((err,res)=>{
+                    goldmintContract.icoTokensSold((err,res)=>{
                          assert.equal(err,null);
                          assert.equal(res,TOKENS_PER_ETH);
 
@@ -1533,7 +1533,7 @@ describe('Contracts 7 - Refund', function() {
                     assert.equal(balance,ONE_HALF_TOKENS_PER_ETH);
 
                     // new check
-                    goldmintContract.getTokensIcoSold((err,res)=>{
+                    goldmintContract.icoTokensSold((err,res)=>{
                          assert.equal(err,null);
                          assert.equal(res,ONE_HALF_TOKENS_PER_ETH);
 

@@ -417,24 +417,8 @@ contract Goldmint is SafeMath {
           otherCurrenciesChecker = _new;
      }
 
-     function getTokensIcoSold() constant public returns (uint){
-          return icoTokensSold;
-     }
-
-     function getTotalIcoTokens() constant public returns (uint){
-          return ICO_TOKEN_SUPPLY_LIMIT;
-     }
-
-     function getMntTokenBalance(address _of) constant public returns (uint){
-          return mntToken.balanceOf(_of);
-     }
-
      function getCurrentPrice()constant public returns (uint){
           return getMntTokensPerEth(icoTokensSold);
-     }
-
-     function getBlockLength()constant public returns (uint){
-          return SINGLE_BLOCK_LEN;
      }
 
 ////

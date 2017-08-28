@@ -419,9 +419,6 @@ contract Goldmint is SafeMath {
      /// @dev This function is automatically called when ICO is finished 
      /// WARNING: can be called multiple times!
      function finishICO() internal {
-          // TODO: uncomment this line and fix tests...
-          //require(icoTokensSold>=ICO_TOKEN_SOFT_CAP);
-
           mntToken.lockTransfer(false);
 
           if(!restTokensMoved){

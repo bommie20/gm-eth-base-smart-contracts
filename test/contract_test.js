@@ -282,7 +282,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           // check preconditions
           var moved = goldmintContract.icoTokensUnsold();
           assert.equal(moved,0);
-          assert.equal(goldmintContract.restTokensMoved(),false);
+          //assert.equal(goldmintContract.restTokensMoved(),false);
           var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
           assert.equal(unsoldBalance,0);
 
@@ -319,7 +319,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                moved = goldmintContract.icoTokensUnsold();
                assert.equal(moved,ICO_TOTAL_SELLING_SHOULD_BE);
 
-               assert.equal(goldmintContract.restTokensMoved(),true);
+               //assert.equal(goldmintContract.restTokensMoved(),true);
 
                unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
                assert.equal(unsoldBalance,ICO_TOTAL_SELLING_SHOULD_BE);
@@ -350,7 +350,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                var moved = goldmintContract.icoTokensUnsold();
                assert.equal(moved,ICO_TOTAL_SELLING_SHOULD_BE);
 
-               assert.equal(goldmintContract.restTokensMoved(),true);
+               //assert.equal(goldmintContract.restTokensMoved(),true);
 
                var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
                assert.equal(unsoldBalance,ICO_TOTAL_SELLING_SHOULD_BE);
@@ -814,7 +814,7 @@ describe('Contracts 3 - ICO buy tests', function() {
           // check preconditions
           var moved = goldmintContract.icoTokensUnsold();
           assert.equal(moved,0);
-          assert.equal(goldmintContract.restTokensMoved(),false);
+          //assert.equal(goldmintContract.restTokensMoved(),false);
           var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
           assert.equal(unsoldBalance,0);
 
@@ -869,9 +869,9 @@ describe('Contracts 3 - ICO buy tests', function() {
                //assert.equal(moved,shouldBe);
 
                // TODO: not working with different params than default!
-               //assert.equal(moved,ICO_TOTAL_SELLING_SHOULD_BE - TOKENS_PER_ETH);
+               assert.equal(moved,ICO_TOTAL_SELLING_SHOULD_BE - TOKENS_PER_ETH);
 
-               assert.equal(goldmintContract.restTokensMoved(),true);
+               //assert.equal(goldmintContract.restTokensMoved(),true);
 
                unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
                assert.equal(unsoldBalance.toString(10),moved.toString(10));

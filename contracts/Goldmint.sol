@@ -19,7 +19,6 @@ contract SafeMath {
      }
 }
 
-
 contract StdToken is SafeMath {
      // Fields:
      mapping(address => uint256) balances;
@@ -410,11 +409,28 @@ contract Goldmint is SafeMath {
           otherCurrenciesChecker = _new;
      }
 
+// These are used by frontend so we can not remove them
+     function getTokensIcoSold() constant public returns (uint){          
+          return icoTokensSold;       
+     }      
+     
+     function getTotalIcoTokens() constant public returns (uint){          
+          return ICO_TOKEN_SUPPLY_LIMIT;         
+     }       
+     
+     function getMntTokenBalance(address _of) constant public returns (uint){         
+          return mntToken.balanceOf(_of);         
+     }        
+
+     function getBlockLength()constant public returns (uint){          
+          return SINGLE_BLOCK_LEN;      
+     }
+
      function getCurrentPrice()constant public returns (uint){
           return getMntTokensPerEth(icoTokensSold);
      }
 
-////
+/////////////////////////////
      function isIcoFinished() constant public returns(bool) {
           return icoStartedTime > 0
             && (now > icoStartedTime + 30 days || icoTokensSold >= ICO_TOKEN_SUPPLY_LIMIT);

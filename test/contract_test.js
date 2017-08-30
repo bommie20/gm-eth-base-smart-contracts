@@ -756,7 +756,7 @@ describe('Contracts 3 - ICO buy tests', function() {
                assert.equal(err,null);
                assert.equal(res,0);
 
-               goldmintContract.icoTokensSold((err,res)=>{
+               goldmintContract.getTotalIcoTokens((err,res)=>{
                     assert.equal(err,null);
                     assert.equal(res,ICO_TOTAL_SELLING_SHOULD_BE);
 
@@ -1388,8 +1388,6 @@ describe('Contracts 6 - ICO finished test', function() {
      });
 
      it('should change state if not creator if ICO is finished', function(done){
-          assert.equal(typeof(goldmintContract.finishICO),'undefined');
-
           var params = {from: creator2, gas: 2900000};
           goldmintContract.finishICO(params, (err,res)=>{
                assert.equal(err, null);

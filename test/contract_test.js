@@ -402,7 +402,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
 
      it('should not burn creator2 tokens if not from token manager', function(done){
           var params = {from: creator, gas: 2900000};
-          goldmintContract.burnTokens(creator2, ISSUE_EXTERNALLY, params, (err,res)=>{
+          mntContract.burnTokens(creator2, ISSUE_EXTERNALLY, params, (err,res)=>{
                assert.notEqual(err, null);
 
                mntContract.balanceOf(creator2, (err,res)=>{
@@ -414,22 +414,10 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           });
      });
 
-     it('should not burn creator2 tokens if bigger than balance', function(done){
-          var params = {from: tokenManager, gas: 2900000};
-          goldmintContract.burnTokens(creator2, 2000000000000000000, params, (err,res)=>{
-               assert.notEqual(err, null);
-
-               mntContract.balanceOf(creator2, (err,res)=>{
-                    assert.equal(err, null);
-                    assert.equal(res.toString(10),ISSUE_EXTERNALLY);
-                    done();
-               });
-          });
-     });
-
+     /*
      it('should not burn creator2 tokens if bigger than balance 2', function(done){
           var params = {from: tokenManager, gas: 2900000};
-          goldmintContract.burnTokens(creator2, ISSUE_EXTERNALLY + 100, params, (err,res)=>{
+          mntContract.burnTokens(creator2, ISSUE_EXTERNALLY + 100, params, (err,res)=>{
                assert.notEqual(err, null);
 
                mntContract.balanceOf(creator2, (err,res)=>{
@@ -463,6 +451,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                });
           });
      });
+     */
 
      it('should not issue additional tokens if more than max', function(done){
           var params = {from: tokenManager, gas: 2900000};

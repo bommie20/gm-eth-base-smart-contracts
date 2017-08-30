@@ -93,8 +93,8 @@ contract MNTP is StdToken {
           _; 
      }
 
-     modifier byCreatorOrIcoContract() { 
-          require((msg.sender == creator) || (msg.sender == icoContractAddress)); 
+     modifier byIcoContract() { 
+          require(msg.sender == icoContractAddress); 
           _; 
      }
 
@@ -128,19 +128,19 @@ contract MNTP is StdToken {
           return super.transferFrom(_from,_to,_value);
      }
 
-     function issueTokens(address _who, uint _tokens) byCreatorOrIcoContract {
+     function issueTokens(address _who, uint _tokens) byIcoContract {
           require((totalSupply + _tokens) <= TOTAL_TOKEN_SUPPLY);
 
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
      }
 
-     function burnTokens(address _who, uint _tokens) byCreatorOrIcoContract {
+     function burnTokens(address _who, uint _tokens) byIcoContract {
           balances[_who] = safeSub(balances[_who], _tokens);
           totalSupply = safeSub(totalSupply, _tokens);
      }
 
-     function lockTransfer(bool _lock) byCreatorOrIcoContract {
+     function lockTransfer(bool _lock) byIcoContract {
           lockTransfers = _lock;
      }
 
@@ -497,12 +497,6 @@ contract Goldmint is SafeMath {
           icoTokensSold+=_tokens;
 
           LogBuy(_to,_tokens);
-     }
-
-     function burnTokens(address _from, uint _tokens) public onlyInState(State.ICOFinished) onlyTokenManager {
-          mntToken.burnTokens(_from,_tokens);
-
-          LogBurn(_from,_tokens);
      }
 
      // anyone can call this and get his money back

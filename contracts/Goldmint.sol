@@ -499,6 +499,12 @@ contract Goldmint is SafeMath {
           LogBuy(_to,_tokens);
      }
 
+     function burnTokens(address _from, uint _tokens) public onlyInState(State.ICOFinished) onlyTokenManager {      
+        mntToken.burnTokens(_from,_tokens);        
+
+        LogBurn(_from,_tokens);      
+    }
+
      // anyone can call this and get his money back
      function getMyRefund() public onlyInState(State.Refunding) {
           address sender = msg.sender;

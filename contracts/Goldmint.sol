@@ -301,7 +301,14 @@ contract Goldmint is SafeMath {
          
           ICOFinished,
 
-          Refunding
+          // We start to refund if Soft Cap is not reached.
+          // Then each token holder request his money back and his
+          // tokens are burned.
+          Refunding,
+
+          // In this state we lock all MNT tokens forever.
+          // There is no any possibility to move back
+          Migrating
      }
      State public currentState = State.Init;
 
@@ -374,6 +381,14 @@ contract Goldmint is SafeMath {
 
           // in this state tokens still shouldn't be transferred
           assert(mntToken.lockTransfers());
+     }
+
+     function startMigration() public onlyCreator onlyInState(State.ICOFinished) {
+          // there is no way back...
+          setState(State.Migrating);
+
+          // disable token transfers
+          mntToken.lockTransfer(true);
      }
 
      /// @dev This function can be called by creator at any time,

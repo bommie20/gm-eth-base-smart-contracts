@@ -1599,3 +1599,218 @@ describe('Contracts 7 - Refund', function() {
           });
      });
 });
+
+describe('Contracts 8 - migrate', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+               creator2 = accounts[4];
+               tokenManager = accounts[5];
+               unsoldTokensReward = accounts[6];
+               multisig = accounts[7];
+
+               var contractName = ':MNTP';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployUnsoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployFoundersVestingContract(data,function(err){
+                         assert.equal(err,null);
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+                              done();
+                         });
+                    });
+               });
+          });
+     });
+
+     it('should set Goldmint token address to MNTP contract',function(done){
+          mntContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should set Goldmint token address to Unsold contract',function(done){
+          unsoldContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.startICO(params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should buy tokens 1',function(done){
+          // 1 ETH
+          var amount = 1000000000000000000;
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    // 53.5 MNTP tokens per 1 ETH
+                    var balance = mntContract.balanceOf(buyer);
+                    assert.equal(balance,TOKENS_PER_ETH);
+                    done();
+               }
+          );
+     });
+
+     it('should not transfer MNTP tokens if ICO is not finished',function(done){
+          var params = {from: buyer, gas: 2900000};
+
+          var balance1 = mntContract.balanceOf(buyer2);
+          assert.equal(balance1,0);
+
+          //var amount = TOKENS_PER_ETH;
+          var amount = 10;
+          mntContract.transfer(buyer2, amount, params, (err,res)=>{
+               assert.notEqual(err, null);
+
+               var balance = mntContract.balanceOf(buyer);
+               assert.equal(balance,TOKENS_PER_ETH);
+               
+               done();
+          });
+     });
+
+     it('should not transfer MNTP tokens if ICO is not finished',function(done){
+          var params = {from: buyer, gas: 2900000};
+
+          var amount = 10;
+          mntContract.transfer(buyer2, amount, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should change state to ICOFinished', function(done){
+          // finish
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.finishICO(params, (err,res)=>{
+               assert.equal(err, null);
+
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,3);
+                    done();
+               });
+          });
+     });
+
+     it('should transfer MNTP tokens if ICO is finished',function(done){
+          var params = {from: buyer, gas: 2900000};
+
+          var balance = mntContract.balanceOf(buyer);
+          assert.equal(balance,TOKENS_PER_ETH);
+
+          var balance1 = mntContract.balanceOf(buyer2);
+          assert.equal(balance1,0);
+
+          var amount = 10;
+          mntContract.transfer(buyer2, amount, params, (err,res)=>{
+               assert.equal(err, null);
+
+               balance1 = mntContract.balanceOf(buyer2);
+               assert.equal(balance1,amount);
+               
+               var balanceNew = mntContract.balanceOf(buyer);
+               assert.equal(balanceNew,balance - 10);
+
+               done();
+          });
+     });
+
+     it('should change state to Migrating', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.startMigration(params, (err,res)=>{
+               assert.equal(err, null);
+
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,5);
+                    done();
+               });
+          });
+     });
+
+     it('should not transfer MNTP tokens if in migration state',function(done){
+          var params = {from: buyer2, gas: 2900000};
+
+          var balance = mntContract.balanceOf(buyer2);
+          assert.equal(balance,10);
+
+          var balance1 = mntContract.balanceOf(buyer);
+          assert.equal(balance1,TOKENS_PER_ETH - 10);
+
+          var amount = 10;
+          mntContract.transfer(buyer, amount, params, (err,res)=>{
+               assert.notEqual(err, null);
+
+               balance1 = mntContract.balanceOf(buyer);
+               assert.equal(balance1,TOKENS_PER_ETH - 10);
+               
+               var balanceNew = mntContract.balanceOf(buyer2);
+               assert.equal(balanceNew,10);
+
+               done();
+          });
+     });
+})

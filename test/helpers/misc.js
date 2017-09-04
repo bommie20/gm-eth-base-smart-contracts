@@ -237,6 +237,8 @@ function deployGoldmintContract(data,cb){
 
           tempContract.new(
                multisig,
+               multisig2,
+
                tokenManager,
                tokenManager,  // _otherCurrenciesChecker
                mntContractAddress,

@@ -20,11 +20,13 @@ var buyers = [];
 var unsoldTokensReward;
 var tokenManager;
 var multisig;
+var multisig2;
 
 var initialBalanceCreator = 0;
 var initialBalanceBuyer = 0;
 var initialBalanceBuyer2 = 0;
 var initialMultisigBalance = 0;
+var initialMultisig2Balance = 0;
 
 var mntContractAddress;
 var mntContract;
@@ -50,6 +52,8 @@ var BONUS_SHOULD_BE = 1000000 * 1000000000000000000;
 var TOTAL_SUPPLY_SHOULD_BE = new BigNumber(FOUNDERS_BALANCE_SHOULD_BE).plus(new BigNumber(ICO_TOTAL_SELLING_SHOULD_BE));
 var TOKENS_PER_ETH = 51428571428571428571;
 var ONE_HALF_TOKENS_PER_ETH = 77142857142857142856;
+
+var MULTISIG_PERCENTS = 80;
 
 /*
 // TEST:
@@ -110,6 +114,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
                multisig = accounts[7];
+               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -290,6 +295,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           assert.equal(foundersBalance.toString(10), FOUNDERS_BALANCE_SHOULD_BE);
 
           initialMultisigBalance = web3.eth.getBalance(multisig);
+          initialMultisig2Balance = web3.eth.getBalance(multisig2);
 
           // finish
           var params = {from: creator, gas: 2900000};
@@ -302,7 +308,10 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
 
                     // check multisig ETH balance
                     var balanceAfter = web3.eth.getBalance(multisig);
+                    var balanceAfter2 = web3.eth.getBalance(multisig2);
+
                     assert.equal(balanceAfter.toString(10),initialMultisigBalance.toString(10));
+                    assert.equal(balanceAfter2.toString(10),initialMultisig2Balance.toString(10));
 
                     done();
                });
@@ -686,8 +695,10 @@ describe('Contracts 3 - ICO buy tests', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
                multisig = accounts[7];
+               multisig2 = accounts[8];
 
                initialMultisigBalance = web3.eth.getBalance(multisig);
+               initialMultisig2Balance = web3.eth.getBalance(multisig2);
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -829,8 +840,17 @@ describe('Contracts 3 - ICO buy tests', function() {
 
                     // check multisig ETH balance
                     var balanceAfter = web3.eth.getBalance(multisig);
+                    var balance2After = web3.eth.getBalance(multisig2);
+
+                    // All collected ETH should be split between these two multisig wallets
+                    var shouldBe = (1000000000000000000 / 100) * MULTISIG_PERCENTS; 
+                    var shouldBe2 = (1000000000000000000 / 100) * (100 - MULTISIG_PERCENTS); 
+
                     assert.equal(balanceAfter.toString(10),
-                                 parseInt(initialMultisigBalance.toString(10)) + 1000000000000000000);
+                                 parseInt(initialMultisigBalance.toString(10)) + shouldBe);
+
+                    assert.equal(balance2After.toString(10),
+                                 parseInt(initialMultisig2Balance.toString(10)) + shouldBe2);
 
                     done();
                });
@@ -935,6 +955,7 @@ describe('Contracts 4 - lock MNTP transfers', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
                multisig = accounts[7];
+               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -1149,6 +1170,7 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
                multisig = accounts[7];
+               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -1295,6 +1317,7 @@ describe('Contracts 6 - ICO finished test', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
                multisig = accounts[7];
+               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -1417,6 +1440,7 @@ describe('Contracts 7 - Refund', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
                multisig = accounts[7];
+               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -1551,6 +1575,7 @@ describe('Contracts 7 - Refund', function() {
 
      it('should change state to Refunding', function(done){
           initialMultisigBalance = web3.eth.getBalance(multisig);
+          initialMultisig2Balance = web3.eth.getBalance(multisig2);
 
           var params = {from: creator, gas: 2900000};
           goldmintContract.startRefunding(params, (err,res)=>{
@@ -1562,6 +1587,9 @@ describe('Contracts 7 - Refund', function() {
                     // check multisig ETH balance
                     var balanceAfter = web3.eth.getBalance(multisig);
                     assert.equal(balanceAfter.toString(10),initialMultisigBalance.toString(10));
+
+                    var balance2After = web3.eth.getBalance(multisig2);
+                    assert.equal(balance2After.toString(10),initialMultisig2Balance.toString(10));
 
                     done();
                });
@@ -1617,6 +1645,7 @@ describe('Contracts 8 - migrate', function() {
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
                multisig = accounts[7];
+               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){

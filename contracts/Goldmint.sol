@@ -261,6 +261,7 @@ contract Goldmint is SafeMath {
      address public creator = 0x0;
      address public tokenManager = 0x0;
      address public multisigAddress = 0x0;
+     address public multisig2Address = 0x0;
      address public otherCurrenciesChecker = 0x0;
 
      uint64 public icoStartedTime = 0;
@@ -273,10 +274,13 @@ contract Goldmint is SafeMath {
 
      // These can be changed before ICO start ($7USD/MNTP)
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 7000;
-     // coinmarketcap.com 14.08.2017
+     // coinmarketcap.com 04.09.2017
      uint constant ETH_PRICE_IN_USD = 300;
      // price changes from block to block
      uint public constant SINGLE_BLOCK_LEN = 700000;
+     // multisig/multisig2 rate. 
+     // All colllected during ICO ETH will be sent in this proportion to these wallets
+     uint public constant MULTISIG1_PERCENTS = 80;
 
 ///////     
      // 1 000 000 tokens
@@ -345,6 +349,8 @@ contract Goldmint is SafeMath {
      /// @dev Constructor
      function Goldmint(
           address _multisigAddress,
+          address _multisig2Address,
+
           address _tokenManager,
           address _otherCurrenciesChecker,
 
@@ -355,6 +361,8 @@ contract Goldmint is SafeMath {
           creator = msg.sender;
 
           multisigAddress = _multisigAddress;
+          multisig2Address = _multisig2Address;
+
           tokenManager = _tokenManager;
           otherCurrenciesChecker = _otherCurrenciesChecker; 
 
@@ -412,8 +420,13 @@ contract Goldmint is SafeMath {
                unsoldContract.finishIco();
           }
 
-          // send all ETH to multisig
-          multisigAddress.transfer(this.balance);
+          // send all ETH to multisigs
+          // we have 2 separate multisigs for extra security
+          uint sendToFirst = (this.balance / 100) * MULTISIG1_PERCENTS;
+          uint sendToSecond= safeSub(this.balance, sendToFirst);
+
+          multisigAddress.transfer(sendToFirst);
+          multisig2Address.transfer(sendToSecond);
      }
 
      function setState(State _s) internal {

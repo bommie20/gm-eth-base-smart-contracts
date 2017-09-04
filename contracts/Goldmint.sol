@@ -260,9 +260,24 @@ contract FoundersVesting is SafeMath {
 contract Goldmint is SafeMath {
      address public creator = 0x0;
      address public tokenManager = 0x0;
-     address public multisigAddress = 0x0;
-     address public multisig2Address = 0x0;
      address public otherCurrenciesChecker = 0x0;
+
+     // These are HARD CODED!!!
+     // For extra security we split single multisig into 10 separate multisigs
+     //
+     // TODO: set to real params!
+     address[] public multisigs = [
+          0x4743E37B3671958f4B6dc5a342eA6A182bDa56aa,
+          0xf50Ee077fEd52078F1167D495598a50aCbbffEd1,
+          0xAc72BEaf48a9BedC35588b61b49780fa2037608e,
+          0xBAbb78a6fa75af062cb8fac4311f3b05A86f92db,
+          0x61cc4Be864B7845EAb03A190562B609886CA5F07,
+          0x3FdCa8B5d4D7B7AFaA5cE2c3bdb681D595568ddd,
+          0xbEb1C119713D18f0CbdfD6c5829707693A38F701,
+          0x7B2C21be7b4Bf2B1588099e60E1f6a89E5E9beA8,
+          0x2EBe70376f1f2640af432626101AC52A337F143a,
+          0x80b365da1C18f4aa1ecFa0dFA07Ed4417B05Cc69
+     ];
 
      uint64 public icoStartedTime = 0;
 
@@ -348,9 +363,6 @@ contract Goldmint is SafeMath {
 /// Functions:
      /// @dev Constructor
      function Goldmint(
-          address _multisigAddress,
-          address _multisig2Address,
-
           address _tokenManager,
           address _otherCurrenciesChecker,
 
@@ -360,9 +372,6 @@ contract Goldmint is SafeMath {
      {
           creator = msg.sender;
 
-          multisigAddress = _multisigAddress;
-          multisig2Address = _multisig2Address;
-
           tokenManager = _tokenManager;
           otherCurrenciesChecker = _otherCurrenciesChecker; 
 
@@ -371,6 +380,8 @@ contract Goldmint is SafeMath {
 
           // slight rename
           foundersRewardsAccount = _foundersVestingAddress;
+
+          assert(multisigs.length==10);
      }
 
      function startICO() public onlyCreator onlyInState(State.Init) {
@@ -421,12 +432,12 @@ contract Goldmint is SafeMath {
           }
 
           // send all ETH to multisigs
-          // we have 2 separate multisigs for extra security
-          uint sendToFirst = (this.balance / 100) * MULTISIG1_PERCENTS;
-          uint sendToSecond= safeSub(this.balance, sendToFirst);
-
-          multisigAddress.transfer(sendToFirst);
-          multisig2Address.transfer(sendToSecond);
+          // we have N separate multisigs for extra security
+          uint sendThisAmount = (this.balance / 10);
+          for(uint i=0; i<10; ++i){
+               address ms = multisigs[i];
+               ms.transfer(sendThisAmount);
+          }
      }
 
      function setState(State _s) internal {

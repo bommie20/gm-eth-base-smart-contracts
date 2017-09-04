@@ -53,8 +53,6 @@ var TOTAL_SUPPLY_SHOULD_BE = new BigNumber(FOUNDERS_BALANCE_SHOULD_BE).plus(new 
 var TOKENS_PER_ETH = 51428571428571428571;
 var ONE_HALF_TOKENS_PER_ETH = 77142857142857142856;
 
-var MULTISIG_PERCENTS = 80;
-
 /*
 // TEST:
 var ICO_TOTAL_SELLING_SHOULD_BE = 250 * 1000000000000000000;
@@ -113,8 +111,6 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
-               multisig = accounts[7];
-               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -143,6 +139,13 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
 
                          deployGoldmintContract(data,function(err){
                               assert.equal(err,null);
+
+                              assert.equal(goldmintContract.multisigs(0),0x4743E37B3671958f4B6dc5a342eA6A182bDa56aa);
+                              assert.equal(goldmintContract.multisigs(9),0x80b365da1C18f4aa1ecFa0dFA07Ed4417B05Cc69);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
+
                               done();
                          });
                     });
@@ -694,11 +697,6 @@ describe('Contracts 3 - ICO buy tests', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
-               multisig = accounts[7];
-               multisig2 = accounts[8];
-
-               initialMultisigBalance = web3.eth.getBalance(multisig);
-               initialMultisig2Balance = web3.eth.getBalance(multisig2);
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -727,6 +725,13 @@ describe('Contracts 3 - ICO buy tests', function() {
 
                          deployGoldmintContract(data,function(err){
                               assert.equal(err,null);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
+
+                              initialMultisigBalance = web3.eth.getBalance(multisig);
+                              initialMultisig2Balance = web3.eth.getBalance(multisig2);
+
                               done();
                          });
                     });
@@ -843,8 +848,8 @@ describe('Contracts 3 - ICO buy tests', function() {
                     var balance2After = web3.eth.getBalance(multisig2);
 
                     // All collected ETH should be split between these two multisig wallets
-                    var shouldBe = (1000000000000000000 / 100) * MULTISIG_PERCENTS; 
-                    var shouldBe2 = (1000000000000000000 / 100) * (100 - MULTISIG_PERCENTS); 
+                    var shouldBe = (1000000000000000000 / 10); 
+                    var shouldBe2 = (1000000000000000000 / 10); 
 
                     assert.equal(balanceAfter.toString(10),
                                  parseInt(initialMultisigBalance.toString(10)) + shouldBe);
@@ -954,8 +959,6 @@ describe('Contracts 4 - lock MNTP transfers', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
-               multisig = accounts[7];
-               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -984,6 +987,10 @@ describe('Contracts 4 - lock MNTP transfers', function() {
 
                          deployGoldmintContract(data,function(err){
                               assert.equal(err,null);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
+
                               done();
                          });
                     });
@@ -1169,8 +1176,6 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
-               multisig = accounts[7];
-               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -1199,6 +1204,9 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
 
                          deployGoldmintContract(data,function(err){
                               assert.equal(err,null);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
 
                               mntContract.setIcoContractAddress(
                                    goldmintContractAddress,
@@ -1316,8 +1324,6 @@ describe('Contracts 6 - ICO finished test', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
-               multisig = accounts[7];
-               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -1346,6 +1352,9 @@ describe('Contracts 6 - ICO finished test', function() {
 
                          deployGoldmintContract(data,function(err){
                               assert.equal(err,null);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
 
                               mntContract.setIcoContractAddress(
                                    goldmintContractAddress,
@@ -1439,8 +1448,6 @@ describe('Contracts 7 - Refund', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
-               multisig = accounts[7];
-               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -1469,6 +1476,9 @@ describe('Contracts 7 - Refund', function() {
 
                          deployGoldmintContract(data,function(err){
                               assert.equal(err,null);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
 
                               mntContract.setIcoContractAddress(
                                    goldmintContractAddress,
@@ -1644,8 +1654,6 @@ describe('Contracts 8 - migrate', function() {
                creator2 = accounts[4];
                tokenManager = accounts[5];
                unsoldTokensReward = accounts[6];
-               multisig = accounts[7];
-               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){

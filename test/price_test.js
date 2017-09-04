@@ -77,8 +77,6 @@ describe('Price tests', function() {
                goldmintTeam = accounts[3];
                unsoldTokensReward = accounts[5];
                tokenManager = accounts[6];
-               multisig = accounts[7];
-               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){
@@ -107,6 +105,10 @@ describe('Price tests', function() {
                          
                          deployGoldmintContract(data,function(err){
                               assert.equal(err,null);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
+
                               done();
                          });
                     });

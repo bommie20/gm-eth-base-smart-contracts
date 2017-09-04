@@ -16,6 +16,7 @@ var goldmintTeam;
 var unsoldTokensReward;
 var tokenManager;
 var multisig;
+var multisig2;
 
 var foundersRewardAccount;
 
@@ -77,6 +78,7 @@ describe('Price tests', function() {
                unsoldTokensReward = accounts[5];
                tokenManager = accounts[6];
                multisig = accounts[7];
+               multisig2 = accounts[8];
 
                var contractName = ':MNTP';
                getContractAbi(contractName,function(err,abi){

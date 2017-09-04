@@ -141,6 +141,7 @@ contract MNTP is StdToken {
           totalSupply = safeAdd(totalSupply,_tokens);
      }
 
+     // For refunds only
      function burnTokens(address _who, uint _tokens) byIcoContract {
           balances[_who] = safeSub(balances[_who], _tokens);
           totalSupply = safeSub(totalSupply, _tokens);
@@ -329,9 +330,12 @@ contract Goldmint is SafeMath {
           // We start to refund if Soft Cap is not reached.
           // Then each token holder request his money back and his
           // tokens are burned.
+          // There is no any possibility to transfer tokens
+          // There is no any possibility to move back
           Refunding,
 
           // In this state we lock all MNT tokens forever.
+          // There is no any possibility to transfer tokens
           // There is no any possibility to move back
           Migrating
      }
@@ -543,12 +547,6 @@ contract Goldmint is SafeMath {
 
           LogBuy(_to,_tokens);
      }
-
-     function burnTokens(address _from, uint _tokens) public onlyInState(State.ICOFinished) onlyTokenManager {      
-        mntToken.burnTokens(_from,_tokens);        
-
-        LogBurn(_from,_tokens);      
-    }
 
      // anyone can call this and get his money back
      function getMyRefund() public onlyInState(State.Refunding) {

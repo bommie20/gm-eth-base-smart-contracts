@@ -293,10 +293,7 @@ contract Goldmint is SafeMath {
      // coinmarketcap.com 04.09.2017
      uint constant ETH_PRICE_IN_USD = 300;
      // price changes from block to block
-     uint public constant SINGLE_BLOCK_LEN = 700000;
-     // multisig/multisig2 rate. 
-     // All colllected during ICO ETH will be sent in this proportion to these wallets
-     uint public constant MULTISIG1_PERCENTS = 80;
+     uint constant SINGLE_BLOCK_LEN = 700000;
 
 ///////     
      // 1 000 000 tokens
@@ -485,9 +482,9 @@ contract Goldmint is SafeMath {
             && (now > icoStartedTime + 30 days || icoTokensSold >= ICO_TOKEN_SUPPLY_LIMIT);
      }
 
-     function getMntTokensPerEth(uint tokensSold) public constant returns (uint){
+     function getMntTokensPerEth(uint _tokensSold) public constant returns (uint){
           // 10 buckets
-          uint priceIndex = (tokensSold / 1 ether) / SINGLE_BLOCK_LEN;
+          uint priceIndex = (_tokensSold / 1 ether) / SINGLE_BLOCK_LEN;
           assert(priceIndex>=0 && (priceIndex<=9));
           
           uint8[10] memory discountPercents = [20,15,10,8,6,4,2,0,0,0];
@@ -520,10 +517,10 @@ contract Goldmint is SafeMath {
      }
 
      /// @dev This is called by other currency processors to issue new tokens 
-     function issueTokensFromOtherCurrency(address _to, uint _wei_count) onlyInState(State.ICORunning) public onlyOtherCurrenciesChecker {
-          require(_wei_count!=0);
+     function issueTokensFromOtherCurrency(address _to, uint _weiCount) onlyInState(State.ICORunning) public onlyOtherCurrenciesChecker {
+          require(_weiCount!=0);
 
-          uint newTokens = (_wei_count * getMntTokensPerEth(icoTokensSold)) / 1 ether;
+          uint newTokens = (_weiCount * getMntTokensPerEth(icoTokensSold)) / 1 ether;
           issueTokensInternal(_to,newTokens);
      }
 

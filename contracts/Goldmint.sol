@@ -139,6 +139,8 @@ contract MNTP is StdToken {
 
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
+
+          Transfer(0x0, _who, _tokens);
      }
 
      // For refunds only

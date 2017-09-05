@@ -19,17 +19,19 @@ contract SafeMath {
      }
 }
 
+// ERC20 standard
+// We don't use ERC23 standard
 contract StdToken is SafeMath {
-     // Fields:
+// Fields:
      mapping(address => uint256) balances;
      mapping (address => mapping (address => uint256)) allowed;
      uint public totalSupply = 0;
 
-     // Events:
+// Events:
      event Transfer(address indexed _from, address indexed _to, uint256 _value);
      event Approval(address indexed _owner, address indexed _spender, uint256 _value);
 
-     // Functions:
+// Functions:
      function transfer(address _to, uint256 _value) returns(bool){
           require(balances[msg.sender] >= _value);
           require(balances[_to] + _value > balances[_to]);
@@ -81,7 +83,7 @@ contract StdToken is SafeMath {
 }
 
 contract MNTP is StdToken {
-/// Fields:
+// Fields:
      string public constant name = "Goldmint MNT Prelaunch Token";
      string public constant symbol = "MNTP";
      uint public constant decimals = 18;
@@ -108,17 +110,15 @@ contract MNTP is StdToken {
           creator = _creator;
      }
 
-/// Setters/Getters
+// Setters/Getters
      function setIcoContractAddress(address _icoContractAddress) onlyCreator {
           icoContractAddress = _icoContractAddress;
      }
 
-/// Functions:
-     /// @dev Constructor
+// Functions:
      function MNTP() {
           creator = msg.sender;
 
-          // 10 mln tokens total
           assert(TOTAL_TOKEN_SUPPLY == 10000000 * 1 ether);
      }
 
@@ -157,8 +157,10 @@ contract MNTP is StdToken {
      }
 }
 
-// This contract will hold all tokens that were unsold during ICO
-// (Goldmint should be able to withdraw them and sold only 1 year post-ICO)
+// This contract will hold all tokens that were unsold during ICO.
+//
+// Goldmint Team should be able to withdraw them and sell only after 1 year is passed after 
+// ICO is finished.
 contract GoldmintUnsold is SafeMath {
      address public creator;
      address public teamAccountAddress;
@@ -184,28 +186,27 @@ contract GoldmintUnsold is SafeMath {
           _; 
      }
 
-/// Setters/Getters
+// Setters/Getters
      function setIcoContractAddress(address _icoContractAddress) onlyCreator {
           icoContractAddress = _icoContractAddress;
      }
 
-     // only by Goldmint contract 
      function finishIco() public onlyIcoContract {
           icoIsFinishedDate = uint64(now);
      }
 
      // can be called by anyone...
      function withdrawTokens() public {
-          // wait for 1 year!
+          // Check if 1 year is passed
           uint64 oneYearPassed = icoIsFinishedDate + 365 days;  
           require(uint(now) >= oneYearPassed);
 
-          // transfer all tokens from this contract to the teamAccountAddress
+          // Transfer all tokens from this contract to the teamAccountAddress
           uint total = mntToken.balanceOf(this);
           mntToken.transfer(teamAccountAddress,total);
      }
 
-     // Default fallback function
+     // Do not allow to send money directly to this contract
      function() payable {
           revert();
      }
@@ -227,9 +228,9 @@ contract FoundersVesting is SafeMath {
           mntToken = MNTP(_mntTokenAddress);          
      }
 
-     // can be called by anyone...
+     // Can be called by anyone
      function withdrawTokens() public {
-          // 1 - wait for next month!
+          // 1 - wait for the next month
           uint64 oneMonth = lastWithdrawTime + 30 days;  
           require(uint(now) >= oneMonth);
 
@@ -252,21 +253,19 @@ contract FoundersVesting is SafeMath {
           lastWithdrawTime = uint64(now);
      }
 
-     // Default fallback function
+     // Do not allow to send money directly to this contract
      function() payable {
           revert();
      }
 }
 
+// This is the main Goldmint ICO smart contract
 contract Goldmint is SafeMath {
-     address public creator = 0x0;
-     address public tokenManager = 0x0;
-     address public otherCurrenciesChecker = 0x0;
-
-     // These are HARD CODED!!!
-     // For extra security we split single multisig into 10 separate multisigs
+// Constants:
+     // These values are HARD CODED!!!
+     // For extra security we split single multisig wallet into 10 separate multisig wallets
      //
-     // TODO: set to real params!
+     // TODO: set real params here
      address[] public multisigs = [
           0x4743E37B3671958f4B6dc5a342eA6A182bDa56aa,
           0xf50Ee077fEd52078F1167D495598a50aCbbffEd1,
@@ -280,40 +279,43 @@ contract Goldmint is SafeMath {
           0x80b365da1C18f4aa1ecFa0dFA07Ed4417B05Cc69
      ];
 
-     uint64 public icoStartedTime = 0;
-
-     MNTP public mntToken; 
-     GoldmintUnsold public unsoldContract;
-
-     // We count ETH invested by person, in case we need to make a refund.
+     // We count ETH invested by person, for refunds (see below)
      mapping(address => uint) ethInvestedBy;
-
-     // These can be changed before ICO start ($7USD/MNTP)
+     // These can be changed before ICO starts ($7USD/MNTP)
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 7000;
+     // USD/ETH is fixed for the whole ICO
+     // WARNING: if USD/ETH rate changes DURING ICO -> we won't change it
      // coinmarketcap.com 04.09.2017
      uint constant ETH_PRICE_IN_USD = 300;
-     // price changes from block to block
+     // Price changes from block to block
      uint constant SINGLE_BLOCK_LEN = 700000;
-
-///////     
      // 1 000 000 tokens
      uint public constant BONUS_REWARD = 1000000 * 1 ether;
      // 2 000 000 tokens
      uint public constant FOUNDERS_REWARD = 2000000 * 1 ether;
-     // 7 000 000 we sell only this amount of tokens during the ICO
+     // 7 000 000 is sold during the ICO
      uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7000000 * 1 ether;
-     // 150 000 tokens soft cap
+     // 150 000 tokens soft cap (otherwise - refund)
      uint public constant ICO_TOKEN_SOFT_CAP = 150000 * 1 ether;
-     
-     // this is total number of tokens sold during ICO
+
+// Fields:
+     address public creator = 0x0;
+     address public tokenManager = 0x0;
+     address public otherCurrenciesChecker = 0x0;
+
+     uint64 public icoStartedTime = 0;
+
+     MNTP public mntToken; 
+
+     GoldmintUnsold public unsoldContract;
+
+     // Total amount of tokens sold during ICO
      uint public icoTokensSold = 0;
-     // this is total number of tokens sent to GoldmintUnsold contract after ICO is finished
+     // Total amount of tokens sent to GoldmintUnsold contract after ICO is finished
      uint public icoTokensUnsold = 0;
-
-     // this is total number of tokens that were issued by a scripts
+     // Total number of tokens that were issued by a scripts
      uint public issuedExternallyTokens = 0;
-
-     // this is where FOUNDERS_REWARD will be allocated
+     // This is where FOUNDERS_REWARD will be allocated
      address public foundersRewardsAccount = 0x0;
 
      enum State{
@@ -321,24 +323,32 @@ contract Goldmint is SafeMath {
 
           ICORunning,
           ICOPaused,
-         
+
+          // Collected ETH is transferred to multisigs.
+          // Unsold tokens transferred to GoldmintUnsold contract.
           ICOFinished,
 
           // We start to refund if Soft Cap is not reached.
-          // Then each token holder request his money back and his
-          // tokens are burned.
+          // Then each token holder should request a refund personally from his
+          // personal wallet.
+          //
+          // We will return ETHs only to the original address. If your address is changed
+          // or you have lost your keys -> you will not be able to get a refund.
+          // 
           // There is no any possibility to transfer tokens
           // There is no any possibility to move back
           Refunding,
 
           // In this state we lock all MNT tokens forever.
+          // We are going to migrate MNTP -> MNT tokens during this stage. 
+          // 
           // There is no any possibility to transfer tokens
           // There is no any possibility to move back
           Migrating
      }
      State public currentState = State.Init;
 
-/// Modifiers:
+// Modifiers:
      modifier onlyCreator() { 
           require(msg.sender==creator); 
           _; 
@@ -356,12 +366,12 @@ contract Goldmint is SafeMath {
           _; 
      }
 
-/// Events:
+// Events:
      event LogStateSwitch(State newState);
      event LogBuy(address indexed owner, uint value);
      event LogBurn(address indexed owner, uint value);
      
-/// Functions:
+// Functions:
      /// @dev Constructor
      function Goldmint(
           address _tokenManager,
@@ -446,7 +456,7 @@ contract Goldmint is SafeMath {
           LogStateSwitch(_s);
      }
 
-/// Access methods:
+// Access methods:
      function setTokenManager(address _new) public onlyTokenManager {
           tokenManager = _new;
      }
@@ -455,7 +465,7 @@ contract Goldmint is SafeMath {
           otherCurrenciesChecker = _new;
      }
 
-// These are used by frontend so we can not remove them
+     // These are used by frontend so we can not remove them
      function getTokensIcoSold() constant public returns (uint){          
           return icoTokensSold;       
      }      

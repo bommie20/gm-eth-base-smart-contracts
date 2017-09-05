@@ -433,23 +433,35 @@ contract Goldmint is SafeMath {
      /// or by anyone if ICO has really finished.
      function finishICO() public onlyInState(State.ICORunning) {
           require(msg.sender == creator || isIcoFinished());
-
           setState(State.ICOFinished);
+
+          // 1 - lock all transfers
           mntToken.lockTransfer(false);
 
-          // move all unsold tokens to unsoldTokens contract
+          // 2 - move all unsold tokens to unsoldTokens contract
           icoTokensUnsold = safeSub(ICO_TOKEN_SUPPLY_LIMIT,icoTokensSold);
           if(icoTokensUnsold>0){
                mntToken.issueTokens(unsoldContract,icoTokensUnsold);
                unsoldContract.finishIco();
           }
 
-          // send all ETH to multisigs
+          // 3 - send all ETH to multisigs
           // we have N separate multisigs for extra security
           uint sendThisAmount = (this.balance / 10);
-          for(uint i=0; i<10; ++i){
+
+          // 3.1 - send to 9 multisigs
+          for(uint i=0; i<9; ++i){
                address ms = multisigs[i];
-               ms.transfer(sendThisAmount);
+
+               if(this.balance>=sendThisAmount){
+                    ms.transfer(sendThisAmount);
+               }
+          }
+
+          // 3.2 - send everything left to 10th multisig
+          if(0!=this.balance){
+               address lastMs = multisigs[9];
+               lastMs.transfer(this.balance);
           }
      }
 

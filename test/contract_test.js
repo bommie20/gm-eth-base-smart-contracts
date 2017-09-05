@@ -21,12 +21,14 @@ var unsoldTokensReward;
 var tokenManager;
 var multisig;
 var multisig2;
+var multisig10;
 
 var initialBalanceCreator = 0;
 var initialBalanceBuyer = 0;
 var initialBalanceBuyer2 = 0;
 var initialMultisigBalance = 0;
 var initialMultisig2Balance = 0;
+var initialMultisig10Balance = 0;
 
 var mntContractAddress;
 var mntContract;
@@ -51,6 +53,8 @@ var BONUS_SHOULD_BE = 1000000 * 1000000000000000000;
 // 9000000000000000000000000
 var TOTAL_SUPPLY_SHOULD_BE = new BigNumber(FOUNDERS_BALANCE_SHOULD_BE).plus(new BigNumber(ICO_TOTAL_SELLING_SHOULD_BE));
 var TOKENS_PER_ETH = 51428571428571428571;
+var TOKENS_PER_38 = 1954;
+var TOKENS_PER_8 = 411;
 var ONE_HALF_TOKENS_PER_ETH = 77142857142857142856;
 
 /*
@@ -60,6 +64,8 @@ var FOUNDERS_BALANCE_SHOULD_BE = 2000000 * 1000000000000000000;
 var BONUS_SHOULD_BE = 1000000 * 1000000000000000000;
 var TOTAL_SUPPLY_SHOULD_BE = new BigNumber(FOUNDERS_BALANCE_SHOULD_BE).plus(new BigNumber(ICO_TOTAL_SELLING_SHOULD_BE));
 var TOKENS_PER_ETH = 51428571428571428571;
+var TOKENS_PER_38 = ;
+var TOKENS_PER_8 = ;
 */
 
 /////////////////////////////////////////////
@@ -1787,3 +1793,401 @@ describe('Contracts 8 - migrate', function() {
           });
      });
 })
+
+describe('Contracts 9 - multisigs check 1', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+               creator2 = accounts[4];
+               tokenManager = accounts[5];
+               unsoldTokensReward = accounts[6];
+
+               var contractName = ':MNTP';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployUnsoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployFoundersVestingContract(data,function(err){
+                         assert.equal(err,null);
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
+                              multisig10 = goldmintContract.multisigs(9);
+
+                              initialMultisigBalance = web3.eth.getBalance(multisig);
+                              initialMultisig2Balance = web3.eth.getBalance(multisig2);
+                              initialMultisig10Balance = web3.eth.getBalance(multisig10);
+
+                              done();
+                         });
+                    });
+               });
+          });
+     });
+
+     it('should set Goldmint token address to MNTP contract',function(done){
+          mntContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should set Goldmint token address to Unsold contract',function(done){
+          unsoldContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should get all frontend data', function(done){
+          goldmintContract.icoTokensSold((err,res)=>{
+               assert.equal(err,null);
+               assert.equal(res,0);
+
+               goldmintContract.getTotalIcoTokens((err,res)=>{
+                    assert.equal(err,null);
+                    assert.equal(res,ICO_TOTAL_SELLING_SHOULD_BE);
+
+                    goldmintContract.getCurrentPrice((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,TOKENS_PER_ETH);
+
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.startICO(params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should buy tokens 1',function(done){
+          // will not be enough to split into 10 multisigs proportionally
+          var amount = 38;
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    // 51.43 MNTP tokens per 1 ETH
+                    var balance = mntContract.balanceOf(buyer);
+                    assert.equal(balance,TOKENS_PER_38);
+
+                    // new check
+                    goldmintContract.icoTokensSold((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,TOKENS_PER_38);
+
+                         done();
+                    });
+               }
+          );
+     });
+
+     it('should change state to ICOFinished', function(done){
+          // check preconditions
+          var moved = goldmintContract.icoTokensUnsold();
+          assert.equal(moved,0);
+          //assert.equal(goldmintContract.restTokensMoved(),false);
+          var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
+          assert.equal(unsoldBalance,0);
+
+          // finish
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.finishICO(params, (err,res)=>{
+               assert.equal(err, null);
+
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,3);
+
+                    // check multisig ETH balance
+                    var balanceAfter = web3.eth.getBalance(multisig);
+                    var balance2After = web3.eth.getBalance(multisig2);
+                    var balance10After = web3.eth.getBalance(multisig10);
+
+                    // All collected ETH should be split between these multisig wallets
+                    // 1 - 3
+                    // 2 - 3
+                    // 3 - 3
+                    // 4 - 3
+                    // 5 - 3
+                    // 6 - 3
+                    // 7 - 3
+                    // 8 - 3
+                    // 9 - 3
+                    // 10 - 11
+                    var shouldBe = 3;
+                    var shouldBe2 = 3;
+                    var shouldBe10 = 11;
+
+                    assert.equal(balanceAfter.toString(10),
+                                 parseInt(initialMultisigBalance.toString(10)) + shouldBe);
+
+                    assert.equal(balance2After.toString(10),
+                                 parseInt(initialMultisig2Balance.toString(10)) + shouldBe2);
+
+                    assert.equal(balance10After.toString(10),
+                                 parseInt(initialMultisig10Balance.toString(10)) + shouldBe10);
+
+                    done();
+               });
+          });
+     });
+})
+
+describe('Contracts 10 - multisigs check 2', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+               creator2 = accounts[4];
+               tokenManager = accounts[5];
+               unsoldTokensReward = accounts[6];
+
+               var contractName = ':MNTP';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployUnsoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployFoundersVestingContract(data,function(err){
+                         assert.equal(err,null);
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
+                              multisig10 = goldmintContract.multisigs(9);
+
+                              initialMultisigBalance = web3.eth.getBalance(multisig);
+                              initialMultisig2Balance = web3.eth.getBalance(multisig2);
+                              initialMultisig10Balance = web3.eth.getBalance(multisig10);
+
+                              done();
+                         });
+                    });
+               });
+          });
+     });
+
+     it('should set Goldmint token address to MNTP contract',function(done){
+          mntContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should set Goldmint token address to Unsold contract',function(done){
+          unsoldContract.setIcoContractAddress(
+               goldmintContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should get all frontend data', function(done){
+          goldmintContract.icoTokensSold((err,res)=>{
+               assert.equal(err,null);
+               assert.equal(res,0);
+
+               goldmintContract.getTotalIcoTokens((err,res)=>{
+                    assert.equal(err,null);
+                    assert.equal(res,ICO_TOTAL_SELLING_SHOULD_BE);
+
+                    goldmintContract.getCurrentPrice((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,TOKENS_PER_ETH);
+
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should change state to ICORunning', function(done){
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.startICO(params, (err,res)=>{
+               assert.equal(err, null);
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,1);
+                    done();
+               });
+          });
+     });
+
+     it('should buy tokens 1',function(done){
+          var amount = 8;
+
+          web3.eth.sendTransaction(
+               {
+                    from: buyer,               
+                    to: goldmintContractAddress,
+                    value: amount,
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    // 51.43 MNTP tokens per 1 ETH
+                    var balance = mntContract.balanceOf(buyer);
+                    assert.equal(balance,TOKENS_PER_8);
+
+                    // new check
+                    goldmintContract.icoTokensSold((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,TOKENS_PER_8);
+
+                         done();
+                    });
+               }
+          );
+     });
+
+     it('should change state to ICOFinished', function(done){
+          // check preconditions
+          var moved = goldmintContract.icoTokensUnsold();
+          assert.equal(moved,0);
+          //assert.equal(goldmintContract.restTokensMoved(),false);
+          var unsoldBalance = mntContract.balanceOf(unsoldContractAddress);
+          assert.equal(unsoldBalance,0);
+
+          // finish
+          var params = {from: creator, gas: 2900000};
+          goldmintContract.finishICO(params, (err,res)=>{
+               assert.equal(err, null);
+
+               goldmintContract.currentState((err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res,3);
+
+                    // check multisig ETH balance
+                    var balanceAfter = web3.eth.getBalance(multisig);
+                    var balance2After = web3.eth.getBalance(multisig2);
+                    var balance10After = web3.eth.getBalance(multisig10);
+
+                    // All collected ETH should be split between these multisig wallets
+                    // 1 - 0 
+                    // 2 - 0 
+                    // 3 - 0 
+                    // 4 - 0 
+                    // 5 - 0 
+                    // 6 - 0 
+                    // 7 - 0 
+                    // 8 - 0 
+                    // 9 - 0 
+                    // 10 - 8 
+                    var shouldBe = 0;
+                    var shouldBe2 = 0;
+                    var shouldBe10 = 8;
+
+                    assert.equal(balanceAfter.toString(10),
+                                 parseInt(initialMultisigBalance.toString(10)) + shouldBe);
+
+                    assert.equal(balance2After.toString(10),
+                                 parseInt(initialMultisig2Balance.toString(10)) + shouldBe2);
+
+                    assert.equal(balance10After.toString(10),
+                                 parseInt(initialMultisig10Balance.toString(10)) + shouldBe10);
+
+                    done();
+               });
+          });
+     });
+})
+

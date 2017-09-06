@@ -475,9 +475,12 @@ contract Goldmint is SafeMath {
           tokenManager = _new;
      }
 
+     // TODO: stealing creator's key means stealing otherCurrenciesChecker key too!
+     /*
      function setOtherCurrenciesChecker(address _new) public onlyCreator {
           otherCurrenciesChecker = _new;
      }
+     */
 
      // These are used by frontend so we can not remove them
      function getTokensIcoSold() constant public returns (uint){          

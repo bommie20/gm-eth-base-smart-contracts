@@ -505,8 +505,8 @@ contract Goldmint is SafeMath {
 
 /////////////////////////////
      function isIcoFinished() constant public returns(bool) {
-          return icoStartedTime > 0
-            && (now > icoStartedTime + 30 days || icoTokensSold >= ICO_TOKEN_SUPPLY_LIMIT);
+          return (icoStartedTime > 0)
+            && (now > (icoStartedTime + 30 days) || (icoTokensSold >= ICO_TOKEN_SUPPLY_LIMIT));
      }
 
      function getMntTokensPerEth(uint _tokensSold) public constant returns (uint){

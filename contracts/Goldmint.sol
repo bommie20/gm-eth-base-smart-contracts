@@ -269,16 +269,16 @@ contract Goldmint is SafeMath {
      //
      // TODO: set real params here
      address[] public multisigs = [
-          0x4743E37B3671958f4B6dc5a342eA6A182bDa56aa,
-          0xf50Ee077fEd52078F1167D495598a50aCbbffEd1,
-          0xAc72BEaf48a9BedC35588b61b49780fa2037608e,
-          0xBAbb78a6fa75af062cb8fac4311f3b05A86f92db,
-          0x61cc4Be864B7845EAb03A190562B609886CA5F07,
-          0x3FdCa8B5d4D7B7AFaA5cE2c3bdb681D595568ddd,
-          0xbEb1C119713D18f0CbdfD6c5829707693A38F701,
-          0x7B2C21be7b4Bf2B1588099e60E1f6a89E5E9beA8,
-          0x2EBe70376f1f2640af432626101AC52A337F143a,
-          0x80b365da1C18f4aa1ecFa0dFA07Ed4417B05Cc69
+          0x27ce565b1047c6258164062983bb8bc2917f11d2,
+          0xfb3afc815894e91fe1ab6e6ef36f8565fbb904f6,
+          0x7e2a7a10509177db2a7ea41e728743c4eb42f528,
+          0x27ce565b1047c6258164062983bb8bc2917f11d2,
+          0xfb3afc815894e91fe1ab6e6ef36f8565fbb904f6,
+          0x7e2a7a10509177db2a7ea41e728743c4eb42f528,
+          0x27ce565b1047c6258164062983bb8bc2917f11d2,
+          0xfb3afc815894e91fe1ab6e6ef36f8565fbb904f6,
+          0x7e2a7a10509177db2a7ea41e728743c4eb42f528,
+          0xF4Ce80097bf1E584822dBcA84f91D5d7d9df0846
      ];
 
      // We count ETH invested by person, for refunds (see below)

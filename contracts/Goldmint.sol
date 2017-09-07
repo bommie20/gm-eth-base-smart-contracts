@@ -290,13 +290,19 @@ contract Goldmint is SafeMath {
      // coinmarketcap.com 04.09.2017
      uint constant ETH_PRICE_IN_USD = 300;
      // Price changes from block to block
-     uint constant SINGLE_BLOCK_LEN = 700000;
+     //uint constant SINGLE_BLOCK_LEN = 700000;
+
+     uint constant SINGLE_BLOCK_LEN = 100;
+
      // 1 000 000 tokens
      uint public constant BONUS_REWARD = 1000000 * 1 ether;
      // 2 000 000 tokens
      uint public constant FOUNDERS_REWARD = 2000000 * 1 ether;
      // 7 000 000 is sold during the ICO
-     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7000000 * 1 ether;
+     //uint public constant ICO_TOKEN_SUPPLY_LIMIT = 7000000 * 1 ether;
+
+     uint public constant ICO_TOKEN_SUPPLY_LIMIT = 150 * 1 ether;
+
      // 150 000 tokens soft cap (otherwise - refund)
      uint public constant ICO_TOKEN_SOFT_CAP = 150000 * 1 ether;
 

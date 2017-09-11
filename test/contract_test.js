@@ -2094,7 +2094,12 @@ describe('Contracts 10 - multisigs check 2', function() {
                          assert.equal(err,null);
                          assert.equal(res,TOKENS_PER_ETH);
 
-                         done();
+                         goldmintContract.getTotalCollectedWei((err,res)=>{
+                             assert.equal(err,null);
+                             assert.equal(res,0);
+
+                             done();
+                         });
                     });
                });
           });
@@ -2185,7 +2190,15 @@ describe('Contracts 10 - multisigs check 2', function() {
                     assert.equal(balance10After.toString(10),
                                  parseInt(initialMultisig10Balance.toString(10)) + shouldBe10);
 
-                    done();
+                    goldmintContract.getTotalCollectedWei((err,res)=>{
+                         assert.equal(err,null);
+                         assert.equal(res,8);
+
+                         var ethBalance = web3.eth.getBalance(goldmintContractAddress);
+                         assert.equal(ethBalance,0);
+
+                         done();
+                    });
                });
           });
      });

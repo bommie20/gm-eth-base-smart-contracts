@@ -283,6 +283,8 @@ contract Goldmint is SafeMath {
 
      // We count ETH invested by person, for refunds (see below)
      mapping(address => uint) ethInvestedBy;
+     uint collectedWei = 0;
+
      // These can be changed before ICO starts ($7USD/MNTP)
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 7000;
      // USD/ETH is fixed for the whole ICO
@@ -503,6 +505,10 @@ contract Goldmint is SafeMath {
           return getMntTokensPerEth(icoTokensSold);
      }
 
+     function getTotalCollectedWei()constant public returns (uint){
+          return collectedWei;
+     }
+
 /////////////////////////////
      function isIcoFinished() constant public returns(bool) {
           return (icoStartedTime > 0)
@@ -541,6 +547,9 @@ contract Goldmint is SafeMath {
 
           // Update this only when buying from ETH
           ethInvestedBy[msg.sender] = safeAdd(ethInvestedBy[msg.sender], msg.value);
+
+          // This is total collected ETH
+          collectedWei = safeAdd(collectedWei, msg.value);
      }
 
      /// @dev This is called by other currency processors to issue new tokens 

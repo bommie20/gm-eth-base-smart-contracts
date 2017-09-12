@@ -33,9 +33,6 @@ contract StdToken is SafeMath {
 
 // Functions:
      function transfer(address _to, uint256 _value) returns(bool){
-          require(balances[msg.sender] >= _value);
-          require(balances[_to] + _value > balances[_to]);
-
           balances[msg.sender] = safeSub(balances[msg.sender],_value);
           balances[_to] = safeAdd(balances[_to],_value);
 
@@ -44,10 +41,6 @@ contract StdToken is SafeMath {
      }
 
      function transferFrom(address _from, address _to, uint256 _value) returns(bool){
-          require(balances[_from] >= _value);
-          require(allowed[_from][msg.sender] >= _value);
-          require(balances[_to] + _value > balances[_to]);
-
           balances[_to] = safeAdd(balances[_to],_value);
           balances[_from] = safeSub(balances[_from],_value);
           allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender],_value);
@@ -74,11 +67,6 @@ contract StdToken is SafeMath {
 
      function allowance(address _owner, address _spender) constant returns (uint256) {
           return allowed[_owner][_spender];
-     }
-
-     modifier onlyPayloadSize(uint _size) {
-          require(msg.data.length >= _size + 4);
-          _;
      }
 }
 

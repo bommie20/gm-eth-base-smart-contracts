@@ -514,6 +514,14 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           });
      });
 
+     it('should not get vested founders tokens if not creator', function(done){
+          var params = {from: creator2, gas: 3900000};
+          foundersVestingContract.withdrawTokens(params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
      it('should get 1/10 vested founders tokens if >30 days elapsed', function(done){
           // check precondition
           var teamBalance = mntContract.balanceOf(goldmintTeam);

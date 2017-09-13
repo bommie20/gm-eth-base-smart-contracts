@@ -215,6 +215,7 @@ contract GoldmintUnsold is SafeMath {
 }
 
 contract FoundersVesting is SafeMath {
+     address public creator;
      address public teamAccountAddress;
      uint64 public lastWithdrawTime;
 
@@ -228,10 +229,16 @@ contract FoundersVesting is SafeMath {
           lastWithdrawTime = uint64(now);
 
           mntToken = MNTP(_mntTokenAddress);          
+
+          creator = msg.sender;
      }
 
-     // Can be called by anyone
-     function withdrawTokens() public {
+     modifier onlyCreator() { 
+          require(msg.sender==creator); 
+          _; 
+     }
+
+     function withdrawTokens() onlyCreator public {
           // 1 - wait for the next month
           uint64 oneMonth = lastWithdrawTime + 30 days;  
           require(uint(now) >= oneMonth);

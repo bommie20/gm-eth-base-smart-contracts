@@ -287,10 +287,11 @@ contract Goldmint is SafeMath {
 
      // These can be changed before ICO starts ($7USD/MNTP)
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 7000;
-     // USD/ETH is fixed for the whole ICO
-     // WARNING: if USD/ETH rate changes DURING ICO -> we won't change it
-     // coinmarketcap.com 04.09.2017
-     uint constant ETH_PRICE_IN_USD = 300;
+
+     // The USD/ETH exchange rate may be changed once in every eight hours and can vary from $100 to $700 depending on the market. The exchange rate is retrieved from coinmarketcap.com site and is rounded to $1 dollar. For example if current marketcap price is $306.123 per ETH, the price is set as $306 to the contract.
+     uint public usdPerEthCoinmarketcapRate = 300;
+     uint64 public lastUsdPerEthChangeDate = 0;
+
      // Price changes from block to block
      uint constant SINGLE_BLOCK_LEN = 700000;
      // 1 000 000 tokens
@@ -303,9 +304,10 @@ contract Goldmint is SafeMath {
      uint public constant ICO_TOKEN_SOFT_CAP = 150000 * 1 ether;
 
 // Fields:
-     address public creator = 0x0;
-     address public tokenManager = 0x0;
-     address public otherCurrenciesChecker = 0x0;
+     address public creator = 0x0;                // can not be changed after deploy
+     address public ethRateChanger = 0x0;         // can not be changed after deploy
+     address public tokenManager = 0x0;           // can be changed by token manager only
+     address public otherCurrenciesChecker = 0x0; // can not be changed after deploy
 
      uint64 public icoStartedTime = 0;
 
@@ -365,6 +367,11 @@ contract Goldmint is SafeMath {
           require(msg.sender==otherCurrenciesChecker); 
           _; 
      }
+     modifier onlyEthSetter() { 
+          require(msg.sender==ethRateChanger); 
+          _; 
+     }
+
      modifier onlyInState(State state){ 
           require(state==currentState); 
           _; 
@@ -379,6 +386,7 @@ contract Goldmint is SafeMath {
      /// @dev Constructor
      function Goldmint(
           address _tokenManager,
+          address _ethRateChanger,
           address _otherCurrenciesChecker,
 
           address _mntTokenAddress,
@@ -388,6 +396,9 @@ contract Goldmint is SafeMath {
           creator = msg.sender;
 
           tokenManager = _tokenManager;
+          ethRateChanger = _ethRateChanger;
+          lastUsdPerEthChangeDate = uint64(now);
+
           otherCurrenciesChecker = _otherCurrenciesChecker; 
 
           mntToken = MNTP(_mntTokenAddress);
@@ -529,7 +540,7 @@ contract Goldmint is SafeMath {
 
           // Correct: 300000 / 5833.33333333 = 51.42857142
           // We have to multiply by '1 ether' to avoid float truncations
-          uint mntPerEth = (ETH_PRICE_IN_USD * 1000 * 1 ether * 1 ether) / pricePer1000tokensUsd;
+          uint mntPerEth = (usdPerEthCoinmarketcapRate * 1000 * 1 ether * 1 ether) / pricePer1000tokensUsd;
           return mntPerEth;
      }
 
@@ -594,6 +605,17 @@ contract Goldmint is SafeMath {
 
           // 2 - burn tokens
           mntToken.burnTokens(sender, mntToken.balanceOf(sender));
+     }
+
+     function setUsdPerEthRate(uint _usdPerEthRate) public onlyEthSetter {
+          // 1 - check
+          require((_usdPerEthRate>=100) && (_usdPerEthRate<=700));
+          uint64 hoursPassed = lastUsdPerEthChangeDate + 8 hours;  
+          require(uint(now) >= hoursPassed);
+
+          // 2 - update
+          usdPerEthCoinmarketcapRate = _usdPerEthRate;
+          lastUsdPerEthChangeDate = uint64(now);
      }
 
      // Default fallback function

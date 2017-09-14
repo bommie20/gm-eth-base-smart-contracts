@@ -151,7 +151,7 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                          deployGoldmintContract(data,function(err){
                               assert.equal(err,null);
 
-                              assert.equal(goldmintContract.multisigs(0),0x4743E37B3671958f4B6dc5a342eA6A182bDa56aa);
+                              assert.equal(goldmintContract.multisigs(0),0xcec42e247097c276ad3d7cfd270adbd562da5c61);
                               assert.equal(goldmintContract.multisigs(9),0x80b365da1C18f4aa1ecFa0dFA07Ed4417B05Cc69);
 
                               multisig = goldmintContract.multisigs(0);

@@ -276,15 +276,15 @@ contract Goldmint is SafeMath {
      //
      // TODO: set real params here
      address[] public multisigs = [
-          0x4743E37B3671958f4B6dc5a342eA6A182bDa56aa,
-          0xf50Ee077fEd52078F1167D495598a50aCbbffEd1,
-          0xAc72BEaf48a9BedC35588b61b49780fa2037608e,
-          0xBAbb78a6fa75af062cb8fac4311f3b05A86f92db,
-          0x61cc4Be864B7845EAb03A190562B609886CA5F07,
-          0x3FdCa8B5d4D7B7AFaA5cE2c3bdb681D595568ddd,
-          0xbEb1C119713D18f0CbdfD6c5829707693A38F701,
-          0x7B2C21be7b4Bf2B1588099e60E1f6a89E5E9beA8,
-          0x2EBe70376f1f2640af432626101AC52A337F143a,
+          0xcec42e247097c276ad3d7cfd270adbd562da5c61,
+          0x373c46c544662b8c5d55c24cf4f9a5020163ec2f,
+          0x672cf829272339a6c8c11b14acc5f9d07bafac7c,
+          0xce0e1981a19a57ae808a7575a6738e4527fb9118,
+          0x93aa76cdb17eea80e4de983108ef575d8fc8f12b,
+          0x20ae3329cd1e35feff7115b46218c9d056d430fd,
+          0xe9fc1a57a5dc1caa3de22a940e9f09e640615f7e,
+          0xd360433950de9f6fa0e93c29425845eed6bfa0d0,
+          0xf0de97eaff5d6c998c80e07746c81a336e1bbd43,
           0x80b365da1C18f4aa1ecFa0dFA07Ed4417B05Cc69
      ];
 

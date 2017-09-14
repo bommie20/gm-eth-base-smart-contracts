@@ -2402,8 +2402,8 @@ describe('Contracts 11 - set ETH price ', function() {
      });
 
      // move time 
-     it('should move time 9 hours',function(done){
-          var hours = 9 * 31;
+     it('should move time 2 hours',function(done){
+          var hours = 2 * 31;
           var seconds = 60 * 60 * hours;
 
           web3.currentProvider.sendAsync({

@@ -295,7 +295,7 @@ contract Goldmint is SafeMath {
      // These can be changed before ICO starts ($7USD/MNTP)
      uint constant STD_PRICE_USD_PER_1000_TOKENS = 7000;
 
-     // The USD/ETH exchange rate may be changed once in every eight hours and can vary from $100 to $700 depending on the market. The exchange rate is retrieved from coinmarketcap.com site and is rounded to $1 dollar. For example if current marketcap price is $306.123 per ETH, the price is set as $306 to the contract.
+     // The USD/ETH exchange rate may be changed every hour and can vary from $100 to $700 depending on the market. The exchange rate is retrieved from coinmarketcap.com site and is rounded to $1 dollar. For example if current marketcap price is $306.123 per ETH, the price is set as $306 to the contract.
      uint public usdPerEthCoinmarketcapRate = 300;
      uint64 public lastUsdPerEthChangeDate = 0;
 
@@ -617,7 +617,7 @@ contract Goldmint is SafeMath {
      function setUsdPerEthRate(uint _usdPerEthRate) public onlyEthSetter {
           // 1 - check
           require((_usdPerEthRate>=100) && (_usdPerEthRate<=700));
-          uint64 hoursPassed = lastUsdPerEthChangeDate + 8 hours;  
+          uint64 hoursPassed = lastUsdPerEthChangeDate + 1 hours;  
           require(uint(now) >= hoursPassed);
 
           // 2 - update

@@ -1244,11 +1244,25 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
           done();
      });
 
+     it('should not issue tokens if more than single bucket', function(done){
+          var params = {from: tokenManager, gas: 2900000};
+
+          var tokens = 30001 * 1000000000000000000; 
+          var perEth = TOKENS_PER_ETH;
+          var weiCount = (tokens * 1000000000000000000) / TOKENS_PER_ETH;
+
+          goldmintContract.issueTokensFromOtherCurrency(creator2, weiCount, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     /*
      it('should issue tokens with issueTokensFromOtherCurrency function to creator', function(done){
           var params = {from: tokenManager, gas: 2900000};
 
-          var amount = 1000000000000000000;
-          goldmintContract.issueTokensFromOtherCurrency(creator2, amount, params, (err,res)=>{
+          var weiCount = 1000000000000000000;     // 1 ETH
+          goldmintContract.issueTokensFromOtherCurrency(creator2, weiCount, params, (err,res)=>{
                assert.equal(err, null);
 
                var issuedExt = goldmintContract.issuedExternallyTokens();
@@ -1260,6 +1274,34 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
                mntContract.balanceOf(creator2, (err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res.toString(10),TOKENS_PER_ETH);
+                    done();
+               });
+          });
+     });
+     */
+
+     it('should issue tokens with issueTokensFromOtherCurrency function to creator', function(done){
+          var params = {from: tokenManager, gas: 2900000};
+
+          // 10 K tokens
+          var N = 25000;
+          var tokens = N * 1000000000000000000; 
+          var perEth = TOKENS_PER_ETH;
+          var weiCount = (tokens * 1000000000000000000) / TOKENS_PER_ETH;
+
+          console.log('Wei count: ', weiCount);
+          goldmintContract.issueTokensFromOtherCurrency(creator2, weiCount, params, (err,res)=>{
+               assert.equal(err, null);
+
+               var issuedExt = goldmintContract.issuedExternallyTokens();
+               assert.equal(issuedExt,0);
+
+               var tokensSold = goldmintContract.icoTokensSold();
+               assert.equal(tokensSold,tokens);
+
+               mntContract.balanceOf(creator2, (err,res)=>{
+                    assert.equal(err, null);
+                    assert.equal(res.toString(10),tokens);
                     done();
                });
           });

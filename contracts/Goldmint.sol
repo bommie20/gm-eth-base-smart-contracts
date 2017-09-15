@@ -274,7 +274,8 @@ contract Goldmint is SafeMath {
      // These values are HARD CODED!!!
      // For extra security we split single multisig wallet into 10 separate multisig wallets
      //
-     // TODO: set real params here
+     // THIS IS A REAL ICO WALLETS!!!
+     // PLEASE DOUBLE CHECK THAT...
      address[] public multisigs = [
           0xcec42e247097c276ad3d7cfd270adbd562da5c61,
           0x373c46c544662b8c5d55c24cf4f9a5020163ec2f,
@@ -316,6 +317,12 @@ contract Goldmint is SafeMath {
 
      // 150 000 tokens soft cap (otherwise - refund)
      uint public constant ICO_TOKEN_SOFT_CAP = 150000 * 1 ether;
+
+     // 3 000 000 can be issued from other currencies
+     uint public constant MAX_ISSUED_FROM_OTHER_CURRENCIES = 3000000 * 1 ether;
+     // 30 000 MNTP tokens per one call only
+     uint public constant MAX_SINGLE_ISSUED_FROM_OTHER_CURRENCIES = 30000 * 1 ether;
+     uint public issuedFromOtherCurrencies = 0;
 
 // Fields:
      address public creator = 0x0;                // can not be changed after deploy
@@ -582,7 +589,13 @@ contract Goldmint is SafeMath {
           require(_weiCount!=0);
 
           uint newTokens = (_weiCount * getMntTokensPerEth(icoTokensSold)) / 1 ether;
+          
+          require(newTokens<=MAX_SINGLE_ISSUED_FROM_OTHER_CURRENCIES);
+          require((issuedFromOtherCurrencies + newTokens)<=MAX_ISSUED_FROM_OTHER_CURRENCIES);
+
           issueTokensInternal(_to,newTokens);
+
+          issuedFromOtherCurrencies = issuedFromOtherCurrencies + newTokens;
      }
 
      /// @dev This can be called to manually issue new tokens 
@@ -599,8 +612,7 @@ contract Goldmint is SafeMath {
      function issueTokensInternal(address _to, uint _tokens) internal {
           require((icoTokensSold + _tokens)<=ICO_TOKEN_SUPPLY_LIMIT);
 
-          mntToken.issueTokens(_to,_tokens);
-
+          mntToken.issueTokens(_to,_tokens); 
           icoTokensSold+=_tokens;
 
           LogBuy(_to,_tokens);

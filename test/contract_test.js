@@ -105,6 +105,27 @@ function getMoreVestedTokens(index,maxIndex,cb){
      });
 }
 
+function issue10kOtherCurrency(index,maxIndex,cb){
+     // 1 - stop recursion?
+     if(index>maxIndex){
+          return cb(null);
+     }
+
+     var tokens = 10000 * 1000000000000000000; 
+     var perEth = TOKENS_PER_ETH;
+     var weiCount = (tokens * 1000000000000000000) / TOKENS_PER_ETH;
+
+     // 2 - issue tokens
+     var params = {from: tokenManager, gas: 2900000};
+     goldmintContract.issueTokensFromOtherCurrency(creator2, weiCount, params, (err,res)=>{
+          if(err){
+               return cb(err);
+          }
+          // 3 - continue recursion
+          issue10kOtherCurrency(index + 1,maxIndex,cb);
+     });
+}
+
 describe('Contracts 2 - test MNTP getters and setters', function() {
      before("Initialize everything", function(done) {
           web3.eth.getAccounts(function(err, as) {
@@ -1257,7 +1278,6 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
           });
      });
 
-     /*
      it('should issue tokens with issueTokensFromOtherCurrency function to creator', function(done){
           var params = {from: tokenManager, gas: 2900000};
 
@@ -1278,7 +1298,6 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
                });
           });
      });
-     */
 
      it('should issue tokens with issueTokensFromOtherCurrency function to creator', function(done){
           var params = {from: tokenManager, gas: 2900000};
@@ -1290,16 +1309,16 @@ describe('Contracts 5 - test issueTokensFromOtherCurrency', function() {
           var weiCount = (tokens * 1000000000000000000) / TOKENS_PER_ETH;
 
           console.log('Wei count: ', weiCount);
-          goldmintContract.issueTokensFromOtherCurrency(creator2, weiCount, params, (err,res)=>{
+          goldmintContract.issueTokensFromOtherCurrency(creator, weiCount, params, (err,res)=>{
                assert.equal(err, null);
 
                var issuedExt = goldmintContract.issuedExternallyTokens();
                assert.equal(issuedExt,0);
 
                var tokensSold = goldmintContract.icoTokensSold();
-               assert.equal(tokensSold,tokens);
+               assert.notEqual(tokensSold,TOKENS_PER_ETH);
 
-               mntContract.balanceOf(creator2, (err,res)=>{
+               mntContract.balanceOf(creator, (err,res)=>{
                     assert.equal(err, null);
                     assert.equal(res.toString(10),tokens);
                     done();
@@ -2549,3 +2568,151 @@ describe('Contracts 11 - set ETH price ', function() {
           );
      });
 })
+
+describe('Contracts 12 - test issueTokensFromOtherCurrency total', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               goldmintTeam = accounts[3];
+               creator2 = accounts[4];
+               tokenManager = accounts[5];
+               unsoldTokensReward = accounts[6];
+               ethRateChanger = accounts[7];
+
+               var contractName = ':MNTP';
+               getContractAbi(contractName,function(err,abi){
+                    ledgerAbi = abi;
+
+                    done();
+               });
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+
+               deployUnsoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployFoundersVestingContract(data,function(err){
+                         assert.equal(err,null);
+
+                         deployGoldmintContract(data,function(err){
+                              assert.equal(err,null);
+
+                              multisig = goldmintContract.multisigs(0);
+                              multisig2 = goldmintContract.multisigs(1);
+
+                              mntContract.setIcoContractAddress(
+                                   goldmintContractAddress,
+                                   {
+                                        from: creator,               
+                                        gas: 2900000 
+                                   },function(err,result){
+
+                                        unsoldContract.setIcoContractAddress(
+                                             goldmintContractAddress,
+                                             {
+                                                  from: creator,               
+                                                  gas: 2900000 
+                                             },function(err,result){
+                                                  assert.equal(err,null);
+                                                  done();
+                                        });
+                                   });
+                         });
+                    });
+               });
+          });
+     });
+
+     it('should return 0 for total supply', function(done){
+          var params = {from: creator2, gas: 2900000};
+          mntContract.totalSupply((err,res)=>{
+               assert.equal(err, null);
+               assert.equal(res.toString(10), 0);
+               done();                              
+          })
+     });
+
+     it('should not issue tokens if in wrong state', function(done){
+          var params = {from: tokenManager, gas: 2900000};
+
+          var amount = 1000000000000000000;
+          goldmintContract.issueTokensFromOtherCurrency(creator2, amount, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should change state to ICORunning', function(done){
+          goldmintContract.currentState((err,res)=>{
+               assert.equal(err,null);
+               assert.equal(res,0);
+
+               var params = {from: creator, gas: 2900000};
+               goldmintContract.startICO(params, (err,res)=>{
+                    assert.equal(err, null);
+
+                    goldmintContract.currentState((err,res)=>{
+                         assert.equal(err, null);
+                         assert.equal(res,1);
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should not issue tokens from other account', function(done){
+          var params = {from: creator, gas: 2900000};
+
+          var amount = 1000000000000000000;
+          goldmintContract.issueTokensFromOtherCurrency(creator2, amount, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should not be able to call issueTokensInternal', function(done){
+          var params = {from: creator, gas: 2900000};
+          assert.equal(typeof(goldmintContract.issueTokensInternal),'undefined');
+          assert.notEqual(typeof(goldmintContract.issueTokensFromOtherCurrency),'undefined');
+
+          done();
+     });
+
+     it('should not issue tokens if more than total ', function(done){
+          var index = 0;
+          // 299 iterations by default
+          var maxIndex = (3000000 / 10000) - 1;     
+
+          // 3 mln = 300 iterations
+          issue10kOtherCurrency(index,maxIndex,function(err){
+               assert.equal(err,null);
+
+               var issuedOtherCurr = goldmintContract.issuedFromOtherCurrencies(); 
+
+               // should fail!
+               issue10kOtherCurrency(index,maxIndex,function(err){
+                    assert.notEqual(err,null);
+                    done();
+               });
+          });
+     });
+
+});

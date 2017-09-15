@@ -618,12 +618,12 @@ contract Goldmint is SafeMath {
 
           require(ethValue > 0);
 
-          // 1 - send money back
-          sender.transfer(ethValue);
+          // 1 - burn tokens
           ethInvestedBy[sender] = 0;
-
-          // 2 - burn tokens
           mntToken.burnTokens(sender, mntToken.balanceOf(sender));
+
+          // 2 - send money back
+          sender.transfer(ethValue);
      }
 
      function setUsdPerEthRate(uint _usdPerEthRate) public onlyEthSetter {

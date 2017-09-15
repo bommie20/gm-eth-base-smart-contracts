@@ -593,7 +593,9 @@ contract Goldmint is SafeMath {
 
      /// @dev This can be called to manually issue new tokens 
      /// from the bonus reward
-     function issueTokensExternal(address _to, uint _tokens) public onlyInState(State.ICOFinished) onlyTokenManager {
+     function issueTokensExternal(address _to, uint _tokens) public onlyTokenManager {
+          // in 2 states
+          require((State.ICOFinished==currentState) || (State.ICORunning==currentState));
           // can not issue more than BONUS_REWARD
           require((issuedExternallyTokens + _tokens)<=BONUS_REWARD);
 

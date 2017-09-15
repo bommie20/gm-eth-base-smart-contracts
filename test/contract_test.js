@@ -292,6 +292,14 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
           });
      });
 
+     it('should not issue tokens externally if in wrong state', function(done){
+          var params = {from: tokenManager, gas: 2900000};
+          goldmintContract.issueTokensExternal(creator2, 1000, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
      it('should change state to ICORunning', function(done){
           goldmintContract.currentState((err,res)=>{
                assert.equal(err,null);
@@ -307,14 +315,6 @@ describe('Contracts 2 - test MNTP getters and setters', function() {
                          done();
                     });
                });
-          });
-     });
-
-     it('should not issue tokens externally if in wrong state', function(done){
-          var params = {from: tokenManager, gas: 2900000};
-          goldmintContract.issueTokensExternal(creator2, 1000, params, (err,res)=>{
-               assert.notEqual(err, null);
-               done();
           });
      });
 

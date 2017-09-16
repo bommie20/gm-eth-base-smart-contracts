@@ -277,15 +277,15 @@ contract Goldmint is SafeMath {
      // THIS IS A REAL ICO WALLETS!!!
      // PLEASE DOUBLE CHECK THAT...
      address[] public multisigs = [
-          0xcec42e247097c276ad3d7cfd270adbd562da5c61,
-          0x373c46c544662b8c5d55c24cf4f9a5020163ec2f,
-          0x672cf829272339a6c8c11b14acc5f9d07bafac7c,
-          0xce0e1981a19a57ae808a7575a6738e4527fb9118,
-          0x93aa76cdb17eea80e4de983108ef575d8fc8f12b,
-          0x20ae3329cd1e35feff7115b46218c9d056d430fd,
-          0xe9fc1a57a5dc1caa3de22a940e9f09e640615f7e,
-          0xd360433950de9f6fa0e93c29425845eed6bfa0d0,
-          0xf0de97eaff5d6c998c80e07746c81a336e1bbd43,
+          0xcEc42E247097C276Ad3D7cFd270aDBd562dA5c61,
+          0x373C46c544662B8C5D55c24Cf4F9a5020163eC2f,
+          0x672CF829272339A6c8c11b14Acc5F9d07bAFAC7c,
+          0xce0e1981A19a57aE808a7575a6738e4527fB9118,
+          0x93Aa76cdb17EeA80e4De983108ef575D8fc8f12b,
+          0x20ae3329Cd1e35FEfF7115B46218c9D056d430Fd,
+          0xe9fC1A57a5dC1CaA3DE22A940E9F09e640615f7E,
+          0xD360433950DE9F6FA0e93C29425845EeD6BFA0d0,
+          0xF0De97EAff5D6c998c80e07746c81a336e1BBd43,
           0x80b365da1C18f4aa1ecFa0dFA07Ed4417B05Cc69
      ];
 

@@ -365,6 +365,8 @@ function deployMigrationContract(data,cb){
           var alreadyCalled = false;
 
           tempContract.new(
+               mntContractAddress,
+               goldContractAddress,
                {
                     from: creator, 
                     // should not exceed 5000000 for Kovan by default

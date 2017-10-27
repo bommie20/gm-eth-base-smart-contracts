@@ -11,8 +11,15 @@ var web3 = new Web3(new Web3.providers.HttpProvider(process.env.ETH_NODE));
 
 var accounts;
 var creator;
+var buyer;
 
 var initialBalanceCreator = 0;
+
+var mntContractAddress;
+var mntContract;
+
+var goldContractAddress;
+var goldContract;
 
 var migrationContractAddress;
 var migrationContract;
@@ -29,6 +36,7 @@ describe('Migrations 1', function() {
 
                accounts = as;
                creator = accounts[0];
+               buyer = accounts[1];
 
                done();
           });
@@ -41,11 +49,60 @@ describe('Migrations 1', function() {
      it('should deploy token contract',function(done){
           var data = {};
 
-          deployMigrationContract(data,function(err){
+          deployMntContract(data,function(err){
                assert.equal(err,null);
+               
+               deployGoldContract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployMigrationContract(data,function(err){
+                         assert.equal(err,null);
+
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should return reward 0', function(done){
+          var out = migrationContract.calculateMyRewardMax(creator); 
+          assert.equal(out,0);
+
+          done();
+     })
+
+     it('should set ico contract address',function(done){
+          // set myself
+          mntContract.setIcoContractAddress(
+               creator,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should issue some MNTP tokens', function(done){
+          var params = {from: creator, gas: 2900000};
+
+          mntContract.issueTokens(buyer, 1000, params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balance = mntContract.balanceOf(buyer);
+               assert.equal(balance,1000);
 
                done();
           });
      });
 
+     it('should return reward', function(done){
+          var out = migrationContract.calculateMyRewardMax(buyer); 
+          assert.equal(out,0);
+
+          done();
+     })
 });

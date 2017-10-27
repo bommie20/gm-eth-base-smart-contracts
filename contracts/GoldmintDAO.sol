@@ -226,7 +226,7 @@ contract GoldmintMigration is CreatorEnabled {
      // _grapheneAddress is something like that - "BTS7yRXCkBjKxho57RCbqYE3nEiprWXXESw3Hxs5CKRnft8x7mdGi"
      function migrateMntp(string _grapheneAddress) public {
           // 1 - calculate current reward
-          uint myRewardMax = calculateMyRewardMax();        
+          uint myRewardMax = calculateMyRewardMax(msg.sender);        
           uint myReward = calculateMyRewardDecreased(myRewardMax);
 
           // 2 - pay reward
@@ -239,8 +239,11 @@ contract GoldmintMigration is CreatorEnabled {
 
      // Each MNTP token holder gets a GOLD reward as a percent of all rewards
      // proportional to his MNTP token stake
-     function calculateMyRewardMax() public returns(uint){
-          uint myCurrentMntpBalance = mntpToken.balanceOf(msg.sender);
+     function calculateMyRewardMax(address _of) public constant returns(uint){
+          uint myCurrentMntpBalance = mntpToken.balanceOf(_of);
+          if(0==myCurrentMntpBalance){
+               return 0;
+          }
           return migrationRewardTotal * (myCurrentMntpBalance / mntpToMigrateTotal);
      }
 
@@ -251,7 +254,7 @@ contract GoldmintMigration is CreatorEnabled {
      // On 1st day of migration, you will get: 100 - 100 * 0/365 = 100% of your rewards
      // On 2nd day of migration, you will get: 100 - 100 * 1/365 = 99.7261% of your rewards
      // On 365th day of migration, you will get: 100 - 100 * 364/365 = 0.274%
-     function calculateMyRewardDecreased(uint _myRewardMax) public returns(uint){
+     function calculateMyRewardDecreased(uint _myRewardMax) public constant returns(uint){
           // day starts from 0
           uint day = (uint64(now) - migrationStartedTime) / uint64(1 days);  
           if(day>=365){

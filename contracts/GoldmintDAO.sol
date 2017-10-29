@@ -106,7 +106,7 @@ contract Gold is StdToken, CreatorEnabled {
      modifier onlyIfUnlocked() { require(!lockTransfers); _; }
 
 // Functions:
-     function GOLD() public {
+     function Gold() public {
           creator = msg.sender;
      }
 
@@ -114,8 +114,14 @@ contract Gold is StdToken, CreatorEnabled {
           migrationAddress = _migrationAddress;
      }
 
-     function emit(address _to, uint _value) public onlyCreator {
+     function issueTokens(address _who, uint _tokens) public onlyCreator {
           // TODO:
+          //require((totalSupply + _tokens) <= TOTAL_TOKEN_SUPPLY);
+
+          balances[_who] = safeAdd(balances[_who],_tokens);
+          totalSupply = safeAdd(totalSupply,_tokens);
+
+          Transfer(0x0, _who, _tokens);
      }
 
      function startMigration() public onlyMigration {
@@ -127,16 +133,7 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function transfer(address _to, uint256 _value) public onlyIfUnlocked onlyPayloadSize(2 * 32) returns(bool){
-          uint fee = calculateFee(_value);
-          uint sendThis = safeSub(_value,fee);
-          
-          // 1.Transfer fee
-          // A -> rewards account
-          super.transfer(migrationAddress, fee);
-
-          // 2.Transfer
-          // A -> B
-          return super.transfer(_to, sendThis);
+          return transferFrom(msg.sender, _to, _value);
      }
 
      function transferFrom(address _from, address _to, uint256 _value) public onlyIfUnlocked returns(bool){
@@ -162,7 +159,7 @@ contract Gold is StdToken, CreatorEnabled {
 
      function calculateFee(uint _value) internal returns(uint) {
           // TODO
-          return 0;  
+          return 1;  
      }
 
 }
@@ -240,10 +237,15 @@ contract GoldmintMigration is CreatorEnabled {
      // Each MNTP token holder gets a GOLD reward as a percent of all rewards
      // proportional to his MNTP token stake
      function calculateMyRewardMax(address _of) public constant returns(uint){
+          if(0==mntpToMigrateTotal){
+               return 0;
+          }
+
           uint myCurrentMntpBalance = mntpToken.balanceOf(_of);
           if(0==myCurrentMntpBalance){
                return 0;
           }
+
           return migrationRewardTotal * (myCurrentMntpBalance / mntpToMigrateTotal);
      }
 

@@ -12,6 +12,7 @@ var web3 = new Web3(new Web3.providers.HttpProvider(process.env.ETH_NODE));
 var accounts;
 var creator;
 var buyer;
+var buyer2;
 
 var initialBalanceCreator = 0;
 
@@ -37,6 +38,7 @@ describe('Migrations 1', function() {
                accounts = as;
                creator = accounts[0];
                buyer = accounts[1];
+               buyer2 = accounts[2];
 
                done();
           });
@@ -52,7 +54,9 @@ describe('Migrations 1', function() {
           deployMntContract(data,function(err){
                assert.equal(err,null);
                
-               deployGoldContract(data,function(err){
+               // same as deplyGold2Contract but deploys 
+               // Gold from GoldmintDAO.sol file
+               deployGold2Contract(data,function(err){
                     assert.equal(err,null);
 
                     deployMigrationContract(data,function(err){
@@ -64,8 +68,34 @@ describe('Migrations 1', function() {
           });
      });
 
+     it('should not set migration address if not creator',function(done){
+          goldContract.setMigrationContractAddress(
+               migrationContractAddress,
+               {
+                    from: buyer,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should set migration address',function(done){
+          goldContract.setMigrationContractAddress(
+               migrationContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
      it('should return reward 0', function(done){
-          var out = migrationContract.calculateMyRewardMax(creator); 
+          var out = migrationContract.calculateMyRewardMax(buyer); 
           assert.equal(out,0);
 
           done();
@@ -99,10 +129,103 @@ describe('Migrations 1', function() {
           });
      });
 
-     it('should return reward', function(done){
+     it('should not emit GOLD if not creator',function(done){
+          var balance = goldContract.balanceOf(buyer);
+          assert.equal(balance,0);
+
+          var amount = 100000;
+          var params = {from: buyer, gas: 2900000};
+          goldContract.issueTokens(buyer, amount, params, (err,res)=>{
+               assert.notEqual(err, null);
+               done();
+          });
+     });
+
+     it('should emit some GOLD tokens to buyer',function(done){
+          var balance = goldContract.balanceOf(buyer);
+          assert.equal(balance,0);
+
+          var amount = 100000;
+          var params = {from: creator, gas: 2900000};
+          goldContract.issueTokens(buyer, amount, params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balance = goldContract.balanceOf(buyer);
+               assert.equal(balance,100000);
+
+               done();
+          });
+     });
+
+     it('should transfer GOLD tokens to get some reward',function(done){
+          assert.notEqual(goldContract.migrationAddress(),0);
+
+          var balance1 = goldContract.balanceOf(buyer2);
+          assert.equal(balance1,0);
+
+          var amount = 100000;
+
+          var params = {from: buyer, gas: 2900000};
+          goldContract.transfer(buyer2, amount, params, (err,res)=>{
+               assert.equal(err, null);
+
+               /*
+               var balance = goldContract.balanceOf(buyer);
+               assert.equal(balance,0);
+
+               balance1 = goldContract.balanceOf(buyer2);
+               assert.equal(balance1,100000);
+               */
+
+               done();
+          });
+     });
+
+     /*
+     it('should return zero reward because migration is not started', function(done){
+          var out = migrationContract.calculateMyRewardMax(buyer); 
+          assert.equal(out,0);
+          done();
+     })
+
+     it('should not start the migration if not creator',function(done){
+          // set myself
+          migrationContract.startMigration(
+               {
+                    from: buyer,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should start the migration',function(done){
+          // set myself
+          migrationContract.startMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    // TODO: must not be zero
+                    assert.notEqual(migrationContract.migrationRewardTotal(),0);
+                    assert.notEqual(migrationContract.migrationStartedTime(),0);
+                    assert.equal(migrationContract.mntpToMigrateTotal(),1000);
+
+                    done();
+               }
+          );
+     });
+
+     /*
+     it('should return non-zero reward', function(done){
           var out = migrationContract.calculateMyRewardMax(buyer); 
           assert.equal(out,0);
 
           done();
      })
+     */
 });

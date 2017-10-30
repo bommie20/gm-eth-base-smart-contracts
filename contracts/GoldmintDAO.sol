@@ -104,6 +104,7 @@ contract Gold is StdToken, CreatorEnabled {
 
      bool public lockTransfers = false;
      bool public migrationStarted = false;
+     bool public migrationFinished = false;
 
 // Modifiers:
      modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
@@ -125,9 +126,6 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function issueTokens(address _who, uint _tokens) public onlyCreator {
-          // TODO: 
-          //require((totalSupply + _tokens) <= TOTAL_TOKEN_SUPPLY);
-
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
 
@@ -139,12 +137,21 @@ contract Gold is StdToken, CreatorEnabled {
           migrationStarted = true;
      }
 
+     function finishMigration() public onlyMigration {
+          require(true==migrationStarted);
+
+          migrationFinished = true;
+     }
+
      function lockTransfer(bool _lock) public onlyMigration {
           lockTransfers = _lock;
      }
 
      function transfer(address _to, uint256 _value) public onlyIfUnlocked onlyPayloadSize(2 * 32) returns(bool){
-          uint fee = calculateFee(_value);
+          uint yourCurrentMntpBalance = mntpToken.balanceOf(msg.sender);
+
+          // you can't transfer if fee is ZERO 
+          uint fee = calculateFee(yourCurrentMntpBalance, _value);
           uint sendThis = safeSub(_value,fee);
           
           // 1.Transfer fee
@@ -165,7 +172,9 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function transferFrom(address _from, address _to, uint256 _value) public onlyIfUnlocked returns(bool){
-          uint fee = calculateFee(_value);
+          uint yourCurrentMntpBalance = mntpToken.balanceOf(_from);
+
+          uint fee = calculateFee(yourCurrentMntpBalance, _value);
           uint sendThis = safeSub(_value,fee);
           
           // 1.Transfer fee
@@ -193,14 +202,25 @@ contract Gold is StdToken, CreatorEnabled {
           Transfer(migrationAddress, _to, _value);
      }
 
-     function calculateFee(uint _value) public constant returns(uint) {
-          var yourCurrentMntpBalane = mntpToken.balanceOf(msg.sender);
+     function calculateFee(uint _mntpBalance, uint _value) public constant returns(uint) {
+          // When migration process is finished (1 year from Graphene launch), then transaction fee is 1% GOLD.
+          if(migrationFinished){
+               return (_value / 100); 
+          }
 
-          // TODO
-
-          return 100;  
+          // If the sender holds 0 MNTP, then the transaction fee is 1% GOLD.
+          // If the sender holds at least 10 MNTP, then the transaction fee is 0.333333% GOLD.
+          // If the sender holds at least 1000 MNTP, then the transaction fee is 0.033333% GOLD.
+          if(_mntpBalance>=(1000 * 1 ether)){
+               return ((_value / 100) / 30);
+          }
+          if(_mntpBalance>=(10 * 1 ether)){
+               return ((_value / 100) / 3);
+          }
+          
+          // 1%
+          return (_value / 100);
      }
-
 }
 
 contract MNTP_Interface is StdToken {
@@ -223,6 +243,7 @@ contract GoldmintMigration is CreatorEnabled {
      // this is total collected GOLD rewards (launch to migration start)
      uint public migrationRewardTotal = 0;
      uint64 public migrationStartedTime = 0;
+     uint64 public migrationFinishedTime = 0;
 
 // Functions:
      // Constructor
@@ -255,6 +276,11 @@ contract GoldmintMigration is CreatorEnabled {
           migrationStartedTime = uint64(now);
      }
 
+     function finishMigration() public onlyCreator {
+          goldToken.finishMigration();
+          migrationFinishedTime = uint64(now);
+     }
+
      // Call this to migrate your MNTP tokens to Graphene MNT
      // (this is one-way only)
      // _grapheneAddress is something like that - "BTS7yRXCkBjKxho57RCbqYE3nEiprWXXESw3Hxs5CKRnft8x7mdGi"
@@ -263,6 +289,7 @@ contract GoldmintMigration is CreatorEnabled {
           uint myRewardMax = calculateMyRewardMax(msg.sender);        
           uint myReward = calculateMyRewardDecreased(myRewardMax);
 
+          // TODO:
           // 2 - pay reward
 
      }

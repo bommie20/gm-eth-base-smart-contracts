@@ -178,7 +178,9 @@ describe('Migrations 1', function() {
                var balance = goldContract.balanceOf(buyer);
                assert.equal(balance,0);
 
-               var fee = goldContract.calculateFee(amount);
+               var mntpBalance = mntContract.balanceOf(buyer);
+               var fee = goldContract.calculateFee(mntpBalance,amount);
+               assert.equal(fee,1000);  // 1% 
 
                balance1 = goldContract.balanceOf(buyer2);
                assert.equal(balance1,100000 - fee);
@@ -191,6 +193,7 @@ describe('Migrations 1', function() {
           });
      });
 
+     /*
      it('should return zero reward because migration is not started', function(done){
           var out = migrationContract.calculateMyRewardMax(buyer); 
           assert.equal(out,0);
@@ -198,7 +201,6 @@ describe('Migrations 1', function() {
      })
 
      it('should not start the migration if not creator',function(done){
-          // set myself
           migrationContract.startMigration(
                {
                     from: buyer,               
@@ -211,7 +213,6 @@ describe('Migrations 1', function() {
      });
 
      it('should start the migration',function(done){
-          // set myself
           migrationContract.startMigration(
                {
                     from: creator,               
@@ -276,7 +277,8 @@ describe('Migrations 1', function() {
                // should update the balance
                var balanceNew = goldContract.balanceOf(buyer2);
 
-               var fee = goldContract.calculateFee(amount);
+               var mntpBalance = mntContract.balanceOf(buyer3);
+               var fee = goldContract.calculateFee(mntpBalance, amount);
                var one = new BigNumber(amount);
                var two = new BigNumber(fee);
                var shouldBe = prevBalance.plus(one).minus(two); 
@@ -294,5 +296,155 @@ describe('Migrations 1', function() {
                done();
           });
      });
+     */
+});
 
+describe('Migrations 2 - calculate fees', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               buyer3 = accounts[3];
+               goldmintTeamAddress = accounts[4];
+
+               done();
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+               
+               // same as deplyGold2Contract but deploys 
+               // Gold from GoldmintDAO.sol file
+               deployGold2Contract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployMigrationContract(data,function(err){
+                         assert.equal(err,null);
+
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should set migration address',function(done){
+          goldContract.setMigrationContractAddress(
+               migrationContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     // migration still not started
+     // migration still not finished
+     it('should calculate correct fees',function(done){
+          var mntpBalance = 0;
+          var amount = 1000;
+          var fee = goldContract.calculateFee(mntpBalance,amount);
+          assert.equal(fee, 10);   // 1%
+
+          // 2
+          mntpBalance = 0;
+          amount = 100000000;
+          fee = goldContract.calculateFee(mntpBalance,amount);
+          assert.equal(fee, 1000000);   // 1%
+
+          // 3 - i own 10 MNTP tokens
+          mntpBalance = 10 * 1000000000000000000;
+          amount = 100000000;
+          fee = goldContract.calculateFee(mntpBalance,amount);
+          assert.equal(fee, 333333);   // 0.3333%
+
+          // 4 - i own 1000 MNTP tokens
+          mntpBalance = 1000 * 1000000000000000000;
+          amount = 100000000;
+          fee = goldContract.calculateFee(mntpBalance,amount);
+          assert.equal(fee, 33333);   // 0.03333%
+
+          done();
+     });
+
+     it('should not finish the migration if not started',function(done){
+          migrationContract.finishMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should start the migration',function(done){
+          migrationContract.startMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should finish the migration',function(done){
+          migrationContract.finishMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     // migration finished
+     it('should calculate correct fees',function(done){
+          var mntpBalance = 0;
+          var amount = 1000;
+          var fee = goldContract.calculateFee(mntpBalance,amount);
+          assert.equal(fee, 10);   // 1%
+
+          // 2
+          mntpBalance = 0;
+          amount = 100000000;
+          fee = goldContract.calculateFee(mntpBalance,amount);
+          assert.equal(fee, 1000000);   // 1%
+
+          // 3 - i own 10 MNTP tokens
+          mntpBalance = 10 * 1000000000000000000;
+          amount = 100000000;
+          fee = goldContract.calculateFee(mntpBalance,amount);
+          assert.equal(fee, 1000000);   // 1%
+
+          // 4 - i own 1000 MNTP tokens
+          mntpBalance = 1000 * 1000000000000000000;
+          amount = 100000000;
+          fee = goldContract.calculateFee(mntpBalance,amount);
+          assert.equal(fee, 1000000);   // 1%
+
+          done();
+     });
 });

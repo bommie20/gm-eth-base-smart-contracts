@@ -99,19 +99,29 @@ contract Gold is StdToken, CreatorEnabled {
 
      // this is used to send fees (that is then distributed as rewards)
      address public migrationAddress = 0x0;
+     address public goldmintTeamAddress = 0x0;
+     MNTP_Interface public mntpToken;
+
      bool public lockTransfers = false;
+     bool public migrationStarted = false;
 
 // Modifiers:
      modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
      modifier onlyIfUnlocked() { require(!lockTransfers); _; }
 
 // Functions:
-     function Gold() public {
+     function Gold(address _mntpContractAddress, address _goldmintTeamAddress) public {
           creator = msg.sender;
+          mntpToken = MNTP_Interface(_mntpContractAddress);
+          goldmintTeamAddress = _goldmintTeamAddress; 
      }
 
      function setMigrationContractAddress(address _migrationAddress) public onlyCreator {
           migrationAddress = _migrationAddress;
+     }
+
+     function setGoldmintTeamAddress(address _teamAddress) public onlyCreator {
+          goldmintTeamAddress = _teamAddress;
      }
 
      function issueTokens(address _who, uint _tokens) public onlyCreator {
@@ -124,8 +134,9 @@ contract Gold is StdToken, CreatorEnabled {
           Transfer(0x0, _who, _tokens);
      }
 
+     // there is no way to revert that
      function startMigration() public onlyMigration {
-          // TODO:
+          migrationStarted = true;
      }
 
      function lockTransfer(bool _lock) public onlyMigration {
@@ -138,7 +149,15 @@ contract Gold is StdToken, CreatorEnabled {
           
           // 1.Transfer fee
           // A -> rewards account
-          super.transfer(migrationAddress, fee);
+          // 
+          // Each GOLD token transfer should send transaction fee to
+          // GoldmintMigration contract if Migration process is not started.
+          // Goldmint team if Migration process is started.
+          if(migrationStarted){
+               super.transfer(goldmintTeamAddress, fee);
+          }else{
+               super.transfer(migrationAddress, fee);
+          }
 
           // 2.Transfer
           // A -> B
@@ -151,8 +170,16 @@ contract Gold is StdToken, CreatorEnabled {
           
           // 1.Transfer fee
           // A -> rewards account
-          super.transferFrom(_from, migrationAddress, fee);
-
+          // 
+          // Each GOLD token transfer should send transaction fee to
+          // GoldmintMigration contract if Migration process is not started.
+          // Goldmint team if Migration process is started.
+          if(migrationStarted){
+               super.transferFrom(_from, goldmintTeamAddress, fee);
+          }else{
+               super.transferFrom(_from, migrationAddress, fee);
+          }
+          
           // 2.Transfer
           // A -> B
           return super.transferFrom(_from, _to, sendThis);
@@ -167,7 +194,10 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function calculateFee(uint _value) public constant returns(uint) {
+          var yourCurrentMntpBalane = mntpToken.balanceOf(msg.sender);
+
           // TODO
+
           return 100;  
      }
 
@@ -192,7 +222,6 @@ contract GoldmintMigration is CreatorEnabled {
      
      // this is total collected GOLD rewards (launch to migration start)
      uint public migrationRewardTotal = 0;
-     uint public mntpToMigrateTotal = 0;
      uint64 public migrationStartedTime = 0;
 
 // Functions:
@@ -223,7 +252,6 @@ contract GoldmintMigration is CreatorEnabled {
           
           // 2 - store the current values 
           migrationRewardTotal = goldToken.balanceOf(this);
-          mntpToMigrateTotal = mntpToken.totalSupply();
           migrationStartedTime = uint64(now);
      }
 
@@ -247,6 +275,9 @@ contract GoldmintMigration is CreatorEnabled {
      // Each MNTP token holder gets a GOLD reward as a percent of all rewards
      // proportional to his MNTP token stake
      function calculateMyRewardMax(address _of) public constant returns(uint){
+          // total supply should never change, but who knows
+          // lets get it again
+          uint mntpToMigrateTotal = mntpToken.totalSupply();
           if(0==mntpToMigrateTotal){
                return 0;
           }

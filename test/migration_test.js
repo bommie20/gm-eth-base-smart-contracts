@@ -13,6 +13,9 @@ var accounts;
 var creator;
 var buyer;
 var buyer2;
+var buyer3;
+
+var goldmintTeamAddress;
 
 var initialBalanceCreator = 0;
 
@@ -39,6 +42,8 @@ describe('Migrations 1', function() {
                creator = accounts[0];
                buyer = accounts[1];
                buyer2 = accounts[2];
+               buyer3 = accounts[3];
+               goldmintTeamAddress = accounts[4];
 
                done();
           });
@@ -216,19 +221,78 @@ describe('Migrations 1', function() {
 
                     assert.notEqual(migrationContract.migrationRewardTotal(),0);
                     assert.notEqual(migrationContract.migrationStartedTime(),0);
-                    assert.equal(migrationContract.mntpToMigrateTotal(),1000);
+                    assert.equal(mntContract.totalSupply(),1000);
 
                     done();
                }
           );
      });
 
-     /*
      it('should return non-zero reward', function(done){
           var out = migrationContract.calculateMyRewardMax(buyer); 
-          assert.equal(out,0);
+
+          // 100% of rewards
+          var balanceRewards = goldContract.balanceOf(migrationContractAddress);
+          assert.equal(out.toString(10),balanceRewards.toString(10));
 
           done();
      })
-     */
+
+     it('should emit some GOLD tokens to buyer3 and rewards should not be changed',function(done){
+          var balance = goldContract.balanceOf(buyer3);
+          assert.equal(balance,0);
+
+          var amount = 200000;
+          var params = {from: creator, gas: 2900000};
+          goldContract.issueTokens(buyer3, amount, params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balance = goldContract.balanceOf(buyer3);
+               assert.equal(balance,200000);
+
+               // rewards should not be changed - 100% of rewards
+               var out = migrationContract.calculateMyRewardMax(buyer); 
+               var balanceRewards = goldContract.balanceOf(migrationContractAddress);
+               assert.equal(out.toString(10),balanceRewards.toString(10));
+
+               done();
+          });
+     });
+
+     it('should transfer reward to goldmint team',function(done){
+          var amount = 200000;
+          
+          var prevBalance = goldContract.balanceOf(buyer2);
+          var prevFees = goldContract.balanceOf(migrationContractAddress); 
+
+          // GOLD: buyer3 -> buyer2
+          var params = {from: buyer3, gas: 2900000};
+          goldContract.transfer(buyer2, amount, params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balance = goldContract.balanceOf(buyer3);
+               assert.equal(balance,0);
+
+               // should update the balance
+               var balanceNew = goldContract.balanceOf(buyer2);
+
+               var fee = goldContract.calculateFee(amount);
+               var one = new BigNumber(amount);
+               var two = new BigNumber(fee);
+               var shouldBe = prevBalance.plus(one).minus(two); 
+
+               assert.equal(balanceNew.toString(10),shouldBe.toString(10));
+
+               // fees should not be updated!
+               var balanceRewards = goldContract.balanceOf(migrationContractAddress);
+               assert.equal(balanceRewards.toString(10),prevFees.toString(10));
+
+               // goldmint team should get the reward
+               var teamAmount = goldContract.balanceOf(goldmintTeamAddress);
+               assert.equal(teamAmount.toString(10),fee.toString(10));
+
+               done();
+          });
+     });
+
 });

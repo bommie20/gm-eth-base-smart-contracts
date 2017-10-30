@@ -429,6 +429,8 @@ function deployGold2Contract(data,cb){
           var alreadyCalled = false;
 
           tempContract.new(
+               mntContractAddress,
+               goldmintTeamAddress,
                {
                     from: creator, 
                     // should not exceed 5000000 for Kovan by default

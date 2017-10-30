@@ -193,7 +193,6 @@ describe('Migrations 1', function() {
           });
      });
 
-     /*
      it('should return zero reward because migration is not started', function(done){
           var out = migrationContract.calculateMyRewardMax(buyer); 
           assert.equal(out,0);
@@ -296,7 +295,6 @@ describe('Migrations 1', function() {
                done();
           });
      });
-     */
 });
 
 describe('Migrations 2 - calculate fees', function() {

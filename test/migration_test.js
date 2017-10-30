@@ -334,6 +334,21 @@ describe('Migrations 1', function() {
           });
      });
 
+     it('should set ico contract address',function(done){
+          // required for burn!
+          mntContract.setIcoContractAddress(
+               migrationContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
      // Now migrate MNTP tokens
      it('should migrate MNTP tokens',function(done){
           var grapheneAddress = '224238729837489237482374892734897234897';
@@ -363,6 +378,10 @@ describe('Migrations 1', function() {
                     var newMigrateBalance = goldContract.balanceOf(migrationContractAddress);
                     assert.equal(newMigrateBalance.toString(10),shouldBe.toString(10));
 
+                    // MNTP tokens should be burned...
+                    var myMntp = mntContract.balanceOf(buyer2);
+                    assert.equal(myMntp.toString(10),0);
+
                     done();
                }
           );
@@ -371,13 +390,13 @@ describe('Migrations 1', function() {
      it('should not migrate MNTP tokens again',function(done){
           var grapheneAddress = '224238729837489237482374892734897234897';
 
+          // TODO:
           migrationContract.migrateMntp(
                grapheneAddress,
                {
                     from: buyer2,           
                     gas: 2900000 
                },function(err,result){
-                    // TODO
                     assert.notEqual(err,null);
 
                     done();

@@ -220,6 +220,8 @@ contract Gold is StdToken, CreatorEnabled {
 contract MNTP_Interface is StdToken {
 // Additional methods that MNTP contract provides
      function lockTransfer(bool _lock);
+
+     function burnTokens(address _who, uint _tokens);
 }
 
 contract GoldmintMigration is CreatorEnabled {
@@ -236,6 +238,7 @@ contract GoldmintMigration is CreatorEnabled {
      State public state = State.Init;
      
      // this is total collected GOLD rewards (launch to migration start)
+     uint public mntpToMigrateTotal = 0;
      uint public migrationRewardTotal = 0;
      uint64 public migrationStartedTime = 0;
      uint64 public migrationFinishedTime = 0;
@@ -269,6 +272,7 @@ contract GoldmintMigration is CreatorEnabled {
           // 2 - store the current values 
           migrationRewardTotal = goldToken.balanceOf(this);
           migrationStartedTime = uint64(now);
+          mntpToMigrateTotal = mntpToken.totalSupply();
 
           state = State.MigrationStarted;
      }
@@ -289,16 +293,19 @@ contract GoldmintMigration is CreatorEnabled {
           require((state==State.MigrationStarted) || (state==State.MigrationFinished));
 
           // 1 - calculate current reward
+          uint myBalance = mntpToken.balanceOf(msg.sender);
           uint myRewardMax = calculateMyRewardMax(msg.sender);        
           uint myReward = calculateMyReward(myRewardMax);
 
           // 2 - pay the reward to our user
           goldToken.transferRewardWithoutFee(msg.sender, myReward);
 
-          // 3 - burn tokens (move to 0x0)!
-          // burn will 
-          // TODO: ???
-          //mntpToken.burnTokens();
+          // 3 - burn tokens 
+          // WARNING: burn will reduce totalSupply
+          // 
+          // WARNING: you must call 
+          // setIcoContractAddress(migrationContractAddress)
+          mntpToken.burnTokens(msg.sender,myBalance);
      }
 
      function migrateGold(string _grapheneAddress) public {
@@ -309,9 +316,6 @@ contract GoldmintMigration is CreatorEnabled {
      // Each MNTP token holder gets a GOLD reward as a percent of all rewards
      // proportional to his MNTP token stake
      function calculateMyRewardMax(address _of) public constant returns(uint){
-          // total supply should never change, but who knows
-          // lets get it again
-          uint mntpToMigrateTotal = mntpToken.totalSupply();
           if(0==mntpToMigrateTotal){
                return 0;
           }

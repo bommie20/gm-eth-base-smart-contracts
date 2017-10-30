@@ -287,7 +287,8 @@ contract GoldmintMigration is CreatorEnabled {
      function migrateMntp(string _grapheneAddress) public {
           // 1 - calculate current reward
           uint myRewardMax = calculateMyRewardMax(msg.sender);        
-          uint myReward = calculateMyRewardDecreased(myRewardMax);
+
+          uint myReward = calculateMyReward(myRewardMax);
 
           // TODO:
           // 2 - pay reward
@@ -324,13 +325,20 @@ contract GoldmintMigration is CreatorEnabled {
      // On 1st day of migration, you will get: 100 - 100 * 0/365 = 100% of your rewards
      // On 2nd day of migration, you will get: 100 - 100 * 1/365 = 99.7261% of your rewards
      // On 365th day of migration, you will get: 100 - 100 * 364/365 = 0.274%
-     function calculateMyRewardDecreased(uint _myRewardMax) public constant returns(uint){
-          // day starts from 0
-          uint day = (uint64(now) - migrationStartedTime) / uint64(1 days);  
-          if(day>=365){
+     function calculateMyRewardDecreased(uint _day, uint _myRewardMax) public constant returns(uint){
+          if(_day>=365){
                return 0;
           }
 
-          return _myRewardMax * (100 - (100 * day/365));
+          // day 0: 0
+          // day 1: 100 * 1000000000 /365 = 273972000
+          uint x = ((100 * 1000000000 * _day) / 365);
+          return (_myRewardMax * ((100 * 1000000000) - x)) / (100 * 1000000000);
+     }
+     
+     function calculateMyReward(uint _myRewardMax) public constant returns(uint){
+          // day starts from 0
+          uint day = (uint64(now) - migrationStartedTime) / uint64(1 days);  
+          return calculateMyRewardDecreased(day, _myRewardMax);
      }
 }

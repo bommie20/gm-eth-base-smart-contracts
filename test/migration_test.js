@@ -102,6 +102,8 @@ describe('Migrations 1', function() {
      it('should return reward 0', function(done){
           var out = migrationContract.calculateMyRewardMax(buyer); 
           assert.equal(out,0);
+          var out2= migrationContract.calculateMyReward(out);
+          assert.equal(out2,0);
 
           done();
      })
@@ -196,6 +198,9 @@ describe('Migrations 1', function() {
      it('should return zero reward because migration is not started', function(done){
           var out = migrationContract.calculateMyRewardMax(buyer); 
           assert.equal(out,0);
+          var out2= migrationContract.calculateMyReward(out);
+          assert.equal(out2,0);
+
           done();
      })
 
@@ -235,6 +240,9 @@ describe('Migrations 1', function() {
           var balanceRewards = goldContract.balanceOf(migrationContractAddress);
           assert.equal(out.toString(10),balanceRewards.toString(10));
 
+          var out2 = migrationContract.calculateMyReward(out);
+          assert.equal(out2.toString(10),balanceRewards.toString(10));
+
           done();
      })
 
@@ -254,6 +262,9 @@ describe('Migrations 1', function() {
                var out = migrationContract.calculateMyRewardMax(buyer); 
                var balanceRewards = goldContract.balanceOf(migrationContractAddress);
                assert.equal(out.toString(10),balanceRewards.toString(10));
+
+               var out2 = migrationContract.calculateMyReward(out);
+               assert.equal(out2.toString(10),balanceRewards.toString(10));
 
                done();
           });
@@ -445,4 +456,101 @@ describe('Migrations 2 - calculate fees', function() {
 
           done();
      });
+});
+
+describe('Migrations 3 - calculate rewards', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               buyer3 = accounts[3];
+               goldmintTeamAddress = accounts[4];
+
+               done();
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+               
+               // same as deplyGold2Contract but deploys 
+               // Gold from GoldmintDAO.sol file
+               deployGold2Contract(data,function(err){
+                    assert.equal(err,null);
+
+                    deployMigrationContract(data,function(err){
+                         assert.equal(err,null);
+
+                         done();
+                    });
+               });
+          });
+     });
+
+     it('should set migration address',function(done){
+          goldContract.setMigrationContractAddress(
+               migrationContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should calculate rewards',function(done){
+          // day 1
+          var input = 1000;
+          var out = migrationContract.calculateMyRewardDecreased(0, input);
+          assert.equal(out,1000);
+
+          // day 365
+          out = migrationContract.calculateMyRewardDecreased(366, input);
+          assert.equal(out,0);
+
+          // day 2
+          out = migrationContract.calculateMyRewardDecreased(1, input);
+          assert.equal(out,997);
+
+          // day 3 
+          out = migrationContract.calculateMyRewardDecreased(2, input);
+          assert.equal(out,994);
+
+          // day 4 
+          out = migrationContract.calculateMyRewardDecreased(3, input);
+          assert.equal(out,991);
+
+          // day 5 
+          out = migrationContract.calculateMyRewardDecreased(4, input);
+          assert.equal(out,989);
+
+          // day 6 
+          var input2 = 1000 * 1000000000000000000;
+          out = migrationContract.calculateMyRewardDecreased(5, input2);
+          assert.equal(out,986301369870000000000);
+
+          // day 101
+          var input2 = 1000 * 1000000000000000000;
+          out = migrationContract.calculateMyRewardDecreased(100, input2);
+          assert.equal(out,726027397270000000000);
+
+          done();
+     });
+
 });

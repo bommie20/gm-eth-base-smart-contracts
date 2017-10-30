@@ -216,6 +216,33 @@ describe('Migrations 1', function() {
           );
      });
 
+     it('should not migrate if not migrations is not started',function(done){
+          var grapheneAddress = '224238729837489237482374892734897234897';
+
+          migrationContract.migrateMntp(
+               grapheneAddress,
+               {
+                    from: creator,           
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should not finish the migration if not started',function(done){
+          migrationContract.finishMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
      it('should start the migration',function(done){
           migrationContract.startMigration(
                {
@@ -306,6 +333,74 @@ describe('Migrations 1', function() {
                done();
           });
      });
+
+     // Now migrate MNTP tokens
+     it('should migrate MNTP tokens',function(done){
+          var grapheneAddress = '224238729837489237482374892734897234897';
+
+          var myGoldBalance = goldContract.balanceOf(buyer2);
+          var migrationBalance = goldContract.balanceOf(migrationContractAddress);
+
+          migrationContract.migrateMntp(
+               grapheneAddress,
+               {
+                    from: buyer2,           
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    var out = migrationContract.calculateMyRewardMax(buyer2); 
+                    var out2= migrationContract.calculateMyReward(out); 
+
+                    // should get my migration rewards
+                    var shouldBe = myGoldBalance.plus(out2); 
+
+                    var myNewGoldBalance = goldContract.balanceOf(buyer2);
+                    assert.equal(myNewGoldBalance.toString(10),shouldBe.toString(10));
+
+                    // rewards should be decreased
+                    shouldBe = migrationBalance.minus(out2); 
+                    var newMigrateBalance = goldContract.balanceOf(migrationContractAddress);
+                    assert.equal(newMigrateBalance.toString(10),shouldBe.toString(10));
+
+                    done();
+               }
+          );
+     });
+
+     it('should not migrate MNTP tokens again',function(done){
+          var grapheneAddress = '224238729837489237482374892734897234897';
+
+          migrationContract.migrateMntp(
+               grapheneAddress,
+               {
+                    from: buyer2,           
+                    gas: 2900000 
+               },function(err,result){
+                    // TODO
+                    assert.notEqual(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     // finish the migration
+     it('should finish the migration ',function(done){
+          migrationContract.finishMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     // TODO: test, still can migrate
+
+
 });
 
 describe('Migrations 2 - calculate fees', function() {

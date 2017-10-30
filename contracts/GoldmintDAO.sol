@@ -42,9 +42,6 @@ contract StdToken is SafeMath {
 
 // Functions:
      function transfer(address _to, uint256 _value) onlyPayloadSize(2 * 32) returns(bool){
-          require(balances[msg.sender] >= _value);
-          require(balances[_to] + _value > balances[_to]);
-
           balances[msg.sender] = safeSub(balances[msg.sender],_value);
           balances[_to] = safeAdd(balances[_to],_value);
 
@@ -53,10 +50,6 @@ contract StdToken is SafeMath {
      }
 
      function transferFrom(address _from, address _to, uint256 _value) returns(bool){
-          require(balances[_from] >= _value);
-          require(balances[_to] + _value > balances[_to]);
-          require(allowed[_from][msg.sender] >= _value);
-
           balances[_to] = safeAdd(balances[_to],_value);
           balances[_from] = safeSub(balances[_from],_value);
           allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender],_value);
@@ -137,6 +130,7 @@ contract Gold is StdToken, CreatorEnabled {
           migrationStarted = true;
      }
 
+     // there is no way to revert that
      function finishMigration() public onlyMigration {
           require(true==migrationStarted);
 
@@ -235,7 +229,8 @@ contract GoldmintMigration is CreatorEnabled {
 
      enum State {
           Init,
-          MigrationStarted
+          MigrationStarted,
+          MigrationFinished
      }
 
      State public state = State.Init;
@@ -274,25 +269,36 @@ contract GoldmintMigration is CreatorEnabled {
           // 2 - store the current values 
           migrationRewardTotal = goldToken.balanceOf(this);
           migrationStartedTime = uint64(now);
+
+          state = State.MigrationStarted;
      }
 
+     // that doesn't mean that you cant migrate from Ethereum -> Graphene
+     // that means that you will get no reward
      function finishMigration() public onlyCreator {
           goldToken.finishMigration();
           migrationFinishedTime = uint64(now);
+
+          state = State.MigrationFinished;
      }
 
      // Call this to migrate your MNTP tokens to Graphene MNT
      // (this is one-way only)
      // _grapheneAddress is something like that - "BTS7yRXCkBjKxho57RCbqYE3nEiprWXXESw3Hxs5CKRnft8x7mdGi"
      function migrateMntp(string _grapheneAddress) public {
+          require((state==State.MigrationStarted) || (state==State.MigrationFinished));
+
           // 1 - calculate current reward
           uint myRewardMax = calculateMyRewardMax(msg.sender);        
-
           uint myReward = calculateMyReward(myRewardMax);
 
-          // TODO:
-          // 2 - pay reward
+          // 2 - pay the reward to our user
+          goldToken.transferRewardWithoutFee(msg.sender, myReward);
 
+          // 3 - burn tokens (move to 0x0)!
+          // burn will 
+          // TODO: ???
+          //mntpToken.burnTokens();
      }
 
      function migrateGold(string _grapheneAddress) public {
@@ -330,8 +336,6 @@ contract GoldmintMigration is CreatorEnabled {
                return 0;
           }
 
-          // day 0: 0
-          // day 1: 100 * 1000000000 /365 = 273972000
           uint x = ((100 * 1000000000 * _day) / 365);
           return (_myRewardMax * ((100 * 1000000000) - x)) / (100 * 1000000000);
      }

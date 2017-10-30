@@ -54,8 +54,8 @@ contract StdToken is SafeMath {
 
      function transferFrom(address _from, address _to, uint256 _value) returns(bool){
           require(balances[_from] >= _value);
-          require(allowed[_from][msg.sender] >= _value);
           require(balances[_to] + _value > balances[_to]);
+          require(allowed[_from][msg.sender] >= _value);
 
           balances[_to] = safeAdd(balances[_to],_value);
           balances[_from] = safeSub(balances[_from],_value);
@@ -115,7 +115,7 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function issueTokens(address _who, uint _tokens) public onlyCreator {
-          // TODO:
+          // TODO: 
           //require((totalSupply + _tokens) <= TOTAL_TOKEN_SUPPLY);
 
           balances[_who] = safeAdd(balances[_who],_tokens);
@@ -133,7 +133,16 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function transfer(address _to, uint256 _value) public onlyIfUnlocked onlyPayloadSize(2 * 32) returns(bool){
-          return transferFrom(msg.sender, _to, _value);
+          uint fee = calculateFee(_value);
+          uint sendThis = safeSub(_value,fee);
+          
+          // 1.Transfer fee
+          // A -> rewards account
+          super.transfer(migrationAddress, fee);
+
+          // 2.Transfer
+          // A -> B
+          return super.transfer(_to, sendThis);
      }
 
      function transferFrom(address _from, address _to, uint256 _value) public onlyIfUnlocked returns(bool){
@@ -157,9 +166,9 @@ contract Gold is StdToken, CreatorEnabled {
           Transfer(migrationAddress, _to, _value);
      }
 
-     function calculateFee(uint _value) internal returns(uint) {
+     function calculateFee(uint _value) public constant returns(uint) {
           // TODO
-          return 1;  
+          return 100;  
      }
 
 }
@@ -231,7 +240,8 @@ contract GoldmintMigration is CreatorEnabled {
      }
 
      function migrateGold(string _grapheneAddress) public {
-     
+          // TODO:
+
      }
 
      // Each MNTP token holder gets a GOLD reward as a percent of all rewards

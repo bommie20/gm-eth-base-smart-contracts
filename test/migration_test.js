@@ -165,23 +165,27 @@ describe('Migrations 1', function() {
 
           var amount = 100000;
 
+          // GOLD: buyer -> buyer2
           var params = {from: buyer, gas: 2900000};
           goldContract.transfer(buyer2, amount, params, (err,res)=>{
                assert.equal(err, null);
 
-               /*
                var balance = goldContract.balanceOf(buyer);
                assert.equal(balance,0);
 
+               var fee = goldContract.calculateFee(amount);
+
                balance1 = goldContract.balanceOf(buyer2);
-               assert.equal(balance1,100000);
-               */
+               assert.equal(balance1,100000 - fee);
+
+               // fees are collected
+               var balanceRewards = goldContract.balanceOf(migrationContractAddress);
+               assert.equal(balanceRewards.toString(10),fee.toString(10));
 
                done();
           });
      });
 
-     /*
      it('should return zero reward because migration is not started', function(done){
           var out = migrationContract.calculateMyRewardMax(buyer); 
           assert.equal(out,0);
@@ -210,7 +214,6 @@ describe('Migrations 1', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    // TODO: must not be zero
                     assert.notEqual(migrationContract.migrationRewardTotal(),0);
                     assert.notEqual(migrationContract.migrationStartedTime(),0);
                     assert.equal(migrationContract.mntpToMigrateTotal(),1000);

@@ -125,6 +125,11 @@ contract Gold is StdToken, CreatorEnabled {
           Transfer(0x0, _who, _tokens);
      }
 
+     function burnTokens(address _who, uint _tokens) public onlyMigration {
+          balances[_who] = safeSub(balances[_who],_tokens);
+          totalSupply = safeSub(totalSupply,_tokens);
+     }
+
      // there is no way to revert that
      function startMigration() public onlyMigration {
           migrationStarted = true;
@@ -243,25 +248,37 @@ contract GoldmintMigration is CreatorEnabled {
      uint64 public migrationStartedTime = 0;
      uint64 public migrationFinishedTime = 0;
 
-     struct MntpMigration {
+     struct Migration {
           address ethAddress;
           string grapheneAddress;
-          uint mntpCount;
+          uint tokensCount;
           bool migrated;
           uint64 date;
           string comment;
      }
-     mapping (uint=>MntpMigration) public mntpMigrations;
+     mapping (uint=>Migration) public mntpMigrations;
      mapping (address=>uint) public mntpMigrationIndexes;
      uint public mntpMigrationsCount = 0;
+
+     mapping (uint=>Migration) public goldMigrations;
+     mapping (address=>uint) public goldMigrationIndexes;
+     uint public goldMigrationsCount = 0;
 
      event MntpMigrateWanted(address _ethAddress, string _grapheneAddress, uint256 _value);
      event MntpMigrated(address _ethAddress, string _grapheneAddress, uint256 _value);
 
+     event GoldMigrateWanted(address _ethAddress, string _grapheneAddress, uint256 _value);
+     event GoldMigrated(address _ethAddress, string _grapheneAddress, uint256 _value);
+
 // Access methods
      function getMntpMigration(uint index) public constant returns(address,string,uint,bool,uint64,string){
-          MntpMigration memory mig = mntpMigrations[index];
-          return (mig.ethAddress, mig.grapheneAddress, mig.mntpCount, mig.migrated, mig.date, mig.comment);
+          Migration memory mig = mntpMigrations[index];
+          return (mig.ethAddress, mig.grapheneAddress, mig.tokensCount, mig.migrated, mig.date, mig.comment);
+     }
+
+     function getGoldMigration(uint index) public constant returns(address,string,uint,bool,uint64,string){
+          Migration memory mig = goldMigrations[index];
+          return (mig.ethAddress, mig.grapheneAddress, mig.tokensCount, mig.migrated, mig.date, mig.comment);
      }
 
 // Functions:
@@ -307,6 +324,7 @@ contract GoldmintMigration is CreatorEnabled {
           state = State.MigrationFinished;
      }
 
+// MNTP
      // Call this to migrate your MNTP tokens to Graphene MNT
      // (this is one-way only)
      // _grapheneAddress is something like that - "BTS7yRXCkBjKxho57RCbqYE3nEiprWXXESw3Hxs5CKRnft8x7mdGi"
@@ -335,17 +353,16 @@ contract GoldmintMigration is CreatorEnabled {
           mntpToken.burnTokens(msg.sender,myBalance);
 
           // save tuple 
-          MntpMigration memory mig;
+          Migration memory mig;
           mig.ethAddress = msg.sender;
           mig.grapheneAddress = _grapheneAddress;
-          mig.mntpCount = myBalance;
+          mig.tokensCount = myBalance;
           mig.migrated = false;
           mig.date = uint64(now);
           mig.comment = '';
 
           mntpMigrations[mntpMigrationsCount] = mig;
           mntpMigrationIndexes[msg.sender] = mntpMigrationsCount;
-
           mntpMigrationsCount++;
 
           // send an event
@@ -354,7 +371,7 @@ contract GoldmintMigration is CreatorEnabled {
 
      function isMntpMigrated(address _who) public constant returns(bool){
           uint index = mntpMigrationIndexes[_who];
-          MntpMigration memory mig = mntpMigrations[index];
+          Migration memory mig = mntpMigrations[index];
           return mig.migrated;
      }
 
@@ -363,18 +380,42 @@ contract GoldmintMigration is CreatorEnabled {
           mntpMigrations[index].migrated = _isMigrated; 
           mntpMigrations[index].comment = _comment; 
 
-          // send event
+          // send an event
           if(_isMigrated){
                MntpMigrated(  mntpMigrations[index].ethAddress, 
                               mntpMigrations[index].grapheneAddress, 
-                              mntpMigrations[index].mntpCount);
+                              mntpMigrations[index].tokensCount);
           }
      }
 
-     // 
+// GOLD
      function migrateGold(string _grapheneAddress) public {
-          // TODO:
+          require((state==State.MigrationStarted) || (state==State.MigrationFinished));
 
+          // 1 - get balance
+          uint myBalance = goldToken.balanceOf(msg.sender);
+          require(0!=myBalance);
+
+          // 2 - burn tokens 
+          // WARNING: burn will reduce totalSupply
+          // 
+          goldToken.burnTokens(msg.sender,myBalance);
+
+          // save tuple 
+          Migration memory mig;
+          mig.ethAddress = msg.sender;
+          mig.grapheneAddress = _grapheneAddress;
+          mig.tokensCount = myBalance;
+          mig.migrated = false;
+          mig.date = uint64(now);
+          mig.comment = '';
+
+          goldMigrations[goldMigrationsCount] = mig;
+          goldMigrationIndexes[msg.sender] = goldMigrationsCount;
+          goldMigrationsCount++;
+
+          // send an event
+          GoldMigrateWanted(msg.sender, _grapheneAddress, myBalance);
      }
 
      // Each MNTP token holder gets a GOLD reward as a percent of all rewards

@@ -256,8 +256,7 @@ contract GoldmintMigration is CreatorEnabled {
      uint public mntpMigrationsCount = 0;
 
      event MntpMigrateWanted(address _ethAddress, string _grapheneAddress, uint256 _value);
-     // TODO:
-     //event MntpMigrated(address _ethAddress, string _grapheneAddress, uint256 _value);
+     event MntpMigrated(address _ethAddress, string _grapheneAddress, uint256 _value);
 
 // Access methods
      function getMntpMigration(uint index) public constant returns(address,string,uint,bool,uint64,string){
@@ -363,6 +362,13 @@ contract GoldmintMigration is CreatorEnabled {
           uint index = mntpMigrationIndexes[_who];
           mntpMigrations[index].migrated = _isMigrated; 
           mntpMigrations[index].comment = _comment; 
+
+          // send event
+          if(_isMigrated){
+               MntpMigrated(  mntpMigrations[index].ethAddress, 
+                              mntpMigrations[index].grapheneAddress, 
+                              mntpMigrations[index].mntpCount);
+          }
      }
 
      // 

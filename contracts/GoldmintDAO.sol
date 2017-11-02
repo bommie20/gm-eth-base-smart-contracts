@@ -243,6 +243,20 @@ contract GoldmintMigration is CreatorEnabled {
      uint64 public migrationStartedTime = 0;
      uint64 public migrationFinishedTime = 0;
 
+     struct MntpMigration {
+          address ethAddress;
+          string grapheneAddress;
+          uint mntpCount;
+          bool migrated;
+          uint64 date;
+     }
+     mapping (uint=>MntpMigration) public mntpMigrations;
+     uint public mntpMigrationsCount = 0;
+
+     event MntpMigrateWanted(address _ethAddress, string _grapheneAddress, uint256 _value);
+     // TODO:
+     //event MntpMigrated(address _ethAddress, string _grapheneAddress, uint256 _value);
+
 // Functions:
      // Constructor
      function GoldmintMigration(address _mntpContractAddress, address _goldContractAddress) public {
@@ -289,11 +303,16 @@ contract GoldmintMigration is CreatorEnabled {
      // Call this to migrate your MNTP tokens to Graphene MNT
      // (this is one-way only)
      // _grapheneAddress is something like that - "BTS7yRXCkBjKxho57RCbqYE3nEiprWXXESw3Hxs5CKRnft8x7mdGi"
+     //
+     // !!! WARNING: will not allow anyone to migrate tokens partly
+     // !!! DISCLAIMER: check graphene address format. You will not be able to change that!
      function migrateMntp(string _grapheneAddress) public {
           require((state==State.MigrationStarted) || (state==State.MigrationFinished));
 
           // 1 - calculate current reward
           uint myBalance = mntpToken.balanceOf(msg.sender);
+          require(0!=myBalance);
+
           uint myRewardMax = calculateMyRewardMax(msg.sender);        
           uint myReward = calculateMyReward(myRewardMax);
 
@@ -303,11 +322,32 @@ contract GoldmintMigration is CreatorEnabled {
           // 3 - burn tokens 
           // WARNING: burn will reduce totalSupply
           // 
-          // WARNING: you must call 
+          // WARNING: creator must call 
           // setIcoContractAddress(migrationContractAddress)
+          // of the mntpToken
           mntpToken.burnTokens(msg.sender,myBalance);
+
+          // save tuple 
+          MntpMigration memory mig;
+          mig.ethAddress = msg.sender;
+          mig.grapheneAddress = _grapheneAddress;
+          mig.mntpCount = myBalance;
+          mig.migrated = false;
+          mig.date = uint64(now);
+
+          mntpMigrations[mntpMigrationsCount] = mig;
+          mntpMigrationsCount++;
+
+          // send an event
+          MntpMigrateWanted(msg.sender, _grapheneAddress, myBalance);
      }
 
+     function isMntpMigrated(address _who) public constant returns(bool){
+          // TODO:
+          return false;
+     }
+
+     // 
      function migrateGold(string _grapheneAddress) public {
           // TODO:
 

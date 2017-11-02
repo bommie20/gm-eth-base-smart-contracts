@@ -349,28 +349,35 @@ describe('Migrations 1', function() {
           );
      });
 
-     // Now migrate MNTP tokens
      it('should migrate MNTP tokens',function(done){
           var grapheneAddress = '224238729837489237482374892734897234897';
 
-          var myGoldBalance = goldContract.balanceOf(buyer2);
+          var mntpSupply = mntContract.totalSupply();
+          var myGoldBalance = goldContract.balanceOf(buyer);
+          var myMntpBalance = mntContract.balanceOf(buyer);
           var migrationBalance = goldContract.balanceOf(migrationContractAddress);
+
+          console.log('Migrating MNTPs: ' + myMntpBalance.toString(10));
+          var mntpTotalSupplyShouldBe = mntpSupply.minus(myMntpBalance);
+          assert.notEqual(myMntpBalance.toString(10),0);
+
+          var out = migrationContract.calculateMyRewardMax(buyer); 
+          var out2= migrationContract.calculateMyReward(out); 
+          assert.equal(out2.toString(10),1000);
+
+          assert.equal(migrationContract.mntpMigrationsCount(),0);
 
           migrationContract.migrateMntp(
                grapheneAddress,
                {
-                    from: buyer2,           
+                    from: buyer,           
                     gas: 2900000 
                },function(err,result){
                     assert.equal(err,null);
 
-                    var out = migrationContract.calculateMyRewardMax(buyer2); 
-                    var out2= migrationContract.calculateMyReward(out); 
-
                     // should get my migration rewards
                     var shouldBe = myGoldBalance.plus(out2); 
-
-                    var myNewGoldBalance = goldContract.balanceOf(buyer2);
+                    var myNewGoldBalance = goldContract.balanceOf(buyer);
                     assert.equal(myNewGoldBalance.toString(10),shouldBe.toString(10));
 
                     // rewards should be decreased
@@ -379,8 +386,51 @@ describe('Migrations 1', function() {
                     assert.equal(newMigrateBalance.toString(10),shouldBe.toString(10));
 
                     // MNTP tokens should be burned...
-                    var myMntp = mntContract.balanceOf(buyer2);
+                    var myMntp = mntContract.balanceOf(buyer);
                     assert.equal(myMntp.toString(10),0);
+
+                    // Total supply should be reduced
+                    var newSupply = mntContract.totalSupply();
+                    assert.equal(newSupply.toString(10),mntpTotalSupplyShouldBe.toString(10));
+
+                    //console.log('Supply Was: ');
+                    //console.log(mntpSupply.toString(10));
+
+                    //console.log('Supply: ');
+                    //console.log(newSupply.toString(10));
+
+                    // is MNTP migrated should return false
+                    var isMigrated = migrationContract.isMntpMigrated(buyer);
+                    assert.equal(isMigrated, false);
+
+                    assert.equal(migrationContract.mntpMigrationsCount(),1);
+
+                    done();
+               }
+          );
+     });
+
+     it('should not migrate zero MNTP tokens',function(done){
+          var grapheneAddress = '224238729837489237482374892734897234897';
+
+          var mntpSupply = mntContract.totalSupply();
+          var myGoldBalance = goldContract.balanceOf(buyer2);
+          var myMntpBalance = mntContract.balanceOf(buyer2);
+          var migrationBalance = goldContract.balanceOf(migrationContractAddress);
+
+          var mntpTotalSupplyShouldBe = mntpSupply.minus(myMntpBalance);
+          assert.equal(mntpTotalSupplyShouldBe.toString(10),0);
+
+          var out = migrationContract.calculateMyRewardMax(buyer2); 
+          var out2= migrationContract.calculateMyReward(out); 
+
+          migrationContract.migrateMntp(
+               grapheneAddress,
+               {
+                    from: buyer2,           
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
 
                     done();
                }
@@ -390,11 +440,10 @@ describe('Migrations 1', function() {
      it('should not migrate MNTP tokens again',function(done){
           var grapheneAddress = '224238729837489237482374892734897234897';
 
-          // TODO:
           migrationContract.migrateMntp(
                grapheneAddress,
                {
-                    from: buyer2,           
+                    from: buyer,           
                     gas: 2900000 
                },function(err,result){
                     assert.notEqual(err,null);

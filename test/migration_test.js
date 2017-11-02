@@ -367,6 +367,9 @@ describe('Migrations 1', function() {
 
           assert.equal(migrationContract.mntpMigrationsCount(),0);
 
+          var isMigrated = migrationContract.isMntpMigrated(buyer);
+          assert.equal(isMigrated, false);
+
           migrationContract.migrateMntp(
                grapheneAddress,
                {
@@ -405,10 +408,64 @@ describe('Migrations 1', function() {
 
                     assert.equal(migrationContract.mntpMigrationsCount(),1);
 
+                    var mig = migrationContract.getMntpMigration(0);
+                    assert.equal(mig[0], buyer);
+                    assert.equal(mig[1], '224238729837489237482374892734897234897');
+                    assert.equal(mig[2].toString(10), 1000);
+                    assert.equal(mig[3], false);
+                    assert.equal(mig[5], '');
+
                     done();
                }
           );
      });
+
+     it('should not set migrated if not created',function(done){
+          var isMigrated = migrationContract.isMntpMigrated(buyer);
+          assert.equal(isMigrated, false);
+
+          migrationContract.setMntpMigrated(
+               buyer,
+               true,
+               'some-comment',
+               {
+                    from: buyer,           
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     })
+
+     it('should set migrated',function(done){
+          var isMigrated = migrationContract.isMntpMigrated(buyer);
+          assert.equal(isMigrated, false);
+
+          migrationContract.setMntpMigrated(
+               buyer,
+               true,
+               'some-comment',
+               {
+                    from: creator,           
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    isMigrated = migrationContract.isMntpMigrated(buyer);
+                    assert.equal(isMigrated, true);
+
+                    var mig = migrationContract.getMntpMigration(0);
+                    assert.equal(mig[0], buyer);
+                    assert.equal(mig[1], '224238729837489237482374892734897234897');
+                    assert.equal(mig[2].toString(10), 1000);
+                    assert.equal(mig[3], true);
+                    assert.equal(mig[5], 'some-comment');
+
+                    done();
+               }
+          );
+     })
 
      it('should not migrate zero MNTP tokens',function(done){
           var grapheneAddress = '224238729837489237482374892734897234897';

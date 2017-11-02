@@ -249,13 +249,21 @@ contract GoldmintMigration is CreatorEnabled {
           uint mntpCount;
           bool migrated;
           uint64 date;
+          string comment;
      }
      mapping (uint=>MntpMigration) public mntpMigrations;
+     mapping (address=>uint) public mntpMigrationIndexes;
      uint public mntpMigrationsCount = 0;
 
      event MntpMigrateWanted(address _ethAddress, string _grapheneAddress, uint256 _value);
      // TODO:
      //event MntpMigrated(address _ethAddress, string _grapheneAddress, uint256 _value);
+
+// Access methods
+     function getMntpMigration(uint index) public constant returns(address,string,uint,bool,uint64,string){
+          MntpMigration memory mig = mntpMigrations[index];
+          return (mig.ethAddress, mig.grapheneAddress, mig.mntpCount, mig.migrated, mig.date, mig.comment);
+     }
 
 // Functions:
      // Constructor
@@ -334,8 +342,11 @@ contract GoldmintMigration is CreatorEnabled {
           mig.mntpCount = myBalance;
           mig.migrated = false;
           mig.date = uint64(now);
+          mig.comment = '';
 
           mntpMigrations[mntpMigrationsCount] = mig;
+          mntpMigrationIndexes[msg.sender] = mntpMigrationsCount;
+
           mntpMigrationsCount++;
 
           // send an event
@@ -343,8 +354,15 @@ contract GoldmintMigration is CreatorEnabled {
      }
 
      function isMntpMigrated(address _who) public constant returns(bool){
-          // TODO:
-          return false;
+          uint index = mntpMigrationIndexes[_who];
+          MntpMigration memory mig = mntpMigrations[index];
+          return mig.migrated;
+     }
+
+     function setMntpMigrated(address _who, bool _isMigrated, string _comment) public onlyCreator { 
+          uint index = mntpMigrationIndexes[_who];
+          mntpMigrations[index].migrated = _isMigrated; 
+          mntpMigrations[index].comment = _comment; 
      }
 
      // 

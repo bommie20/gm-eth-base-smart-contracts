@@ -237,6 +237,7 @@ contract GoldmintMigration is CreatorEnabled {
      enum State {
           Init,
           MigrationStarted,
+          MigrationPaused,
           MigrationFinished
      }
 
@@ -304,22 +305,36 @@ contract GoldmintMigration is CreatorEnabled {
      // This method is called when migration to Goldmint's blockchain
      // process is started...
      function startMigration() public onlyCreator {
-          // 1 - change fees
-          goldToken.startMigration();
-          
-          // 2 - store the current values 
-          migrationRewardTotal = goldToken.balanceOf(this);
-          migrationStartedTime = uint64(now);
-          mntpToMigrateTotal = mntpToken.totalSupply();
+          require((State.Init==state) || (State.MigrationPaused==state));
+
+          if(State.Init==state){
+               // 1 - change fees
+               goldToken.startMigration();
+               
+               // 2 - store the current values 
+               migrationRewardTotal = goldToken.balanceOf(this);
+               migrationStartedTime = uint64(now);
+               mntpToMigrateTotal = mntpToken.totalSupply();
+          }
 
           state = State.MigrationStarted;
+     }
+
+     function pauseMigration() public onlyCreator {
+          require((state==State.MigrationStarted) || (state==State.MigrationFinished));
+
+          state = State.MigrationPaused;
      }
 
      // that doesn't mean that you cant migrate from Ethereum -> Graphene
      // that means that you will get no reward
      function finishMigration() public onlyCreator {
-          goldToken.finishMigration();
-          migrationFinishedTime = uint64(now);
+          require((State.MigrationStarted==state) || (State.MigrationPaused==state));
+
+          if(State.MigrationStarted==state){
+               goldToken.finishMigration();
+               migrationFinishedTime = uint64(now);
+          }
 
           state = State.MigrationFinished;
      }

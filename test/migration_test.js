@@ -243,7 +243,48 @@ describe('Migrations 1', function() {
           );
      });
 
+     it('should not pause the migration if not started',function(done){
+          migrationContract.pauseMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
      it('should start the migration',function(done){
+          migrationContract.startMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    assert.notEqual(migrationContract.migrationRewardTotal(),0);
+                    assert.notEqual(migrationContract.migrationStartedTime(),0);
+                    assert.equal(mntContract.totalSupply(),1000);
+
+                    done();
+               }
+          );
+     });
+
+     it('should pause the migration',function(done){
+          migrationContract.pauseMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should start the migration again',function(done){
           migrationContract.startMigration(
                {
                     from: creator,               
@@ -523,8 +564,31 @@ describe('Migrations 1', function() {
           );
      });
 
-     // TODO: test, still can migrate
+     it('should pause the migration',function(done){
+          migrationContract.pauseMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
 
+     it('should finish the migration again',function(done){
+          migrationContract.finishMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     // TODO: test, still can migrate
 
 });
 

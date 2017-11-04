@@ -339,6 +339,10 @@ contract GoldmintMigration is CreatorEnabled {
           state = State.MigrationFinished;
      }
 
+     function destroyMe() public onlyCreator {
+          selfdestruct(msg.sender);          
+     }
+
 // MNTP
      // Call this to migrate your MNTP tokens to Graphene MNT
      // (this is one-way only)

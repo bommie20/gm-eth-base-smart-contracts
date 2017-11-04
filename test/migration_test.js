@@ -588,8 +588,56 @@ describe('Migrations 1', function() {
           );
      });
 
+     it('should not finish the migration once again',function(done){
+          migrationContract.finishMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
      // TODO: test, still can migrate
 
+     // 
+     it('should not selfdestruct if not creator',function(done){
+          migrationContract.destroyMe(
+               {
+                    from: buyer,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should selfdestruct',function(done){
+          migrationContract.destroyMe(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should not call any method of destroyed contract',function(done){
+          migrationContract.finishMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
 });
 
 describe('Migrations 2 - calculate fees', function() {

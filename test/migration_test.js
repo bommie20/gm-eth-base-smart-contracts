@@ -628,15 +628,8 @@ describe('Migrations 1', function() {
      });
 
      it('should not call any method of destroyed contract',function(done){
-          migrationContract.finishMigration(
-               {
-                    from: creator,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.notEqual(err,null);
-                    done();
-               }
-          );
+          assert.equal(migrationContract.state(),0);
+          done();
      });
 });
 

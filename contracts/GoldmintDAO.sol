@@ -473,4 +473,9 @@ contract GoldmintMigration is CreatorEnabled {
           uint day = (uint64(now) - migrationStartedTime) / uint64(1 days);  
           return calculateMyRewardDecreased(day, _myRewardMax);
      }
+
+     // do not allow to send money to this contract...
+     function() public payable{
+          revert();
+     }
 }

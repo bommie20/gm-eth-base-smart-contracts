@@ -22,6 +22,9 @@ var initialBalanceCreator = 0;
 var mntContractAddress;
 var mntContract;
 
+var goldFeeContractAddress;
+var goldFeeContract;
+
 var goldContractAddress;
 var goldContract;
 
@@ -59,15 +62,19 @@ describe('Migrations 1', function() {
           deployMntContract(data,function(err){
                assert.equal(err,null);
                
-               // same as deplyGold2Contract but deploys 
-               // Gold from GoldmintDAO.sol file
-               deployGold2Contract(data,function(err){
+               deployGoldFeeContract(data,function(err){
                     assert.equal(err,null);
 
-                    deployMigrationContract(data,function(err){
+                    // same as deplyGold2Contract but deploys 
+                    // Gold from GoldmintDAO.sol file
+                    deployGold2Contract(data,function(err){
                          assert.equal(err,null);
 
-                         done();
+                         deployMigrationContract(data,function(err){
+                              assert.equal(err,null);
+
+                              done();
+                         });
                     });
                });
           });
@@ -181,7 +188,7 @@ describe('Migrations 1', function() {
                assert.equal(balance,0);
 
                var mntpBalance = mntContract.balanceOf(buyer);
-               var fee = goldContract.calculateFee(mntpBalance,amount);
+               var fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
                assert.equal(fee,1000);  // 1% 
 
                balance1 = goldContract.balanceOf(buyer2);
@@ -356,7 +363,7 @@ describe('Migrations 1', function() {
                var balanceNew = goldContract.balanceOf(buyer2);
 
                var mntpBalance = mntContract.balanceOf(buyer3);
-               var fee = goldContract.calculateFee(mntpBalance, amount);
+               var fee = goldFeeContract.calculateFee(true,false,mntpBalance, amount);
                var one = new BigNumber(amount);
                var two = new BigNumber(fee);
                var shouldBe = prevBalance.plus(one).minus(two); 
@@ -662,15 +669,19 @@ describe('Migrations 2 - calculate fees', function() {
           deployMntContract(data,function(err){
                assert.equal(err,null);
                
-               // same as deplyGold2Contract but deploys 
-               // Gold from GoldmintDAO.sol file
-               deployGold2Contract(data,function(err){
+               deployGoldFeeContract(data,function(err){
                     assert.equal(err,null);
 
-                    deployMigrationContract(data,function(err){
+                    // same as deplyGold2Contract but deploys 
+                    // Gold from GoldmintDAO.sol file
+                    deployGold2Contract(data,function(err){
                          assert.equal(err,null);
 
-                         done();
+                         deployMigrationContract(data,function(err){
+                              assert.equal(err,null);
+
+                              done();
+                         });
                     });
                });
           });
@@ -694,25 +705,25 @@ describe('Migrations 2 - calculate fees', function() {
      it('should calculate correct fees',function(done){
           var mntpBalance = 0;
           var amount = 1000;
-          var fee = goldContract.calculateFee(mntpBalance,amount);
+          var fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
           assert.equal(fee, 10);   // 1%
 
           // 2
           mntpBalance = 0;
           amount = 100000000;
-          fee = goldContract.calculateFee(mntpBalance,amount);
+          fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
           assert.equal(fee, 1000000);   // 1%
 
           // 3 - i own 10 MNTP tokens
           mntpBalance = 10 * 1000000000000000000;
           amount = 100000000;
-          fee = goldContract.calculateFee(mntpBalance,amount);
+          fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
           assert.equal(fee, 333333);   // 0.3333%
 
           // 4 - i own 1000 MNTP tokens
           mntpBalance = 1000 * 1000000000000000000;
           amount = 100000000;
-          fee = goldContract.calculateFee(mntpBalance,amount);
+          fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
           assert.equal(fee, 33333);   // 0.03333%
 
           done();
@@ -758,25 +769,25 @@ describe('Migrations 2 - calculate fees', function() {
      it('should calculate correct fees',function(done){
           var mntpBalance = 0;
           var amount = 1000;
-          var fee = goldContract.calculateFee(mntpBalance,amount);
+          var fee = goldFeeContract.calculateFee(true,true,mntpBalance,amount);
           assert.equal(fee, 10);   // 1%
 
           // 2
           mntpBalance = 0;
           amount = 100000000;
-          fee = goldContract.calculateFee(mntpBalance,amount);
+          fee = goldFeeContract.calculateFee(true,true,mntpBalance,amount);
           assert.equal(fee, 1000000);   // 1%
 
           // 3 - i own 10 MNTP tokens
           mntpBalance = 10 * 1000000000000000000;
           amount = 100000000;
-          fee = goldContract.calculateFee(mntpBalance,amount);
+          fee = goldFeeContract.calculateFee(true,true,mntpBalance,amount);
           assert.equal(fee, 1000000);   // 1%
 
           // 4 - i own 1000 MNTP tokens
           mntpBalance = 1000 * 1000000000000000000;
           amount = 100000000;
-          fee = goldContract.calculateFee(mntpBalance,amount);
+          fee = goldFeeContract.calculateFee(true,true,mntpBalance,amount);
           assert.equal(fee, 1000000);   // 1%
 
           done();
@@ -812,15 +823,19 @@ describe('Migrations 3 - calculate rewards', function() {
           deployMntContract(data,function(err){
                assert.equal(err,null);
                
-               // same as deplyGold2Contract but deploys 
-               // Gold from GoldmintDAO.sol file
-               deployGold2Contract(data,function(err){
+               deployGoldFeeContract(data,function(err){
                     assert.equal(err,null);
 
-                    deployMigrationContract(data,function(err){
+                    // same as deplyGold2Contract but deploys 
+                    // Gold from GoldmintDAO.sol file
+                    deployGold2Contract(data,function(err){
                          assert.equal(err,null);
 
-                         done();
+                         deployMigrationContract(data,function(err){
+                              assert.equal(err,null);
+
+                              done();
+                         });
                     });
                });
           });

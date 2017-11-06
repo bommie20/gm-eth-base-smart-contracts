@@ -84,6 +84,36 @@ contract StdToken is SafeMath {
      }
 }
 
+contract GoldFee is CreatorEnabled {
+// Functions: 
+     function GoldFee(){
+          creator = msg.sender;
+     }
+
+     function calculateFee(
+          bool _isMigrationStarted, bool _isMigrationFinished, 
+          uint _mntpBalance, uint _value) public constant returns(uint) 
+     {
+          // When migration process is finished (1 year from Graphene launch), then transaction fee is 1% GOLD.
+          if(_isMigrationFinished){
+               return (_value / 100); 
+          }
+
+          // If the sender holds 0 MNTP, then the transaction fee is 1% GOLD.
+          // If the sender holds at least 10 MNTP, then the transaction fee is 0.333333% GOLD.
+          // If the sender holds at least 1000 MNTP, then the transaction fee is 0.033333% GOLD.
+          if(_mntpBalance>=(1000 * 1 ether)){
+               return ((_value / 100) / 30);
+          }
+          if(_mntpBalance>=(10 * 1 ether)){
+               return ((_value / 100) / 3);
+          }
+          
+          // 1%
+          return (_value / 100);
+     }
+}
+
 contract Gold is StdToken, CreatorEnabled {
 // Fields:
      string public constant name = "Goldmint GOLD Token";
@@ -94,6 +124,7 @@ contract Gold is StdToken, CreatorEnabled {
      address public migrationAddress = 0x0;
      address public goldmintTeamAddress = 0x0;
      MNTP_Interface public mntpToken;
+     GoldFee public goldFee;
 
      bool public lockTransfers = false;
      bool public migrationStarted = false;
@@ -104,10 +135,12 @@ contract Gold is StdToken, CreatorEnabled {
      modifier onlyIfUnlocked() { require(!lockTransfers); _; }
 
 // Functions:
-     function Gold(address _mntpContractAddress, address _goldmintTeamAddress) public {
+     function Gold(address _mntpContractAddress, address _goldmintTeamAddress, address _goldFeeAddress) public {
           creator = msg.sender;
+
           mntpToken = MNTP_Interface(_mntpContractAddress);
           goldmintTeamAddress = _goldmintTeamAddress; 
+          goldFee = GoldFee(_goldFeeAddress);
      }
 
      function setMigrationContractAddress(address _migrationAddress) public onlyCreator {
@@ -116,6 +149,10 @@ contract Gold is StdToken, CreatorEnabled {
 
      function setGoldmintTeamAddress(address _teamAddress) public onlyCreator {
           goldmintTeamAddress = _teamAddress;
+     }
+
+     function setGoldFeeAddress(address _goldFeeAddress) public onlyCreator {
+          goldFee = GoldFee(_goldFeeAddress);
      }
 
      function issueTokens(address _who, uint _tokens) public onlyCreator {
@@ -149,20 +186,23 @@ contract Gold is StdToken, CreatorEnabled {
      function transfer(address _to, uint256 _value) public onlyIfUnlocked onlyPayloadSize(2 * 32) returns(bool){
           uint yourCurrentMntpBalance = mntpToken.balanceOf(msg.sender);
 
-          // you can't transfer if fee is ZERO 
-          uint fee = calculateFee(yourCurrentMntpBalance, _value);
-          uint sendThis = safeSub(_value,fee);
+          // you can transfer if fee is ZERO 
+          uint fee = goldFee.calculateFee(migrationStarted, migrationFinished, yourCurrentMntpBalance, _value);
+          uint sendThis = _value;
+          if(0!=fee){ 
+               sendThis = safeSub(_value,fee);
           
-          // 1.Transfer fee
-          // A -> rewards account
-          // 
-          // Each GOLD token transfer should send transaction fee to
-          // GoldmintMigration contract if Migration process is not started.
-          // Goldmint team if Migration process is started.
-          if(migrationStarted){
-               super.transfer(goldmintTeamAddress, fee);
-          }else{
-               super.transfer(migrationAddress, fee);
+               // 1.Transfer fee
+               // A -> rewards account
+               // 
+               // Each GOLD token transfer should send transaction fee to
+               // GoldmintMigration contract if Migration process is not started.
+               // Goldmint team if Migration process is started.
+               if(migrationStarted){
+                    super.transfer(goldmintTeamAddress, fee);
+               }else{
+                    super.transfer(migrationAddress, fee);
+               }
           }
 
           // 2.Transfer
@@ -173,19 +213,22 @@ contract Gold is StdToken, CreatorEnabled {
      function transferFrom(address _from, address _to, uint256 _value) public onlyIfUnlocked returns(bool){
           uint yourCurrentMntpBalance = mntpToken.balanceOf(_from);
 
-          uint fee = calculateFee(yourCurrentMntpBalance, _value);
-          uint sendThis = safeSub(_value,fee);
+          uint fee = goldFee.calculateFee(migrationStarted, migrationFinished, yourCurrentMntpBalance, _value);
+          uint sendThis = _value;
+          if(0!=fee){ 
+               safeSub(_value,fee);
           
-          // 1.Transfer fee
-          // A -> rewards account
-          // 
-          // Each GOLD token transfer should send transaction fee to
-          // GoldmintMigration contract if Migration process is not started.
-          // Goldmint team if Migration process is started.
-          if(migrationStarted){
-               super.transferFrom(_from, goldmintTeamAddress, fee);
-          }else{
-               super.transferFrom(_from, migrationAddress, fee);
+               // 1.Transfer fee
+               // A -> rewards account
+               // 
+               // Each GOLD token transfer should send transaction fee to
+               // GoldmintMigration contract if Migration process is not started.
+               // Goldmint team if Migration process is started.
+               if(migrationStarted){
+                    super.transferFrom(_from, goldmintTeamAddress, fee);
+               }else{
+                    super.transferFrom(_from, migrationAddress, fee);
+               }
           }
           
           // 2.Transfer
@@ -199,26 +242,6 @@ contract Gold is StdToken, CreatorEnabled {
           balances[_to] = safeAdd(balances[_to],_value);
 
           Transfer(migrationAddress, _to, _value);
-     }
-
-     function calculateFee(uint _mntpBalance, uint _value) public constant returns(uint) {
-          // When migration process is finished (1 year from Graphene launch), then transaction fee is 1% GOLD.
-          if(migrationFinished){
-               return (_value / 100); 
-          }
-
-          // If the sender holds 0 MNTP, then the transaction fee is 1% GOLD.
-          // If the sender holds at least 10 MNTP, then the transaction fee is 0.333333% GOLD.
-          // If the sender holds at least 1000 MNTP, then the transaction fee is 0.033333% GOLD.
-          if(_mntpBalance>=(1000 * 1 ether)){
-               return ((_value / 100) / 30);
-          }
-          if(_mntpBalance>=(10 * 1 ether)){
-               return ((_value / 100) / 3);
-          }
-          
-          // 1%
-          return (_value / 100);
      }
 }
 

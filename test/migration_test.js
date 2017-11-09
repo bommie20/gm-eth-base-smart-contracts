@@ -159,13 +159,13 @@ describe('Migrations 1', function() {
           var balance = goldContract.balanceOf(buyer);
           assert.equal(balance,0);
 
-          var amount = 100000;
+          var amount = 5000000000000000;
           var params = {from: creator, gas: 2900000};
           goldContract.issueTokens(buyer, amount, params, (err,res)=>{
                assert.equal(err, null);
 
                var balance = goldContract.balanceOf(buyer);
-               assert.equal(balance,100000);
+               assert.equal(balance,5000000000000000);
 
                done();
           });
@@ -177,7 +177,10 @@ describe('Migrations 1', function() {
           var balance1 = goldContract.balanceOf(buyer2);
           assert.equal(balance1,0);
 
-          var amount = 100000;
+          // 0.002 GOLD is min fee
+          // 2000000000000000
+          //var amount = 100000;
+          var amount = 4000000000000000;
 
           // GOLD: buyer -> buyer2
           var params = {from: buyer, gas: 2900000};
@@ -185,14 +188,14 @@ describe('Migrations 1', function() {
                assert.equal(err, null);
 
                var balance = goldContract.balanceOf(buyer);
-               assert.equal(balance,0);
+               assert.equal(balance,1000000000000000);
 
                var mntpBalance = mntContract.balanceOf(buyer);
                var fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
-               assert.equal(fee,1000);  // 1% 
+               assert.equal(fee,2000000000000000);  // 1% 
 
                balance1 = goldContract.balanceOf(buyer2);
-               assert.equal(balance1,100000 - fee);
+               assert.equal(balance1,amount - fee);
 
                // fees are collected
                var balanceRewards = goldContract.balanceOf(migrationContractAddress);
@@ -325,13 +328,13 @@ describe('Migrations 1', function() {
           var balance = goldContract.balanceOf(buyer3);
           assert.equal(balance,0);
 
-          var amount = 200000;
+          var amount = 5000000000000000;
           var params = {from: creator, gas: 2900000};
           goldContract.issueTokens(buyer3, amount, params, (err,res)=>{
                assert.equal(err, null);
 
                var balance = goldContract.balanceOf(buyer3);
-               assert.equal(balance,200000);
+               assert.equal(balance,5000000000000000);
 
                // rewards should not be changed - 100% of rewards
                var out = migrationContract.calculateMyRewardMax(buyer); 
@@ -346,7 +349,7 @@ describe('Migrations 1', function() {
      });
 
      it('should transfer reward to goldmint team',function(done){
-          var amount = 200000;
+          var amount = 4000000000000000;
           
           var prevBalance = goldContract.balanceOf(buyer2);
           var prevFees = goldContract.balanceOf(migrationContractAddress); 
@@ -357,7 +360,7 @@ describe('Migrations 1', function() {
                assert.equal(err, null);
 
                var balance = goldContract.balanceOf(buyer3);
-               assert.equal(balance,0);
+               assert.equal(balance,1000000000000000);
 
                // should update the balance
                var balanceNew = goldContract.balanceOf(buyer2);

@@ -90,6 +90,15 @@ contract GoldFee is CreatorEnabled {
           creator = msg.sender;
      }
 
+     function getMin(uint out)returns (uint){
+          // 0.002 GOLD is min fee
+          uint minFee = 2 * (1 ether / 1000);
+          if(out>=minFee){
+               return out;
+          }
+          return minFee;
+     }
+
      function calculateFee(
           bool _isMigrationStarted, bool _isMigrationFinished, 
           uint _mntpBalance, uint _value) public constant returns(uint) 
@@ -102,15 +111,20 @@ contract GoldFee is CreatorEnabled {
           // If the sender holds 0 MNTP, then the transaction fee is 1% GOLD.
           // If the sender holds at least 10 MNTP, then the transaction fee is 0.333333% GOLD.
           // If the sender holds at least 1000 MNTP, then the transaction fee is 0.033333% GOLD.
+          // If the sender holds at least 10000 MNTP, then the transaction fee is fixed - 0.02 GOLD.
+          if(_mntpBalance>=(10000 * 1 ether)){
+               // 0.02 GOLD
+               return (2 * (1 ether) / 100);
+          }
           if(_mntpBalance>=(1000 * 1 ether)){
-               return ((_value / 100) / 30);
+               return getMin((_value / 100) / 30);
           }
           if(_mntpBalance>=(10 * 1 ether)){
-               return ((_value / 100) / 3);
+               return getMin((_value / 100) / 3);
           }
           
           // 1%
-          return (_value / 100);
+          return getMin(_value / 100);
      }
 }
 

@@ -414,7 +414,7 @@ describe('Migrations 1', function() {
 
           var out = migrationContract.calculateMyRewardMax(buyer); 
           var out2= migrationContract.calculateMyReward(out); 
-          assert.equal(out2.toString(10),1000);
+          assert.equal(out2.toString(10),2000000000000000);
 
           assert.equal(migrationContract.mntpMigrationsCount(),0);
 

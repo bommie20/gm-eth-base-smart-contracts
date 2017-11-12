@@ -709,25 +709,35 @@ describe('Migrations 2 - calculate fees', function() {
           var mntpBalance = 0;
           var amount = 1000;
           var fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
-          assert.equal(fee, 10);   // 1%
+          assert.equal(fee, 2000000000000000);   // 1%, but with min value
 
           // 2
           mntpBalance = 0;
-          amount = 100000000;
+          // 0.002 GOLD is min fee
+          amount = 50000000000000000;
           fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
-          assert.equal(fee, 1000000);   // 1%
+          assert.equal(fee, 2000000000000000);   
+
+
+          // 2.2
+          mntpBalance = 0;
+          amount = 10000000000000000;
+          fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
+          assert.equal(fee, 2000000000000000);   // 1%, but minimum is 2000000000000000
 
           // 3 - i own 10 MNTP tokens
           mntpBalance = 10 * 1000000000000000000;
-          amount = 100000000;
+          // 10 GOLD tokens
+          amount = 10 * 1000000000000000000;
           fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
-          assert.equal(fee, 333333);   // 0.3333%
+          assert.equal(fee, 33333333333333333);   // 0.3333%
 
           // 4 - i own 1000 MNTP tokens
           mntpBalance = 1000 * 1000000000000000000;
-          amount = 100000000;
+          // 10 GOLD tokens
+          amount = 10 * 1000000000000000000;
           fee = goldFeeContract.calculateFee(true,false,mntpBalance,amount);
-          assert.equal(fee, 33333);   // 0.03333%
+          assert.equal(fee, 3333333333333333);   // 0.03333%
 
           done();
      });

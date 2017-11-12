@@ -92,7 +92,7 @@ contract GoldFee is CreatorEnabled {
 
      function getMin(uint out)returns (uint){
           // 0.002 GOLD is min fee
-          uint minFee = 2 * (1 ether / 1000);
+          uint minFee = (2 * 1 ether) / 1000;
           if(out>=minFee){
                return out;
           }

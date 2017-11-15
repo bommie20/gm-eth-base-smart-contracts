@@ -144,6 +144,16 @@ contract Gold is StdToken, CreatorEnabled {
      bool public migrationStarted = false;
      bool public migrationFinished = false;
 
+     struct IssueInfo {
+          address who;
+          uint count;
+          string docLink;
+     }
+     mapping (uint=>IssueInfo) public issues;
+     uint public totalIssues = 0;
+     mapping (address=>uint) public issuesPerAddressCount;
+     mapping (address=> mapping(uint=>uint)) public issuesPerAddress;
+
 // Modifiers:
      modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
      modifier onlyIfUnlocked() { require(!lockTransfers); _; }
@@ -169,9 +179,44 @@ contract Gold is StdToken, CreatorEnabled {
           goldFee = GoldFee(_goldFeeAddress);
      }
 
-     function issueTokens(address _who, uint _tokens) public onlyCreator {
+     // IPFS docs access method:
+     function getIssuesCount() returns (uint){
+          return totalIssues;
+     }
+
+     function getIssueInfo(uint _index) returns (address, uint, string){
+          require(_index < getIssuesCount());
+
+          IssueInfo memory info = issues[_index];
+          return (info.who, info.count, info.docLink);
+     }
+
+     function getIssuesCountForAddress(address _address) returns (uint){
+          return issuesPerAddressCount[_address];
+     }
+
+     function getIssuesForAddress(address _address, uint _index) returns (address, uint, string){
+          require(_index<issuesPerAddressCount[_address]);
+
+          uint indexInGlobalArr = issuesPerAddress[_address][_index];
+          return getIssueInfo(indexInGlobalArr);
+     }
+
+     function issueTokens(address _who, uint _tokens, string _ipfsDocLink) public onlyCreator {
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
+
+          // add to issues
+          IssueInfo memory issue;
+          issue.who = _who;
+          issue.count = _tokens;
+          issue.docLink = _ipfsDocLink;
+          issues[totalIssues] = issue; 
+
+          // add to issues per user
+          issuesPerAddress[_who][issuesPerAddressCount[_who]] = totalIssues;
+          issuesPerAddressCount[_who]++;
+          totalIssues++;
 
           Transfer(0x0, _who, _tokens);
      }
@@ -257,6 +302,7 @@ contract Gold is StdToken, CreatorEnabled {
 
           Transfer(migrationAddress, _to, _value);
      }
+
 }
 
 contract MNTP_Interface is StdToken {

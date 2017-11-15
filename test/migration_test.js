@@ -149,7 +149,7 @@ describe('Migrations 1', function() {
 
           var amount = 100000;
           var params = {from: buyer, gas: 2900000};
-          goldContract.issueTokens(buyer, amount, params, (err,res)=>{
+          goldContract.issueTokens(buyer, amount, "one.link", params, (err,res)=>{
                assert.notEqual(err, null);
                done();
           });
@@ -161,7 +161,7 @@ describe('Migrations 1', function() {
 
           var amount = 5000000000000000;
           var params = {from: creator, gas: 2900000};
-          goldContract.issueTokens(buyer, amount, params, (err,res)=>{
+          goldContract.issueTokens(buyer, amount, "two.link", params, (err,res)=>{
                assert.equal(err, null);
 
                var balance = goldContract.balanceOf(buyer);
@@ -330,7 +330,7 @@ describe('Migrations 1', function() {
 
           var amount = 5000000000000000;
           var params = {from: creator, gas: 2900000};
-          goldContract.issueTokens(buyer3, amount, params, (err,res)=>{
+          goldContract.issueTokens(buyer3, amount, "three", params, (err,res)=>{
                assert.equal(err, null);
 
                var balance = goldContract.balanceOf(buyer3);

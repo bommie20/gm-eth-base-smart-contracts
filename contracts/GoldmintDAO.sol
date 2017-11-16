@@ -180,22 +180,22 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      // IPFS docs access method:
-     function getIssuesCount() returns (uint){
+     function getIssuesCount() constant returns (uint){
           return totalIssues;
      }
 
-     function getIssueInfo(uint _index) returns (address, uint, string){
+     function getIssueInfo(uint _index) constant returns (address, uint, string){
           require(_index < getIssuesCount());
 
           IssueInfo memory info = issues[_index];
           return (info.who, info.count, info.docLink);
      }
 
-     function getIssuesCountForAddress(address _address) returns (uint){
+     function getIssuesCountForAddress(address _address) constant returns (uint){
           return issuesPerAddressCount[_address];
      }
 
-     function getIssuesForAddress(address _address, uint _index) returns (address, uint, string){
+     function getIssueForAddress(address _address, uint _index) constant returns (address, uint, string){
           require(_index<issuesPerAddressCount[_address]);
 
           uint indexInGlobalArr = issuesPerAddress[_address][_index];
@@ -217,6 +217,13 @@ contract Gold is StdToken, CreatorEnabled {
           issuesPerAddress[_who][issuesPerAddressCount[_who]] = totalIssues;
           issuesPerAddressCount[_who]++;
           totalIssues++;
+
+          Transfer(0x0, _who, _tokens);
+     }
+     
+     function issueTokensWithNoDoc(address _who, uint _tokens) public onlyCreator {
+          balances[_who] = safeAdd(balances[_who],_tokens);
+          totalSupply = safeAdd(totalSupply,_tokens);
 
           Transfer(0x0, _who, _tokens);
      }

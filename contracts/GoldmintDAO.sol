@@ -128,7 +128,7 @@ contract GoldFee is CreatorEnabled {
           // If the sender holds at least 10000 MNTP, then the transaction fee is 0.0333333% GOLD,
           // but not more than 0.02 MNTP
           if(_mntpBalance>=(10000 * 1 ether)){
-               return getMax(2 * (1 ether) / 100);
+               return getMax((_value / 100) / 30);
           }
           if(_mntpBalance>=(1000 * 1 ether)){
                return getMin((_value / 100) / 30);

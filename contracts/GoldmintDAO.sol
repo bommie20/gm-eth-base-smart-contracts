@@ -93,10 +93,19 @@ contract GoldFee is CreatorEnabled {
      function getMin(uint out)returns (uint){
           // 0.002 GOLD is min fee
           uint minFee = (2 * 1 ether) / 1000;
-          if(out>=minFee){
-               return out;
+          if(out<minFee){
+               return minFee;
           }
-          return minFee;
+          return out;
+     }
+
+     function getMax(uint out)returns (uint){
+          // 0.02 GOLD is max fee
+          uint maxFee = (2 * 1 ether) / 100;
+          if(out>=maxFee){
+               return maxFee;
+          }
+          return out;
      }
 
      function calculateFee(
@@ -109,12 +118,17 @@ contract GoldFee is CreatorEnabled {
           }
 
           // If the sender holds 0 MNTP, then the transaction fee is 1% GOLD.
-          // If the sender holds at least 10 MNTP, then the transaction fee is 0.333333% GOLD.
-          // If the sender holds at least 1000 MNTP, then the transaction fee is 0.033333% GOLD.
-          // If the sender holds at least 10000 MNTP, then the transaction fee is fixed - 0.02 GOLD.
+
+          // If the sender holds at least 10 MNTP, then the transaction fee is 0.333333% GOLD, 
+          // but not less than 0.002 MNTP
+
+          // If the sender holds at least 1000 MNTP, then the transaction fee is 0.033333% GOLD,
+          // but not less than 0.002 MNTP
+
+          // If the sender holds at least 10000 MNTP, then the transaction fee is 0.0333333% GOLD,
+          // but not more than 0.02 MNTP
           if(_mntpBalance>=(10000 * 1 ether)){
-               // 0.02 GOLD
-               return (2 * (1 ether) / 100);
+               return getMax(2 * (1 ether) / 100);
           }
           if(_mntpBalance>=(1000 * 1 ether)){
                return getMin((_value / 100) / 30);

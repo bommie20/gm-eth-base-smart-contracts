@@ -578,6 +578,99 @@ contract GoldmintMigration is CreatorEnabled {
           return calculateMyRewardDecreased(day, _myRewardMax);
      }
 
+// New features:
+// 1
+     function addDoc(string _ipfsDocLink) public onlyCreator {
+          // TODO: 
+     }
+
+     function getDocCount() public returns (uint){
+          // TODO:
+          return 0; 
+     }
+
+     function getDoc(uint _index) public returns (string){
+          // TODO:
+
+          return "";
+     }
+
+// 2 
+     // _amountCents can be negative
+     function addFiatTransaction(string _userId, int _amountCents) public onlyCreator {
+          // TODO:
+     }
+
+     function getFiatTransactionsCount(string _userId) public returns (uint){
+          // TODO:
+          return 0;
+     }
+
+     function getFiatTransaction(string _userId, uint _index) public returns(int){
+          // TODO:
+          return 0;
+     }
+
+// 3
+     function issueTokens(string _userId, uint _amountCents, int _centsPerGold)public onlyCreator {
+          // TODO:
+     }
+
+     function burnTokens(string _userId, uint _amountCents, int _exchangeRate)public onlyCreator {
+          // TODO:
+     }
+
+// 4
+     function getUserFiatBalance(string _userId)public returns(int){
+          // TODO:
+          return 0;
+     }
+
+// 5:
+     function addBuyTokensRequest(string _requestHash) onlyCreator public {
+          // TODO:
+     }
+
+     function cancelBuyTokensRequest(uint _index) onlyCreator public {
+          // TODO:
+     }
+     
+     function performBuyTokensRequest(int _index) onlyCreator public {
+          // TODO:
+     }
+     
+     function getBuyTokensRequestCount() public returns(uint){
+          // TODO:
+          return 0;
+     }
+
+     function getBuyTokensRequest(int _index) public returns(string hash,uint requestState){
+          // TODO:
+          return ("",0);
+     }
+
+// 6:
+     function addSellTokensRequest(string _requestHash, uint _tokenAmount){
+          // TODO:
+     }
+
+     function cancelSellTokensRequest(uint _requestIndex){
+          // TODO:
+     }
+
+     function performSellTokensRequest(int _requestIndex){
+          // TODO:
+     }
+
+     function getSellTokensRequest(int _requestIndex) returns(string hash, uint requestState){
+          // TODO:
+          return ("",0);
+     }
+
+
+/////////
+
+
      // do not allow to send money to this contract...
      function() public payable{
           revert();

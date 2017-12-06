@@ -333,7 +333,7 @@ contract MNTP_Interface is StdToken {
      function burnTokens(address _who, uint _tokens);
 }
 
-contract GoldmintMigration is CreatorEnabled {
+contract GoldmintMigration is CreatorEnabled, SafeMath {
 // Fields:
      MNTP_Interface public mntpToken;
      Gold public goldToken;
@@ -580,55 +580,95 @@ contract GoldmintMigration is CreatorEnabled {
 
 // New features:
 // 1
+     mapping(uint => string) docs;
+     uint docCount = 0;
+
      function addDoc(string _ipfsDocLink) public onlyCreator returns(uint){
-          // TODO: 
-          return 0;
+          docs[docCount] = _ipfsDocLink;
+          uint out = docCount;
+          docCount++;
+
+          return out;
      }
 
-     function getDocCount() public returns (uint){
-          // TODO:
-          return 0; 
+     function getDocCount() public constant returns (uint){
+          return docCount; 
      }
 
-     function getDoc(uint _index) public returns (string){
-          // TODO:
-          return "";
+     function getDoc(uint _index) public constant returns (string){
+          require(_index < docCount);
+          return docs[_index];
      }
 
 // 2 
+     mapping(string => mapping(uint => int)) fiatTxs;
+     mapping(string => int) fiatBalances;
+     mapping(string => uint) fiatCounts;
+     uint fiatTotal = 0;
+
      // _amountCents can be negative
+     // returns index in user array
      function addFiatTransaction(string _userId, int _amountCents) public onlyCreator returns(uint){
-          // TODO:
+          require(0!=_amountCents);
+
+          uint c = fiatCounts[_userId];
+
+          fiatTxs[_userId][c] = _amountCents;
+          fiatBalances[_userId] = fiatBalances[_userId] + _amountCents;
+
+          fiatCounts[_userId] = safeAdd(fiatCounts[_userId],1);
+
+          fiatTotal++;
+          return c;
      }
 
-     function getFiatTransactionsCount(string _userId) public returns (uint){
-          // TODO:
-          return 0;
+     function getFiatTransactionsCount(string _userId) public constant returns (uint){
+          return fiatCounts[_userId];
      }
      
-     function getAllFiatTransactionsCount() public returns (uint){
-          // TODO:
-          return 0;
+     function getAllFiatTransactionsCount() public constant returns (uint){
+          return fiatTotal;
      }
 
-     function getFiatTransaction(string _userId, uint _index) public returns(int){
-          // TODO:
-          return 0;
+     function getFiatTransaction(string _userId, uint _index) public constant returns(int){
+          require(_index < fiatCounts[_userId]);
+          return fiatTxs[_userId][_index];
      }
 
 // 3
-     function issueTokens(string _userId, uint _amountCents, int _centsPerGold)public onlyCreator {
+     // _goldPerCent should be multiplied by ^18
+     function issueGoldTokens(string _userId, int _amountCents, int _goldPerCent) public onlyCreator {
+          require(_amountCents > 0);
+          require(_goldPerCent > 0);
+
+          int fiatAmount = getUserFiatBalance(_userId);
+          int amount = fiatAmount;
+          // TODO: fix for negative
+          if(_amountCents > fiatAmount){
+               amount = fiatAmount;   
+          }
+          int goldAmountTokens = (amount * _goldPerCent);
+
+          // 2 - add fiat TX. Emission is negative!
+          addFiatTransaction(_userId, - _amountCents);
+          
+          // 3 - issue GOLD tokens
           // TODO:
+          address userAddress = 0x0;
+          goldToken.issueTokensWithNoDoc(userAddress, uint(goldAmountTokens));
      }
 
-     function burnTokens(string _userId, uint _amountCents, int _exchangeRate)public onlyCreator {
+     // _goldPerCent should be multiplied by ^18
+     function burnGoldTokens(string _userId, int _amountCents, int _goldPerCent) public onlyCreator {
+          require(_amountCents > 0);
+          require(_goldPerCent > 0);
+
           // TODO:
      }
 
 // 4
-     function getUserFiatBalance(string _userId)public returns(int){
-          // TODO:
-          return 0;
+     function getUserFiatBalance(string _userId) public constant returns(int){
+          return fiatBalances[_userId];
      }
 
 // 5:
@@ -645,12 +685,12 @@ contract GoldmintMigration is CreatorEnabled {
           // TODO:
      }
      
-     function getBuyTokensRequestCount() public returns(uint){
+     function getBuyTokensRequestCount() public constant returns(uint){
           // TODO:
           return 0;
      }
 
-     function getBuyTokensRequest(int _index) public returns(string hash,uint requestState){
+     function getBuyTokensRequest(int _index) public constant returns(string hash,uint requestState){
           // TODO:
           return ("",0);
      }
@@ -661,15 +701,15 @@ contract GoldmintMigration is CreatorEnabled {
           return 0;
      }
 
-     function cancelSellTokensRequest(uint _requestIndex){
+     function cancelSellTokensRequest(uint _requestIndex) public onlyCreator {
           // TODO:
      }
 
-     function performSellTokensRequest(uint _requestIndex){
+     function performSellTokensRequest(uint _requestIndex) public onlyCreator {
           // TODO:
      }
 
-     function getSellTokensRequest(uint _requestIndex) returns(string hash, uint requestState){
+     function getSellTokensRequest(uint _requestIndex) public constant returns(string hash, uint requestState){
           // TODO:
           return ("",0);
      }

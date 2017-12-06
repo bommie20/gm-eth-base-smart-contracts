@@ -31,6 +31,9 @@ var goldContract;
 var migrationContractAddress;
 var migrationContract;
 
+var fiatContractAddress;
+var fiatContract;
+
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
 describe('Fiat 1', function() {
@@ -73,7 +76,11 @@ describe('Fiat 1', function() {
                          deployMigrationContract(data,function(err){
                               assert.equal(err,null);
 
-                              done();
+                              deployFiatContract(data,function(err){
+                                   assert.equal(err,null);
+
+                                   done();
+                              });
                          });
                     });
                });
@@ -109,10 +116,10 @@ describe('Fiat 1', function() {
      });
 
      it('should not add doc',function(done){
-          assert.equal(migrationContract.getDocCount(),0);
+          assert.equal(fiatContract.getDocCount(),0);
 
           var ipfsLink = "123";
-          migrationContract.addDoc(
+          fiatContract.addDoc(
                ipfsLink,
                {
                     from: buyer,               
@@ -125,10 +132,10 @@ describe('Fiat 1', function() {
      });
 
      it('should add doc 1',function(done){
-          assert.equal(migrationContract.getDocCount(),0);
+          assert.equal(fiatContract.getDocCount(),0);
 
           var ipfsLink = "123";
-          migrationContract.addDoc(
+          fiatContract.addDoc(
                ipfsLink,
                {
                     from: creator,               
@@ -136,9 +143,9 @@ describe('Fiat 1', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    assert.equal(migrationContract.getDocCount(),1);
+                    assert.equal(fiatContract.getDocCount(),1);
 
-                    var s = migrationContract.getDoc(0);
+                    var s = fiatContract.getDoc(0);
                     assert.equal(s,ipfsLink);
 
                     done();
@@ -148,7 +155,7 @@ describe('Fiat 1', function() {
      
      it('should add doc 2',function(done){
           var ipfsLink = "234";
-          migrationContract.addDoc(
+          fiatContract.addDoc(
                ipfsLink,
                {
                     from: creator,               
@@ -156,9 +163,9 @@ describe('Fiat 1', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    assert.equal(migrationContract.getDocCount(),2);
+                    assert.equal(fiatContract.getDocCount(),2);
 
-                    var s = migrationContract.getDoc(1);
+                    var s = fiatContract.getDoc(1);
                     assert.equal(s,ipfsLink);
 
                     done();
@@ -171,7 +178,7 @@ describe('Fiat 1', function() {
           var user = "anton";
           var amount = -300;
 
-          migrationContract.addFiatTransaction(
+          fiatContract.addFiatTransaction(
                user,
                amount,
                {
@@ -187,14 +194,14 @@ describe('Fiat 1', function() {
      it('should add fiat tx',function(done){
           var user = "anton";
 
-          assert.equal(migrationContract.getFiatTransactionsCount(user),0);
-          assert.equal(migrationContract.getAllFiatTransactionsCount(),0);
-          assert.equal(migrationContract.getUserFiatBalance(user),0);
+          assert.equal(fiatContract.getFiatTransactionsCount(user),0);
+          assert.equal(fiatContract.getAllFiatTransactionsCount(),0);
+          assert.equal(fiatContract.getUserFiatBalance(user),0);
 
           // $3 
           var amount = -300;
 
-          migrationContract.addFiatTransaction(
+          fiatContract.addFiatTransaction(
                user,
                amount,
                {
@@ -203,11 +210,11 @@ describe('Fiat 1', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    assert.equal(migrationContract.getFiatTransactionsCount(user),1);
-                    assert.equal(migrationContract.getAllFiatTransactionsCount(),1);
-                    assert.equal(migrationContract.getUserFiatBalance(user),-300);
+                    assert.equal(fiatContract.getFiatTransactionsCount(user),1);
+                    assert.equal(fiatContract.getAllFiatTransactionsCount(),1);
+                    assert.equal(fiatContract.getUserFiatBalance(user),-300);
 
-                    var amount2 = migrationContract.getFiatTransaction(user,0);
+                    var amount2 = fiatContract.getFiatTransaction(user,0);
                     assert.equal(amount2,amount);
 
                     done();
@@ -218,13 +225,13 @@ describe('Fiat 1', function() {
      it('should add fiat tx 2',function(done){
           var user = "kostya";
 
-          assert.equal(migrationContract.getFiatTransactionsCount(user),0);
-          assert.equal(migrationContract.getUserFiatBalance(user),0);
+          assert.equal(fiatContract.getFiatTransactionsCount(user),0);
+          assert.equal(fiatContract.getUserFiatBalance(user),0);
 
           // $5 
           var amount = 500;
 
-          migrationContract.addFiatTransaction(
+          fiatContract.addFiatTransaction(
                user,
                amount,
                {
@@ -233,11 +240,11 @@ describe('Fiat 1', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    assert.equal(migrationContract.getFiatTransactionsCount(user),1);
-                    assert.equal(migrationContract.getAllFiatTransactionsCount(),2);
-                    assert.equal(migrationContract.getUserFiatBalance(user),500);
+                    assert.equal(fiatContract.getFiatTransactionsCount(user),1);
+                    assert.equal(fiatContract.getAllFiatTransactionsCount(),2);
+                    assert.equal(fiatContract.getUserFiatBalance(user),500);
 
-                    var amount2 = migrationContract.getFiatTransaction(user,0);
+                    var amount2 = fiatContract.getFiatTransaction(user,0);
                     assert.equal(amount2,amount);
 
                     done();
@@ -251,7 +258,7 @@ describe('Fiat 1', function() {
           // $9 
           var amount = -900;
 
-          migrationContract.addFiatTransaction(
+          fiatContract.addFiatTransaction(
                user,
                amount,
                {
@@ -260,11 +267,11 @@ describe('Fiat 1', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    assert.equal(migrationContract.getFiatTransactionsCount(user),2);
-                    assert.equal(migrationContract.getAllFiatTransactionsCount(),3);
-                    assert.equal(migrationContract.getUserFiatBalance(user),-400);
+                    assert.equal(fiatContract.getFiatTransactionsCount(user),2);
+                    assert.equal(fiatContract.getAllFiatTransactionsCount(),3);
+                    assert.equal(fiatContract.getUserFiatBalance(user),-400);
 
-                    var amount2 = migrationContract.getFiatTransaction(user,1);
+                    var amount2 = fiatContract.getFiatTransaction(user,1);
                     assert.equal(amount2,amount);
 
                     done();

@@ -158,16 +158,6 @@ contract Gold is StdToken, CreatorEnabled {
      bool public migrationStarted = false;
      bool public migrationFinished = false;
 
-     struct IssueInfo {
-          address who;
-          uint count;
-          string docLink;
-     }
-     mapping (uint=>IssueInfo) public issues;
-     uint public totalIssues = 0;
-     mapping (address=>uint) public issuesPerAddressCount;
-     mapping (address=> mapping(uint=>uint)) public issuesPerAddress;
-
 // Modifiers:
      modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
      modifier onlyIfUnlocked() { require(!lockTransfers); _; }
@@ -192,50 +182,8 @@ contract Gold is StdToken, CreatorEnabled {
      function setGoldFeeAddress(address _goldFeeAddress) public onlyCreator {
           goldFee = GoldFee(_goldFeeAddress);
      }
-
-     // IPFS docs access method:
-     function getIssuesCount() constant returns (uint){
-          return totalIssues;
-     }
-
-     function getIssueInfo(uint _index) constant returns (address, uint, string){
-          require(_index < getIssuesCount());
-
-          IssueInfo memory info = issues[_index];
-          return (info.who, info.count, info.docLink);
-     }
-
-     function getIssuesCountForAddress(address _address) constant returns (uint){
-          return issuesPerAddressCount[_address];
-     }
-
-     function getIssueForAddress(address _address, uint _index) constant returns (address, uint, string){
-          require(_index<issuesPerAddressCount[_address]);
-
-          uint indexInGlobalArr = issuesPerAddress[_address][_index];
-          return getIssueInfo(indexInGlobalArr);
-     }
-
-     function issueTokens(address _who, uint _tokens, string _ipfsDocLink) public onlyCreator {
-          balances[_who] = safeAdd(balances[_who],_tokens);
-          totalSupply = safeAdd(totalSupply,_tokens);
-
-          // add to issues
-          IssueInfo memory issue;
-          issue.who = _who;
-          issue.count = _tokens;
-          issue.docLink = _ipfsDocLink;
-          issues[totalIssues] = issue; 
-
-          // add to issues per user
-          issuesPerAddress[_who][issuesPerAddressCount[_who]] = totalIssues;
-          issuesPerAddressCount[_who]++;
-          totalIssues++;
-
-          Transfer(0x0, _who, _tokens);
-     }
      
-     function issueTokensWithNoDoc(address _who, uint _tokens) public onlyCreator {
+     function issueTokens(address _who, uint _tokens) public onlyCreator {
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
 
@@ -333,7 +281,7 @@ contract MNTP_Interface is StdToken {
      function burnTokens(address _who, uint _tokens);
 }
 
-contract GoldmintMigration is CreatorEnabled, SafeMath {
+contract GoldmintMigration is CreatorEnabled {
 // Fields:
      MNTP_Interface public mntpToken;
      Gold public goldToken;
@@ -578,11 +526,26 @@ contract GoldmintMigration is CreatorEnabled, SafeMath {
           return calculateMyRewardDecreased(day, _myRewardMax);
      }
 
-// New features:
-// 1
+/////////
+
+     // do not allow to send money to this contract...
+     function() public payable{
+          revert();
+     }
+}
+
+contract FiatTables is CreatorEnabled, SafeMath {
+     Gold public goldToken;
      mapping(uint => string) docs;
      uint docCount = 0;
 
+     function FiatTables(address _goldContractAddress) {
+          creator = msg.sender;
+          
+          goldToken = Gold(_goldContractAddress);
+     }
+
+// 1
      function addDoc(string _ipfsDocLink) public onlyCreator returns(uint){
           docs[docCount] = _ipfsDocLink;
           uint out = docCount;
@@ -637,13 +600,12 @@ contract GoldmintMigration is CreatorEnabled, SafeMath {
 
 // 3
      // _goldPerCent should be multiplied by ^18
-     function issueGoldTokens(string _userId, int _amountCents, int _goldPerCent) public onlyCreator {
+     function issueGoldTokens(string _userId, address _userAddress, int _amountCents, int _goldPerCent) public onlyCreator {
           require(_amountCents > 0);
           require(_goldPerCent > 0);
 
           int fiatAmount = getUserFiatBalance(_userId);
           int amount = fiatAmount;
-          // TODO: fix for negative
           if(_amountCents > fiatAmount){
                amount = fiatAmount;   
           }
@@ -653,9 +615,7 @@ contract GoldmintMigration is CreatorEnabled, SafeMath {
           addFiatTransaction(_userId, - _amountCents);
           
           // 3 - issue GOLD tokens
-          // TODO:
-          address userAddress = 0x0;
-          goldToken.issueTokensWithNoDoc(userAddress, uint(goldAmountTokens));
+          goldToken.issueTokens(_userAddress, uint(goldAmountTokens));
      }
 
      // _goldPerCent should be multiplied by ^18
@@ -672,9 +632,33 @@ contract GoldmintMigration is CreatorEnabled, SafeMath {
      }
 
 // 5:
-     function addBuyTokensRequest(string _requestHash) onlyCreator public returns(uint){
-          // TODO:
-          return 0;
+     struct Request {
+          address sender;
+          string requestHash;
+          bool buyRequest;         // otherwise - sell
+          uint goldAmount;
+
+          // 0 - init
+          // 1 - processed
+          // 2 - cancelled
+          uint8 state;
+     }
+     mapping (uint=>Request) request;
+     uint requests = 0;
+
+     function addBuyTokensRequest(string _requestHash, uint goldAmount) onlyCreator public returns(uint){
+          Request memory r;
+          r.sender = msg.sender;
+          r.requestHash = _requestHash;
+          r.buyRequest = true;
+          r.goldAmount = goldAmount;
+          r.state = 0;
+
+          request[requests] = r;
+          uint out = requests;
+          requests++;
+
+          return out;
      }
 
      function cancelBuyTokensRequest(uint _index) onlyCreator public {
@@ -696,9 +680,19 @@ contract GoldmintMigration is CreatorEnabled, SafeMath {
      }
 
 // 6:
-     function addSellTokensRequest(string _requestHash, uint _tokenAmount) returns(uint){
-          // TODO:
-          return 0;
+     function addSellTokensRequest(string _requestHash, uint _goldAmount) returns(uint){
+          Request memory r;
+          r.sender = msg.sender;
+          r.requestHash = _requestHash;
+          r.buyRequest = false;
+          r.goldAmount = _goldAmount;
+          r.state = 0;
+
+          request[requests] = r;
+          uint out = requests;
+          requests++;
+
+          return out;
      }
 
      function cancelSellTokensRequest(uint _requestIndex) public onlyCreator {
@@ -715,10 +709,4 @@ contract GoldmintMigration is CreatorEnabled, SafeMath {
      }
 
 
-/////////
-
-     // do not allow to send money to this contract...
-     function() public payable{
-          revert();
-     }
 }

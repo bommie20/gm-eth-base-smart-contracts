@@ -149,7 +149,7 @@ describe('Migrations 1', function() {
 
           var amount = 100000;
           var params = {from: buyer, gas: 2900000};
-          goldContract.issueTokens(buyer, amount, "one.link", params, (err,res)=>{
+          goldContract.issueTokens(buyer, amount, params, (err,res)=>{
                assert.notEqual(err, null);
                done();
           });
@@ -158,39 +158,14 @@ describe('Migrations 1', function() {
      it('should emit some GOLD tokens to buyer',function(done){
           var balance = goldContract.balanceOf(buyer);
           assert.equal(balance,0);
-          assert.equal(goldContract.getIssuesCount(),0);
-          assert.equal(goldContract.getIssuesCountForAddress(buyer),0);
 
           var amount = 5000000000000000;
           var params = {from: creator, gas: 2900000};
-          goldContract.issueTokens(buyer, amount, "two.link", params, (err,res)=>{
+          goldContract.issueTokens(buyer, amount, params, (err,res)=>{
                assert.equal(err, null);
 
                var balance = goldContract.balanceOf(buyer);
                assert.equal(balance,5000000000000000);
-
-               // check that issue is added to the list
-               assert.equal(goldContract.getIssuesCount(),1);
-               assert.equal(goldContract.getIssuesCountForAddress(buyer),1);
-
-               var ii = goldContract.getIssueInfo(0);
-               assert.equal(ii[0],buyer);
-               assert.equal(ii[1],amount);
-               assert.equal(ii[2],"two.link");
-
-               var ii2 = goldContract.getIssueForAddress(buyer,0);
-               assert.equal(ii2[0],buyer);
-               assert.equal(ii2[1],amount);
-               assert.equal(ii2[2],"two.link");
-
-               assert.equal(goldContract.getIssuesCountForAddress(buyer2),0);
-               try{
-                    // should throw!
-                    var ii3 = goldContract.getIssueForAddress(buyer2,0);
-                    assert.equal(0,1);
-               }catch(err){
-
-               }
                done();
           });
      });
@@ -203,7 +178,6 @@ describe('Migrations 1', function() {
 
           // 0.002 GOLD is min fee
           // 2000000000000000
-          //var amount = 100000;
           var amount = 4000000000000000;
 
           // GOLD: buyer -> buyer2
@@ -354,7 +328,7 @@ describe('Migrations 1', function() {
 
           var amount = 5000000000000000;
           var params = {from: creator, gas: 2900000};
-          goldContract.issueTokens(buyer3, amount, "three", params, (err,res)=>{
+          goldContract.issueTokens(buyer3, amount, params, (err,res)=>{
                assert.equal(err, null);
 
                var balance = goldContract.balanceOf(buyer3);
@@ -367,13 +341,6 @@ describe('Migrations 1', function() {
 
                var out2 = migrationContract.calculateMyReward(out);
                assert.equal(out2.toString(10),balanceRewards.toString(10));
-
-               assert.equal(goldContract.getIssuesCount(),2);
-               assert.equal(goldContract.getIssuesCountForAddress(buyer),1);
-               assert.equal(goldContract.getIssuesCountForAddress(buyer2),0);
-               assert.equal(goldContract.getIssuesCountForAddress(buyer3),1);
-
-
                done();
           });
      });

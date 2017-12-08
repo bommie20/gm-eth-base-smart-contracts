@@ -88,8 +88,8 @@ describe('Fiat 1', function() {
      });
 
      it('should set migration address',function(done){
-          goldContract.setMigrationContractAddress(
-               migrationContractAddress,
+          goldContract.setControllerContractAddress(
+               fiatContractAddress,
                {
                     from: creator,               
                     gas: 2900000 
@@ -273,6 +273,313 @@ describe('Fiat 1', function() {
 
                     var amount2 = fiatContract.getFiatTransaction(user,1);
                     assert.equal(amount2,amount);
+
+                    done();
+               }
+          );
+     });
+
+     it('should add buy tokens request',function(done){
+          var user = "kostya";
+          var hash = "1231321";
+
+          assert.equal(fiatContract.getRequestsCount(),0);
+
+          fiatContract.addBuyTokensRequest(
+               user,
+               hash,
+               {
+                    from: buyer,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    assert.equal(fiatContract.getRequestsCount(),1);
+
+                    var r = fiatContract.getRequest(0);
+                    assert.equal(r[0],buyer);
+                    assert.equal(r[1],user);
+                    assert.equal(r[4],0);    // state
+
+                    done();
+               }
+          );
+     });
+
+     it('should not cancel if not admin',function(done){
+          fiatContract.cancelRequest(
+               0,
+               {
+                    from: buyer,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    assert.equal(fiatContract.getRequestsCount(),1);
+
+                    done();
+               }
+          );
+     });
+
+     it('should cancel request by admin',function(done){
+          fiatContract.cancelRequest(
+               0,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    assert.equal(fiatContract.getRequestsCount(),1);
+
+                    var r = fiatContract.getRequest(0);
+                    assert.equal(r[4],2);
+
+                    done();
+               }
+          );
+     });
+
+     it('should not process cancelled request',function(done){
+          var amountCents = 100;
+
+          // 1 GOLD - $500
+          // 100000000000000000000 GOLD - 50000 cents
+          // 10000000000000000 GOLD - 5 cents
+          // 2000000000000000 GOLD - 1 cent
+          var goldPerCent = 2000000000000000; 
+
+          fiatContract.processRequest(
+               0,
+               amountCents,
+               goldPerCent,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should add buy tokens request 2',function(done){
+          var user = "anton";
+          var hash = "12334390";
+
+          assert.equal(fiatContract.getRequestsCount(),1);
+
+          fiatContract.addBuyTokensRequest(
+               user,
+               hash,
+               {
+                    from: buyer2,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    assert.equal(fiatContract.getRequestsCount(),2);
+
+                    var r = fiatContract.getRequest(1);
+                    assert.equal(r[0],buyer2);
+                    assert.equal(r[1],user);
+                    assert.equal(r[4],0);    // state
+
+                    done();
+               }
+          );
+     });
+
+     it('should not process request if no fiat',function(done){
+          var amountCents = 100;
+
+          // 1 GOLD - $500
+          // 100000000000000000000 GOLD - 50000 cents
+          // 10000000000000000 GOLD - 5 cents
+          // 2000000000000000 GOLD - 1 cent
+          var goldPerCent = 2000000000000000; 
+          
+          fiatContract.processRequest(
+               1,
+               amountCents,
+               goldPerCent,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should add fiat tx 4',function(done){
+          var user = "xxx"; 
+          var amount = 900;        // $9 
+
+          fiatContract.addFiatTransaction(
+               user,
+               amount,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should add buy tokens request',function(done){
+          var user = "xxx";
+          var hash = "1231231231231";
+
+          fiatContract.addBuyTokensRequest(
+               user,
+               hash,
+               {
+                    from: buyer3,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    assert.equal(fiatContract.getRequestsCount(),3);
+
+                    var r = fiatContract.getRequest(2);
+                    assert.equal(r[0],buyer3);
+                    assert.equal(r[1],user);
+                    assert.equal(r[4],0);    // state
+
+                    done();
+               }
+          );
+     });
+
+     it('should process request',function(done){
+          var amountCents = 100;
+
+          // 1 GOLD - $500
+          // 100000000000000000000 GOLD - 50000 cents
+          // 10000000000000000 GOLD - 5 cents
+          // 2000000000000000 GOLD - 1 cent
+          var goldPerCent = 2000000000000000; 
+          
+          var balance = goldContract.balanceOf(buyer3);
+          assert.equal(balance, 0);
+
+          fiatContract.processRequest(
+               2,
+               amountCents,
+               goldPerCent,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    // 900 - 100
+                    var user = 'xxx';
+                    assert.equal(fiatContract.getUserFiatBalance(user),800);
+
+                    // GOLD balance should be increased
+                    var balance = goldContract.balanceOf(buyer3);
+                    assert.equal(balance, goldPerCent * 100);
+
+                    done();
+               }
+          );
+     });
+
+     it('should add buy tokens request 2',function(done){
+          var user = "xxx";
+          var hash = "1231231231232";
+
+          fiatContract.addBuyTokensRequest(
+               user,
+               hash,
+               {
+                    from: buyer3,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should process request 2',function(done){
+          // 800 left only
+          var amountCents = 1000;
+
+          // 1 GOLD - $500
+          // 100000000000000000000 GOLD - 50000 cents
+          // 10000000000000000 GOLD - 5 cents
+          // 2000000000000000 GOLD - 1 cent
+          var goldPerCent = 2000000000000000; 
+
+          fiatContract.processRequest(
+               3,
+               amountCents,
+               goldPerCent,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    var user = 'xxx';
+                    assert.equal(fiatContract.getUserFiatBalance(user),0);
+
+                    // GOLD balance should be increased
+                    var balance = goldContract.balanceOf(buyer3);
+                    // total bought was 900
+                    assert.equal(balance, goldPerCent * 900);
+
+                    done();
+               }
+          );
+     });
+
+     it('should add sell tokens request 3',function(done){
+          var user = "xxx";
+          var hash = "1231231231232";
+
+          fiatContract.addSellTokensRequest(
+               user,
+               hash,
+               {
+                    from: buyer3,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should process request 3',function(done){
+          // sell $100 worth of tokens 
+          var amountCents = 100;
+
+          // 1 GOLD - $500
+          // 100000000000000000000 GOLD - 50000 cents
+          // 10000000000000000 GOLD - 5 cents
+          // 2000000000000000 GOLD - 1 cent
+          var goldPerCent = 2000000000000000; 
+
+          fiatContract.processRequest(
+               4,
+               amountCents,
+               goldPerCent,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    // should be increased
+                    var user = 'xxx';
+                    assert.equal(fiatContract.getUserFiatBalance(user),100);
+
+                    // GOLD balance should be decreased  
+                    var balance = goldContract.balanceOf(buyer3);
+                    assert.equal(balance, goldPerCent * 800);
 
                     done();
                }

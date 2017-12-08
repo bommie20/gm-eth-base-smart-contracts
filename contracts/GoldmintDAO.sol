@@ -150,6 +150,8 @@ contract Gold is StdToken, CreatorEnabled {
 
      // this is used to send fees (that is then distributed as rewards)
      address public migrationAddress = 0x0;
+     address public controllerAddress = 0x0;
+
      address public goldmintTeamAddress = 0x0;
      MNTP_Interface public mntpToken;
      GoldFee public goldFee;
@@ -160,6 +162,8 @@ contract Gold is StdToken, CreatorEnabled {
 
 // Modifiers:
      modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
+     modifier onlyMigrationOrController() { require(msg.sender==migrationAddress || msg.sender==controllerAddress); _; }
+     modifier onlyCreatorOrController() { require(msg.sender==creator || msg.sender==controllerAddress); _; }
      modifier onlyIfUnlocked() { require(!lockTransfers); _; }
 
 // Functions:
@@ -169,6 +173,10 @@ contract Gold is StdToken, CreatorEnabled {
           mntpToken = MNTP_Interface(_mntpContractAddress);
           goldmintTeamAddress = _goldmintTeamAddress; 
           goldFee = GoldFee(_goldFeeAddress);
+     }
+
+     function setControllerContractAddress(address _controllerAddress) public onlyCreator {
+          controllerAddress = _controllerAddress;
      }
 
      function setMigrationContractAddress(address _migrationAddress) public onlyCreator {
@@ -183,14 +191,14 @@ contract Gold is StdToken, CreatorEnabled {
           goldFee = GoldFee(_goldFeeAddress);
      }
      
-     function issueTokens(address _who, uint _tokens) public onlyCreator {
+     function issueTokens(address _who, uint _tokens) public onlyCreatorOrController {
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
 
           Transfer(0x0, _who, _tokens);
      }
 
-     function burnTokens(address _who, uint _tokens) public onlyMigration {
+     function burnTokens(address _who, uint _tokens) public onlyMigrationOrController {
           balances[_who] = safeSub(balances[_who],_tokens);
           totalSupply = safeSub(totalSupply,_tokens);
      }
@@ -535,13 +543,40 @@ contract GoldmintMigration is CreatorEnabled {
 }
 
 contract FiatTables is CreatorEnabled, SafeMath {
+// Fields - 1
      Gold public goldToken;
      mapping(uint => string) docs;
      uint docCount = 0;
 
+// Fields - 2 
+     mapping(string => mapping(uint => int)) fiatTxs;
+     mapping(string => int) fiatBalancesCents;
+     mapping(string => uint) fiatCounts;
+     uint fiatTotal = 0;
+
+// Fields - 3 
+     struct Request {
+          address sender;
+          string userId;
+          string requestHash;
+          bool buyRequest;         // otherwise - sell
+
+          // 0 - init
+          // 1 - processed
+          // 2 - cancelled
+          uint8 state;
+     }
+     mapping (uint=>Request) requests;
+     uint public requestsCount = 0;
+
+////////////////////
+     event NewTokenBuyRequest(address indexed _from, string indexed _userId);
+     event NewTokenSellRequest(address indexed _from, string indexed _userId);
+     event RequestProcessed(uint indexed _reqId);
+     event RequestCancelled(uint indexed _reqId);
+
      function FiatTables(address _goldContractAddress) {
           creator = msg.sender;
-          
           goldToken = Gold(_goldContractAddress);
      }
 
@@ -563,12 +598,7 @@ contract FiatTables is CreatorEnabled, SafeMath {
           return docs[_index];
      }
 
-// 2 
-     mapping(string => mapping(uint => int)) fiatTxs;
-     mapping(string => int) fiatBalances;
-     mapping(string => uint) fiatCounts;
-     uint fiatTotal = 0;
-
+// 2
      // _amountCents can be negative
      // returns index in user array
      function addFiatTransaction(string _userId, int _amountCents) public onlyCreator returns(uint){
@@ -577,7 +607,7 @@ contract FiatTables is CreatorEnabled, SafeMath {
           uint c = fiatCounts[_userId];
 
           fiatTxs[_userId][c] = _amountCents;
-          fiatBalances[_userId] = fiatBalances[_userId] + _amountCents;
+          fiatBalancesCents[_userId] = fiatBalancesCents[_userId] + _amountCents;
 
           fiatCounts[_userId] = safeAdd(fiatCounts[_userId],1);
 
@@ -598,115 +628,118 @@ contract FiatTables is CreatorEnabled, SafeMath {
           return fiatTxs[_userId][_index];
      }
 
-// 3
-     // _goldPerCent should be multiplied by ^18
-     function issueGoldTokens(string _userId, address _userAddress, int _amountCents, int _goldPerCent) public onlyCreator {
-          require(_amountCents > 0);
-          require(_goldPerCent > 0);
-
-          int fiatAmount = getUserFiatBalance(_userId);
-          int amount = fiatAmount;
-          if(_amountCents > fiatAmount){
-               amount = fiatAmount;   
-          }
-          int goldAmountTokens = (amount * _goldPerCent);
-
-          // 2 - add fiat TX. Emission is negative!
-          addFiatTransaction(_userId, - _amountCents);
-          
-          // 3 - issue GOLD tokens
-          goldToken.issueTokens(_userAddress, uint(goldAmountTokens));
-     }
-
-     // _goldPerCent should be multiplied by ^18
-     function burnGoldTokens(string _userId, int _amountCents, int _goldPerCent) public onlyCreator {
-          require(_amountCents > 0);
-          require(_goldPerCent > 0);
-
-          // TODO:
-     }
-
 // 4
      function getUserFiatBalance(string _userId) public constant returns(int){
-          return fiatBalances[_userId];
+          return fiatBalancesCents[_userId];
      }
 
-// 5:
-     struct Request {
-          address sender;
-          string requestHash;
-          bool buyRequest;         // otherwise - sell
-          uint goldAmount;
-
-          // 0 - init
-          // 1 - processed
-          // 2 - cancelled
-          uint8 state;
-     }
-     mapping (uint=>Request) request;
-     uint requests = 0;
-
-     function addBuyTokensRequest(string _requestHash, uint goldAmount) onlyCreator public returns(uint){
+// 3:
+     function addBuyTokensRequest(string _userId, string _requestHash) public returns(uint){
           Request memory r;
           r.sender = msg.sender;
+          r.userId = _userId;
           r.requestHash = _requestHash;
           r.buyRequest = true;
-          r.goldAmount = goldAmount;
           r.state = 0;
 
-          request[requests] = r;
-          uint out = requests;
-          requests++;
+          requests[requestsCount] = r;
+          uint out = requestsCount;
+          requestsCount++;
 
+          NewTokenBuyRequest(msg.sender, _userId); 
           return out;
      }
 
-     function cancelBuyTokensRequest(uint _index) onlyCreator public {
-          // TODO:
-     }
-     
-     function performBuyTokensRequest(uint _index) onlyCreator public {
-          // TODO:
-     }
-     
-     function getBuyTokensRequestCount() public constant returns(uint){
-          // TODO:
-          return 0;
-     }
-
-     function getBuyTokensRequest(int _index) public constant returns(string hash,uint requestState){
-          // TODO:
-          return ("",0);
-     }
-
-// 6:
-     function addSellTokensRequest(string _requestHash, uint _goldAmount) returns(uint){
+     function addSellTokensRequest(string _userId, string _requestHash) returns(uint){
           Request memory r;
           r.sender = msg.sender;
+          r.userId = _userId;
           r.requestHash = _requestHash;
           r.buyRequest = false;
-          r.goldAmount = _goldAmount;
           r.state = 0;
 
-          request[requests] = r;
-          uint out = requests;
-          requests++;
+          requests[requestsCount] = r;
+          uint out = requestsCount;
+          requestsCount++;
 
+          NewTokenSellRequest(msg.sender, _userId);
           return out;
      }
 
-     function cancelSellTokensRequest(uint _requestIndex) public onlyCreator {
-          // TODO:
+     function getRequestsCount() public constant returns(uint){
+          return requestsCount;
      }
 
-     function performSellTokensRequest(uint _requestIndex) public onlyCreator {
-          // TODO:
+     function getRequest(uint _index) public constant returns(address a, string userId, string hash, bool buy, uint8 state){
+          require(_index < requestsCount);
+
+          Request memory r = requests[_index];
+          return (r.sender, r.userId, r.requestHash, r.buyRequest, r.state);
      }
 
-     function getSellTokensRequest(uint _requestIndex) public constant returns(string hash, uint requestState){
-          // TODO:
-          return ("",0);
+     function cancelRequest(uint _index) onlyCreator public {
+          require(_index < requestsCount);
+          require(0==requests[_index].state);
+
+          requests[_index].state = 2;
+     }
+     
+     function processRequest(uint _index, uint _amountCents, uint _goldPerCent) onlyCreator public {
+          require(_index < requestsCount);
+          require(0==requests[_index].state);
+
+          Request memory r = requests[_index];
+
+          // 0 - get fiat amount that user has
+          int amount = int(_amountCents);
+          int fiatAmount = getUserFiatBalance(r.userId);
+
+          uint tokens = 0;
+          if(r.buyRequest){
+               require(fiatAmount > 0);
+               if(fiatAmount < amount){
+                    amount = fiatAmount;
+               }
+               require(amount > 0);
+
+               // 1 - issue tokens
+               tokens = (uint(amount) * _goldPerCent);
+               issueGoldTokens(r.sender, tokens);
+
+               // 2 - add fiat tx
+               // negative for buy
+               addFiatTransaction(r.userId, - amount);
+          }else{
+               tokens = (uint(amount) * _goldPerCent);
+               uint tokenBalance = goldToken.balanceOf(r.sender);
+               if(tokenBalance < tokens){
+                    tokens = tokenBalance;
+               }
+
+               burnGoldTokens(r.sender, tokens);
+               amount = int(tokens / _goldPerCent);
+
+               // 2 - add fiat tx
+               // positive for sell 
+               addFiatTransaction(r.userId, amount);
+          }
+
+          // 3 - update state
+          r.state = 1;   // processed
+          requests[_index] = r;
+
+          // 4 - send event
+          RequestProcessed(_index);
+     }
+     
+////////
+     function issueGoldTokens(address _userAddress, uint _tokenAmount) internal {
+          require(0!=_tokenAmount);
+          goldToken.issueTokens(_userAddress, _tokenAmount);
      }
 
-
+     function burnGoldTokens(address _userAddress, uint _tokenAmount) internal {
+          require(0!=_tokenAmount);
+          goldToken.burnTokens(_userAddress, _tokenAmount);
+     }
 }

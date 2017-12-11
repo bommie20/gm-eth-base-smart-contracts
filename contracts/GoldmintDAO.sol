@@ -257,10 +257,7 @@ contract Gold is StdToken, CreatorEnabled {
           uint yourCurrentMntpBalance = mntpToken.balanceOf(_from);
 
           uint fee = goldFee.calculateFee(migrationStarted, migrationFinished, yourCurrentMntpBalance, _value);
-          uint sendThis = _value;
           if(0!=fee){ 
-               safeSub(_value,fee);
-          
                // 1.Transfer fee
                // A -> rewards account
                // 
@@ -276,6 +273,7 @@ contract Gold is StdToken, CreatorEnabled {
           
           // 2.Transfer
           // A -> B
+          uint sendThis = safeSub(_value,fee);
           return super.transferFrom(_from, _to, sendThis);
      }
 

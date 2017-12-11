@@ -342,15 +342,12 @@ describe('Fiat 1', function() {
           var amountCents = 100;
 
           // 1 GOLD - $500
-          // 100000000000000000000 GOLD - 50000 cents
-          // 10000000000000000 GOLD - 5 cents
-          // 2000000000000000 GOLD - 1 cent
-          var goldPerCent = 2000000000000000; 
-
+          var centsPerGold = (500 * 100);
+          
           fiatContract.processRequest(
                0,
                amountCents,
-               goldPerCent,
+               centsPerGold,
                {
                     from: creator,               
                     gas: 2900000 
@@ -391,15 +388,12 @@ describe('Fiat 1', function() {
           var amountCents = 100;
 
           // 1 GOLD - $500
-          // 100000000000000000000 GOLD - 50000 cents
-          // 10000000000000000 GOLD - 5 cents
-          // 2000000000000000 GOLD - 1 cent
-          var goldPerCent = 2000000000000000; 
-          
+          var centsPerGold = (500 * 100);
+
           fiatContract.processRequest(
                1,
                amountCents,
-               goldPerCent,
+               centsPerGold,
                {
                     from: creator,               
                     gas: 2900000 
@@ -455,10 +449,7 @@ describe('Fiat 1', function() {
           var amountCents = 100;
 
           // 1 GOLD - $500
-          // 100000000000000000000 GOLD - 50000 cents
-          // 10000000000000000 GOLD - 5 cents
-          // 2000000000000000 GOLD - 1 cent
-          var goldPerCent = 2000000000000000; 
+          var centsPerGold = (500 * 100);
           
           var balance = goldContract.balanceOf(buyer3);
           assert.equal(balance, 0);
@@ -466,7 +457,7 @@ describe('Fiat 1', function() {
           fiatContract.processRequest(
                2,
                amountCents,
-               goldPerCent,
+               centsPerGold,
                {
                     from: creator,               
                     gas: 2900000 
@@ -479,7 +470,7 @@ describe('Fiat 1', function() {
 
                     // GOLD balance should be increased
                     var balance = goldContract.balanceOf(buyer3);
-                    assert.equal(balance, goldPerCent * 100);
+                    assert.equal(balance, 100 * 1000000000000000000 / centsPerGold);
 
                     done();
                }
@@ -508,15 +499,12 @@ describe('Fiat 1', function() {
           var amountCents = 1000;
 
           // 1 GOLD - $500
-          // 100000000000000000000 GOLD - 50000 cents
-          // 10000000000000000 GOLD - 5 cents
-          // 2000000000000000 GOLD - 1 cent
-          var goldPerCent = 2000000000000000; 
+          var centsPerGold = (500 * 100);
 
           fiatContract.processRequest(
                3,
                amountCents,
-               goldPerCent,
+               centsPerGold,
                {
                     from: creator,               
                     gas: 2900000 
@@ -529,7 +517,7 @@ describe('Fiat 1', function() {
                     // GOLD balance should be increased
                     var balance = goldContract.balanceOf(buyer3);
                     // total bought was 900
-                    assert.equal(balance, goldPerCent * 900);
+                    assert.equal(balance, 900 * 1000000000000000000 / centsPerGold);
 
                     done();
                }
@@ -558,15 +546,12 @@ describe('Fiat 1', function() {
           var amountCents = 100;
 
           // 1 GOLD - $500
-          // 100000000000000000000 GOLD - 50000 cents
-          // 10000000000000000 GOLD - 5 cents
-          // 2000000000000000 GOLD - 1 cent
-          var goldPerCent = 2000000000000000; 
+          var centsPerGold = (500 * 100);
 
           fiatContract.processRequest(
                4,
                amountCents,
-               goldPerCent,
+               centsPerGold,
                {
                     from: creator,               
                     gas: 2900000 
@@ -579,7 +564,7 @@ describe('Fiat 1', function() {
 
                     // GOLD balance should be decreased  
                     var balance = goldContract.balanceOf(buyer3);
-                    assert.equal(balance, goldPerCent * 800);
+                    assert.equal(balance, 800 * 1000000000000000000 / centsPerGold);
 
                     done();
                }

@@ -160,6 +160,9 @@ contract Gold is StdToken, CreatorEnabled {
      bool public migrationStarted = false;
      bool public migrationFinished = false;
 
+     bool public controllerSet = false;
+     bool public migrationSet = false;
+
 // Modifiers:
      modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
      modifier onlyMigrationOrController() { require(msg.sender==migrationAddress || msg.sender==controllerAddress); _; }
@@ -176,11 +179,15 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function setControllerContractAddress(address _controllerAddress) public onlyCreator {
+          require(false==controllerSet);
           controllerAddress = _controllerAddress;
+          controllerSet = true;
      }
 
      function setMigrationContractAddress(address _migrationAddress) public onlyCreator {
+          require(false==migrationSet);
           migrationAddress = _migrationAddress;
+          migrationSet = true;
      }
 
      function setGoldmintTeamAddress(address _teamAddress) public onlyCreator {
@@ -684,7 +691,7 @@ contract FiatTables is CreatorEnabled, SafeMath {
           requests[_index].state = 2;
      }
      
-     function processRequest(uint _index, uint _amountCents, uint _goldPerCent) onlyCreator public {
+     function processRequest(uint _index, uint _amountCents, uint _centsPerGold) onlyCreator public {
           require(_index < requestsCount);
           require(0==requests[_index].state);
 
@@ -703,21 +710,22 @@ contract FiatTables is CreatorEnabled, SafeMath {
                require(amount > 0);
 
                // 1 - issue tokens
-               tokens = (uint(amount) * _goldPerCent);
+               tokens = (uint(amount) * 1 ether) / _centsPerGold;
                issueGoldTokens(r.sender, tokens);
 
                // 2 - add fiat tx
                // negative for buy
                addFiatTransaction(r.userId, - amount);
           }else{
-               tokens = (uint(amount) * _goldPerCent);
+               tokens = (uint(amount) * 1 ether) / _centsPerGold;
+
                uint tokenBalance = goldToken.balanceOf(r.sender);
                if(tokenBalance < tokens){
                     tokens = tokenBalance;
                }
 
                burnGoldTokens(r.sender, tokens);
-               amount = int(tokens / _goldPerCent);
+               amount = int((tokens * _centsPerGold) / 1 ether);
 
                // 2 - add fiat tx
                // positive for sell 

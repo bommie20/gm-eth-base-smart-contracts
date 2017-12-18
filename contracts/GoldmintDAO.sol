@@ -720,10 +720,10 @@ contract FiatTables is CreatorEnabled, SafeMath {
                uint tokenBalance = goldToken.balanceOf(r.sender);
                if(tokenBalance < tokens){
                     tokens = tokenBalance;
+                    amount = int((tokens * _centsPerGold) / 1 ether);
                }
 
                burnGoldTokens(r.sender, tokens);
-               amount = int((tokens * _centsPerGold) / 1 ether);
 
                // 2 - add fiat tx
                // positive for sell 

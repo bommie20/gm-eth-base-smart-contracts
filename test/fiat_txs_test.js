@@ -296,7 +296,8 @@ describe('Fiat 1', function() {
                     assert.equal(fiatContract.getRequestsCount(),1);
 
                     var r = fiatContract.getRequest(0);
-                    assert.equal(r[0],buyer);
+
+				assert.equal(r[0],buyer);
                     assert.equal(r[1],user);
                     assert.equal(r[4],0);    // state
 
@@ -572,3 +573,178 @@ describe('Fiat 1', function() {
      });
 });
 
+describe('Fiat 2 - change the controller', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               buyer3 = accounts[3];
+               goldmintTeamAddress = accounts[4];
+
+               done();
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+               
+               deployGoldFeeContract(data,function(err){
+                    assert.equal(err,null);
+
+                    // same as deplyGold2Contract but deploys 
+                    // Gold from GoldmintDAO.sol file
+                    deployGold2Contract(data,function(err){
+                         assert.equal(err,null);
+
+                         deployMigrationContract(data,function(err){
+                              assert.equal(err,null);
+
+                              deployFiatContract(data,function(err){
+                                   assert.equal(err,null);
+
+                                   done();
+                              });
+                         });
+                    });
+               });
+          });
+     });
+
+     it('should set migration address',function(done){
+          goldContract.setControllerContractAddress(
+               fiatContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should set ico contract address',function(done){
+          // set myself
+          mntContract.setIcoContractAddress(
+               creator,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should add doc 1',function(done){
+          assert.equal(fiatContract.getDocCount(),0);
+
+          var ipfsLink = "123";
+          fiatContract.addDoc(
+               ipfsLink,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    assert.equal(fiatContract.getDocCount(),1);
+
+                    var s = fiatContract.getDoc(0);
+                    assert.equal(s,ipfsLink);
+
+                    done();
+               }
+          );
+     });
+     
+     it('should change the controller',function(done){
+		var storageAddressWas = fiatContract.myStorage();
+		console.log('EXISTING STORAGE ADDRESS: ');
+		console.log(storageAddressWas);
+
+		var file = './contracts/FiatTables.sol';
+		var contractName = ':FiatTables';
+
+		fs.readFile(file, function(err, result){
+			assert.equal(err,null);
+
+			var source = result.toString();
+			assert.notEqual(source.length,0);
+
+			assert.equal(err,null);
+
+			var output = solc.compile(source, 0); // 1 activates the optimiser
+
+			var abi = JSON.parse(output.contracts[contractName].interface);
+			var bytecode = output.contracts[contractName].bytecode;
+			var tempContract = web3.eth.contract(abi);
+
+			var alreadyCalled = false;
+
+			tempContract.new(
+				goldContractAddress,
+				storageAddressWas,		// use old storage with new controller!
+				{
+					from: creator, 
+					// should not exceed 5000000 for Kovan by default
+					gas: 5995000,
+					//gasPrice: 120000000000,
+					data: '0x' + bytecode
+				}, 
+				function(err, c){
+					assert.equal(err, null);
+
+					console.log('TX HASH: ');
+					console.log(c.transactionHash);
+
+					// TX can be processed in 1 minute or in 30 minutes...
+					// So we can not be sure on this -> result can be null.
+					web3.eth.getTransactionReceipt(c.transactionHash, function(err, result){
+						//console.log('RESULT: ');
+						//console.log(result);
+
+						assert.equal(err, null);
+						assert.notEqual(result, null);
+
+						if(!alreadyCalled){
+							alreadyCalled = true;
+
+							assert.notEqual(fiatContractAddress, result.contractAddress);
+
+							fiatContractAddress = result.contractAddress;
+							fiatContract = web3.eth.contract(abi).at(fiatContractAddress);
+
+							done();
+						}
+					});
+				});
+		});
+     });
+
+     it('should get doc 1 from old storage',function(done){
+          assert.equal(fiatContract.getDocCount(),1);
+
+          var ipfsLink = "123";
+		var s = fiatContract.getDoc(0);
+		assert.equal(s,ipfsLink);
+
+		done();
+     });
+});

@@ -468,7 +468,7 @@ function deployMigrationContract(data,cb){
 }
 
 function deployFiatContract(data,cb){
-     var file = './contracts/GoldmintDAO.sol';
+     var file = './contracts/FiatTables.sol';
      var contractName = ':FiatTables';
 
      fs.readFile(file, function(err, result){
@@ -492,10 +492,11 @@ function deployFiatContract(data,cb){
 
           tempContract.new(
                goldContractAddress,
+			0,		// create new storage
                {
                     from: creator, 
                     // should not exceed 5000000 for Kovan by default
-                    gas: 4995000,
+                    gas: 5995000,
                     //gasPrice: 120000000000,
                     data: '0x' + bytecode
                }, 

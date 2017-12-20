@@ -154,7 +154,9 @@ describe('Fiat 1', function() {
      });
      
      it('should add doc 2',function(done){
-          var ipfsLink = "234";
+		// 64 bytes max (not symbols!)
+          var ipfsLink = "1234567890123456789012345678901234567890123456789012345678901234";
+
           fiatContract.addDoc(
                ipfsLink,
                {
@@ -361,7 +363,8 @@ describe('Fiat 1', function() {
 
      it('should add buy tokens request 2',function(done){
           var user = "anton";
-          var hash = "12334390";
+		// 64 bytes max (not symbols!)
+          var hash = "1234567890123456789012345678901234567890123456789012345678901234";
 
           assert.equal(fiatContract.getRequestsCount(),1);
 
@@ -378,6 +381,7 @@ describe('Fiat 1', function() {
                     var r = fiatContract.getRequest(1);
                     assert.equal(r[0],buyer2);
                     assert.equal(r[1],user);
+                    assert.equal(r[2],hash);
                     assert.equal(r[4],0);    // state
 
                     done();

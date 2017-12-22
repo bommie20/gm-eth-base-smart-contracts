@@ -89,15 +89,15 @@ contract StringMover {
 }
 
 
-contract FiatTablesStorage is CreatorEnabled, SafeMath, StringMover {
+contract FiatTablesStorage is SafeMath, StringMover {
 	function FiatTablesStorage() public {
-		creator = msg.sender;
+		controllerAddress = msg.sender;
 	}
 
 	address public controllerAddress = 0x0;
 	modifier onlyController() { require(msg.sender==controllerAddress); _; }
 
-	function setControllerAddress(address _newController) onlyCreator {
+	function setControllerAddress(address _newController) onlyController {
 		controllerAddress = _newController;
 	}
 
@@ -253,11 +253,16 @@ contract FiatTables is CreatorEnabled, StringMover {
 			myStorage = FiatTablesStorage(_storageAddress);
 		}else{
 			myStorage = new FiatTablesStorage();
-			myStorage.setControllerAddress(address(this));
+			//myStorage.setControllerAddress(address(this));
 		}
 
           goldToken = IGold(_goldContractAddress);
      }
+	
+	// Only old controller can call setControllerAddress
+	function changeController(address _newController) onlyCreator {
+		myStorage.setControllerAddress(_newController);
+	}
 
 // 1
      function addDoc(string _ipfsDocLink) public onlyCreator returns(uint){

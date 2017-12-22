@@ -33,6 +33,7 @@ var migrationContract;
 
 var fiatContractAddress;
 var fiatContract;
+var fiatContractOld;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
@@ -731,6 +732,8 @@ describe('Fiat 2 - change the controller', function() {
 							alreadyCalled = true;
 
 							assert.notEqual(fiatContractAddress, result.contractAddress);
+							// save old 
+							fiatContractOld = web3.eth.contract(abi).at(fiatContractAddress);
 
 							fiatContractAddress = result.contractAddress;
 							fiatContract = web3.eth.contract(abi).at(fiatContractAddress);
@@ -750,5 +753,57 @@ describe('Fiat 2 - change the controller', function() {
 		assert.equal(s,ipfsLink);
 
 		done();
+     });
+
+     it('should not add doc 2 to new controller',function(done){
+          var ipfsLink = "999";
+          fiatContract.addDoc(
+               ipfsLink,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    assert.equal(fiatContract.getDocCount(),1);
+                    done();
+               }
+          );
+     });
+
+	it('should set new controller address to storage',function(done){
+		// call old fiatContract 
+          fiatContractOld.changeController(
+			// new controller
+               fiatContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    assert.equal(fiatContract.getDocCount(),1);
+
+                    done();
+               }
+          );
+
+	});
+
+     it('should add doc 2 to new controller',function(done){
+          var ipfsLink = "999";
+          fiatContract.addDoc(
+               ipfsLink,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    assert.equal(fiatContract.getDocCount(),2);
+                    var s = fiatContract.getDoc(1);
+                    assert.equal(s,ipfsLink);
+
+                    done();
+               }
+          );
      });
 });

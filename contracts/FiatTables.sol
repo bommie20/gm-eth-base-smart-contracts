@@ -89,8 +89,8 @@ contract StringMover {
 }
 
 
-contract FiatTablesStorage is SafeMath, StringMover {
-     function FiatTablesStorage() public {
+contract Storage is SafeMath, StringMover {
+     function Storage() public {
           controllerAddress = msg.sender;
      }
 
@@ -236,7 +236,7 @@ contract FiatTablesStorage is SafeMath, StringMover {
 }
 
 contract FiatTables is CreatorEnabled, StringMover {
-	FiatTablesStorage public myStorage;
+	Storage public myStorage;
      IGold public goldToken;
 
      event NewTokenBuyRequest(address indexed _from, string indexed _userId);
@@ -250,9 +250,9 @@ contract FiatTables is CreatorEnabled, StringMover {
 
           if(0!=_storageAddress){
                // use existing storage
-               myStorage = FiatTablesStorage(_storageAddress);
+               myStorage = Storage(_storageAddress);
           }else{
-               myStorage = new FiatTablesStorage();
+               myStorage = new Storage();
                //myStorage.setControllerAddress(address(this));
           }
 

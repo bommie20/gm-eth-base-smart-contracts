@@ -85,6 +85,12 @@ contract StdToken is SafeMath {
      }
 }
 
+contract IGoldFee {
+     function calculateFee(
+          bool _isMigrationStarted, bool _isMigrationFinished, 
+          uint _mntpBalance, uint _value) public constant returns(uint);
+}
+
 contract GoldFee is CreatorEnabled {
 // Functions: 
      function GoldFee(){
@@ -154,8 +160,8 @@ contract Gold is StdToken, CreatorEnabled {
      address public controllerAddress = 0x0;
 
      address public goldmintTeamAddress = 0x0;
-     MNTP_Interface public mntpToken;
-     GoldFee public goldFee;
+     IMNTP public mntpToken;
+     IGoldFee public goldFee;
 
      bool public lockTransfers = false;
      bool public migrationStarted = false;
@@ -174,9 +180,9 @@ contract Gold is StdToken, CreatorEnabled {
      function Gold(address _mntpContractAddress, address _goldmintTeamAddress, address _goldFeeAddress) public {
           creator = msg.sender;
 
-          mntpToken = MNTP_Interface(_mntpContractAddress);
+          mntpToken = IMNTP(_mntpContractAddress);
           goldmintTeamAddress = _goldmintTeamAddress; 
-          goldFee = GoldFee(_goldFeeAddress);
+          goldFee = IGoldFee(_goldFeeAddress);
      }
 
      function setControllerContractAddress(address _controllerAddress) public onlyCreator {
@@ -196,7 +202,7 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function setGoldFeeAddress(address _goldFeeAddress) public onlyCreator {
-          goldFee = GoldFee(_goldFeeAddress);
+          goldFee = IGoldFee(_goldFeeAddress);
      }
      
      function issueTokens(address _who, uint _tokens) public onlyCreatorOrController {
@@ -288,16 +294,16 @@ contract Gold is StdToken, CreatorEnabled {
 
 }
 
-contract MNTP_Interface is StdToken {
+contract IMNTP is StdToken {
 // Additional methods that MNTP contract provides
      function lockTransfer(bool _lock);
-
+     function issueTokens(address _who, uint _tokens);
      function burnTokens(address _who, uint _tokens);
 }
 
 contract GoldmintMigration is CreatorEnabled {
 // Fields:
-     MNTP_Interface public mntpToken;
+     IMNTP public mntpToken;
      Gold public goldToken;
 
      enum State {
@@ -356,7 +362,7 @@ contract GoldmintMigration is CreatorEnabled {
           require(_mntpContractAddress!=0);
           require(_goldContractAddress!=0);
 
-          mntpToken = MNTP_Interface(_mntpContractAddress);
+          mntpToken = IMNTP(_mntpContractAddress);
           goldToken = Gold(_goldContractAddress);
      }
 

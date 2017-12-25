@@ -6,6 +6,15 @@ contract IGold {
      function burnTokens(address _who, uint _tokens);
 }
 
+// StdToken inheritance is commented, because no 'totalSupply' needed
+contract IMNTP /*is StdToken */{
+     function balanceOf(address _owner) constant returns (uint256);
+// Additional methods that MNTP contract provides
+     function lockTransfer(bool _lock);
+     function issueTokens(address _who, uint _tokens);
+     function burnTokens(address _who, uint _tokens);
+}
+
 contract SafeMath {
      function safeAdd(uint a, uint b) internal returns (uint) {
           uint c = a + b;
@@ -235,9 +244,62 @@ contract Storage is SafeMath, StringMover {
      }
 }
 
-contract FiatTables is CreatorEnabled, StringMover {
+contract GoldFiatFee is CreatorEnabled, StringMover {
+     string gmUserId = "";
+
+// Functions: 
+     function GoldFiatFee(string _gmUserId){
+          creator = msg.sender;
+          gmUserId = _gmUserId;
+     }
+
+     function getGoldmintFeeAccount() public returns(bytes32){
+          bytes32 userBytes = stringToBytes32(gmUserId);
+          return userBytes;
+     }
+
+     function setGoldmintFeeAccount(string _gmUserId) public onlyCreator {
+          gmUserId = _gmUserId;
+     }
+     
+     function calculateBuyGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int) 
+     {
+          // If the sender holds 0 MNTP, then the transaction fee is 3% fiat, 
+          // If the sender holds at least 10 MNTP, then the transaction fee is 2% fiat,
+          // If the sender holds at least 1000 MNTP, then the transaction fee is 1.5% fiat,
+          // If the sender holds at least 10000 MNTP, then the transaction fee is 1% fiat,
+          if(_mntpBalance>=(10000 * 1 ether)){
+               return _goldValue / 100;
+          }
+          if(_mntpBalance>=(1000 * 1 ether)){
+               return (15 * _goldValue / 1000);
+          }
+          if(_mntpBalance>=(10 * 1 ether)){
+               return (2 * _goldValue / 100);
+          }
+          
+          // 3%
+          return (3 * _goldValue / 100);
+     }
+
+     function calculateSellGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int) {
+          // currently no fees for selling goldToken
+          // but later can be changed by introducing new GoldFiatFee contract
+          return 0;
+     }
+}
+
+contract IGoldFiatFee {
+     function getGoldmintFeeAccount()public returns(bytes32);
+     function calculateBuyGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int);
+     function calculateSellGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int);
+}
+
+contract FiatTables is SafeMath, CreatorEnabled, StringMover {
 	Storage public myStorage;
+     IMNTP public mntpToken;
      IGold public goldToken;
+     IGoldFiatFee public fiatFee;
 
      event NewTokenBuyRequest(address indexed _from, string indexed _userId);
      event NewTokenSellRequest(address indexed _from, string indexed _userId);
@@ -245,7 +307,7 @@ contract FiatTables is CreatorEnabled, StringMover {
      event RequestProcessed(uint indexed _reqId);
 
 ////////////////////
-     function FiatTables(address _goldContractAddress, address _storageAddress) {
+     function FiatTables(address _mntpContractAddress, address _goldContractAddress, address _storageAddress, address _fiatFeeContract) {
           creator = msg.sender;
 
           if(0!=_storageAddress){
@@ -253,15 +315,24 @@ contract FiatTables is CreatorEnabled, StringMover {
                myStorage = Storage(_storageAddress);
           }else{
                myStorage = new Storage();
-               //myStorage.setControllerAddress(address(this));
           }
 
+          assert(0x0!=_mntpContractAddress);
+          assert(0x0!=_goldContractAddress);
+          assert(0x0!=_fiatFeeContract);
+
+          mntpToken = IMNTP(_mntpContractAddress);
           goldToken = IGold(_goldContractAddress);
+          fiatFee = IGoldFiatFee(_fiatFeeContract);
      }
 
      // Only old controller can call setControllerAddress
      function changeController(address _newController) onlyCreator {
           myStorage.setControllerAddress(_newController);
+     }
+
+     function changeFiatFeeContract(address _newFiatFee) onlyCreator {
+          fiatFee = IGoldFiatFee(_newFiatFee);
      }
 
      // 1
@@ -339,37 +410,12 @@ contract FiatTables is CreatorEnabled, StringMover {
 
           // 0 - get fiat amount that user has
           int amount = int(_amountCents);
-          int fiatAmount = getUserFiatBalance(userId);
+          require(amount > 0);
 
-          uint tokens = 0;
           if(isBuy){
-               require(fiatAmount > 0);
-               if(fiatAmount < amount){
-                    amount = fiatAmount;
-               }
-               require(amount > 0);
-
-               // 1 - issue tokens
-               tokens = (uint(amount) * 1 ether) / _centsPerGold;
-               issueGoldTokens(sender, tokens);
-
-               // 2 - add fiat tx
-               // negative for buy
-               addFiatTransaction(userId, - amount);
+               processBuyRequest(userId, sender, amount, _centsPerGold);
           }else{
-               tokens = (uint(amount) * 1 ether) / _centsPerGold;
-
-               uint tokenBalance = goldToken.balanceOf(sender);
-               if(tokenBalance < tokens){
-                    tokens = tokenBalance;
-                    amount = int((tokens * _centsPerGold) / 1 ether);
-               }
-
-               burnGoldTokens(sender, tokens);
-
-               // 2 - add fiat tx
-               // positive for sell 
-               addFiatTransaction(userId, amount);
+               processSellRequest(userId, sender, amount, _centsPerGold);
           }
 
           // 3 - update state
@@ -377,6 +423,70 @@ contract FiatTables is CreatorEnabled, StringMover {
 
           // 4 - send event
           RequestProcessed(_index);
+     }
+
+     function processBuyRequest(string _userId, address _userAddress, int _amount, uint _centsPerGold) internal {
+          int userFiatBalance = getUserFiatBalance(_userId);
+          require(userFiatBalance > 0);
+          if(_amount > userFiatBalance){
+               _amount = userFiatBalance;
+          }
+
+          uint userMntpBalance = mntpToken.balanceOf(_userAddress);
+          int fee = fiatFee.calculateBuyGoldFee(userMntpBalance, _amount);
+          require(_amount > fee);  
+
+          // 1 - issue tokens minus fee
+          int amountMinusFee = _amount;
+          if(fee>0){ 
+               amountMinusFee = _amount - fee;
+          }
+          require(amountMinusFee > 0);
+
+          uint tokens = (uint(amountMinusFee) * 1 ether) / _centsPerGold;
+          issueGoldTokens(_userAddress, tokens);
+
+          // 2 - add fiat tx
+          // negative for buy (total amount including fee!)
+          addFiatTransaction(_userId, - _amount);
+
+          // 3 - send fee to Goldmint
+          // positive for sell 
+          if(fee>0){
+               string memory f = bytes32ToString(fiatFee.getGoldmintFeeAccount());
+               addFiatTransaction(f, fee);
+          }
+     }
+
+     function processSellRequest(string _userId, address _userAddress, int _amount, uint _centsPerGold) internal {
+          uint tokens = (uint(_amount) * 1 ether) / _centsPerGold;
+          uint tokenBalance = goldToken.balanceOf(_userAddress);
+
+          if(tokenBalance < tokens){
+               tokens = tokenBalance;
+               _amount = int((tokens * _centsPerGold) / 1 ether);
+          }
+
+          burnGoldTokens(_userAddress, tokens);
+
+          // 2 - add fiat tx
+          uint userMntpBalance = mntpToken.balanceOf(_userAddress);
+          int fee = fiatFee.calculateSellGoldFee(userMntpBalance, _amount);
+          require(_amount > fee);  
+
+          int amountMinusFee = _amount;
+          if(fee>0){ 
+               amountMinusFee = _amount - fee;
+          }
+          require(amountMinusFee > 0);
+          // positive for sell 
+          addFiatTransaction(_userId, amountMinusFee);
+
+          // 3 - send fee to Goldmint
+          if(fee>0){
+               string memory f = bytes32ToString(fiatFee.getGoldmintFeeAccount());
+               addFiatTransaction(f, fee);
+          }
      }
      
 ////////
@@ -390,3 +500,4 @@ contract FiatTables is CreatorEnabled, StringMover {
           goldToken.burnTokens(_userAddress, _tokenAmount);
      }
 }
+

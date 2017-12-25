@@ -31,6 +31,9 @@ var goldContract;
 var migrationContractAddress;
 var migrationContract;
 
+var goldFiatFeeContractAddress;
+var goldFiatFeeContract;
+
 var fiatContractAddress;
 var fiatContract;
 var fiatContractOld;
@@ -77,10 +80,15 @@ describe('Fiat 1', function() {
                          deployMigrationContract(data,function(err){
                               assert.equal(err,null);
 
-                              deployFiatContract(data,function(err){
+                              // 
+                              deployFiatFeeContract(data,function(err){
                                    assert.equal(err,null);
 
-                                   done();
+                                   deployFiatContract(data,function(err){
+                                        assert.equal(err,null);
+
+                                        done();
+                                   });
                               });
                          });
                     });
@@ -460,6 +468,7 @@ describe('Fiat 1', function() {
           var balance = goldContract.balanceOf(buyer3);
           assert.equal(balance, 0);
 
+          // buyer -> buyer3
           fiatContract.processRequest(
                2,
                amountCents,
@@ -474,9 +483,13 @@ describe('Fiat 1', function() {
                     var user = 'xxx';
                     assert.equal(fiatContract.getUserFiatBalance(user),800);
 
+                    var goldmintFeeAccount = "12312312";
+                    assert.equal(fiatContract.getUserFiatBalance(goldmintFeeAccount),3);
+
                     // GOLD balance should be increased
                     var balance = goldContract.balanceOf(buyer3);
-                    assert.equal(balance, 100 * 1000000000000000000 / centsPerGold);
+                    // 97% will be = 1940000000000000 GOLD
+                    assert.equal(balance, (((100 * 1000000000000000000) / centsPerGold) * 97) / 100)
 
                     done();
                }
@@ -522,8 +535,8 @@ describe('Fiat 1', function() {
 
                     // GOLD balance should be increased
                     var balance = goldContract.balanceOf(buyer3);
-                    // total bought was 900
-                    assert.equal(balance, 900 * 1000000000000000000 / centsPerGold);
+                    // total bought was 900 - 3%
+                    assert.equal(balance, ((900 * 1000000000000000000 / centsPerGold) * 97) / 100 );
 
                     done();
                }
@@ -570,7 +583,12 @@ describe('Fiat 1', function() {
 
                     // GOLD balance should be decreased  
                     var balance = goldContract.balanceOf(buyer3);
-                    assert.equal(balance, 800 * 1000000000000000000 / centsPerGold);
+
+                    var wasBeforeSell = ((900 * 1000000000000000000 / centsPerGold) * 97) / 100;
+                    var sell = (100 * 1000000000000000000 / centsPerGold);
+                    var shouldBe = wasBeforeSell - sell;
+
+                    assert.equal(balance, shouldBe);
 
                     done();
                }
@@ -618,10 +636,14 @@ describe('Fiat 2 - change the controller', function() {
                          deployMigrationContract(data,function(err){
                               assert.equal(err,null);
 
-                              deployFiatContract(data,function(err){
+                              deployFiatFeeContract(data,function(err){
                                    assert.equal(err,null);
 
-                                   done();
+                                   deployFiatContract(data,function(err){
+                                        assert.equal(err,null);
+
+                                        done();
+                                   });
                               });
                          });
                     });
@@ -704,8 +726,10 @@ describe('Fiat 2 - change the controller', function() {
 			var alreadyCalled = false;
 
 			tempContract.new(
+                    mntContractAddress,
 				goldContractAddress,
 				storageAddressWas,		// use old storage with new controller!
+                    goldFiatFeeContractAddress,
 				{
 					from: creator, 
 					// should not exceed 5000000 for Kovan by default

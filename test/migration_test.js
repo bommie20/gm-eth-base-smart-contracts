@@ -902,5 +902,227 @@ describe('Migrations 3 - calculate rewards', function() {
 
           done();
      });
-
 });
+
+describe('Migrations 4', function() {
+     before("Initialize everything", function(done) {
+          web3.eth.getAccounts(function(err, as) {
+               if(err) {
+                    done(err);
+                    return;
+               }
+
+               accounts = as;
+               creator = accounts[0];
+               buyer = accounts[1];
+               buyer2 = accounts[2];
+               buyer3 = accounts[3];
+               goldmintTeamAddress = accounts[4];
+
+               done();
+          });
+     });
+
+     after("Deinitialize everything", function(done) {
+          done();
+     });
+
+     it('should deploy token contract',function(done){
+          var data = {};
+
+          deployMntContract(data,function(err){
+               assert.equal(err,null);
+               
+               deployGoldFeeContract(data,function(err){
+                    assert.equal(err,null);
+
+                    // same as deplyGold2Contract but deploys 
+                    // Gold from GoldmintDAO.sol file
+                    deployGold2Contract(data,function(err){
+                         assert.equal(err,null);
+
+                         deployMigrationContract(data,function(err){
+                              assert.equal(err,null);
+
+                              done();
+                         });
+                    });
+               });
+          });
+     });
+
+     it('should set migration address',function(done){
+          goldContract.setMigrationContractAddress(
+               migrationContractAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    done();
+               }
+          );
+     });
+
+     it('should set ico contract address',function(done){
+          // set myself
+          mntContract.setIcoContractAddress(
+               creator,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+     });
+
+     it('should issue some MNTP tokens', function(done){
+          var params = {from: creator, gas: 2900000};
+
+          mntContract.issueTokens(buyer, 1000, params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balance = mntContract.balanceOf(buyer);
+               assert.equal(balance,1000);
+
+               done();
+          });
+     });
+
+     it('should emit some GOLD tokens to buyer',function(done){
+          var balance = goldContract.balanceOf(buyer);
+          assert.equal(balance,0);
+
+          var amount = 5000000000000000;
+          var params = {from: creator, gas: 2900000};
+          goldContract.issueTokens(buyer, amount, params, (err,res)=>{
+               assert.equal(err, null);
+
+               var balance = goldContract.balanceOf(buyer);
+               assert.equal(balance,5000000000000000);
+               done();
+          });
+     });
+
+     it('should start the migration',function(done){
+          migrationContract.startMigration(
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+                    assert.equal(migrationContract.migrationRewardTotal(),0);
+                    done();
+               }
+          );
+     });
+
+     it('should migrate GOLD tokens',function(done){
+          var grapheneAddress = '224238729837489237482374892734897234897';
+
+          var myGoldBalance = goldContract.balanceOf(buyer);
+
+          var isMigrated = migrationContract.isGoldMigrated(buyer);
+          assert.equal(isMigrated, false);
+
+          var amount = 5000000000000000;
+
+          migrationContract.migrateGold(
+               grapheneAddress,
+               {
+                    from: buyer,           
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    assert.equal(migrationContract.goldMigrationsCount(),1);
+
+                    var mig = migrationContract.getGoldMigration(0);
+                    assert.equal(mig[0], buyer);
+                    assert.equal(mig[1], '224238729837489237482374892734897234897');
+                    assert.equal(mig[2].toString(10), amount);
+                    assert.equal(mig[3], false);
+                    assert.equal(mig[5], '');
+
+                    // should burn
+                    var balance = goldContract.balanceOf(buyer);
+                    assert.equal(balance,0);
+
+                    var goldSupply = goldContract.totalSupply();
+                    assert.equal(goldSupply,0);
+
+                    done();
+               }
+          );
+     });
+
+     it('should not set migrated if not created',function(done){
+          var isMigrated = migrationContract.isGoldMigrated(buyer);
+          assert.equal(isMigrated, false);
+
+          migrationContract.setGoldMigrated(
+               buyer,
+               true,
+               'some-comment',
+               {
+                    from: buyer,           
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+                    done();
+               }
+          );
+     })
+
+     it('should set migrated',function(done){
+          var isMigrated = migrationContract.isGoldMigrated(buyer);
+          assert.equal(isMigrated, false);
+
+          var amount = 5000000000000000;
+
+          migrationContract.setGoldMigrated(
+               buyer,
+               true,
+               'some-comment',
+               {
+                    from: creator,           
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    isMigrated = migrationContract.isGoldMigrated(buyer);
+                    assert.equal(isMigrated, true);
+
+                    var mig = migrationContract.getGoldMigration(0);
+                    assert.equal(mig[0], buyer);
+                    assert.equal(mig[1], '224238729837489237482374892734897234897');
+                    assert.equal(mig[2].toString(10), amount);
+                    assert.equal(mig[3], true);
+                    assert.equal(mig[5], 'some-comment');
+
+                    done();
+               }
+          );
+     })
+
+     it('should not migrate GOLD tokens again',function(done){
+          var grapheneAddress = '224238729837489237482374892734897234897';
+
+          migrationContract.migrateGold(
+               grapheneAddress,
+               {
+                    from: buyer,           
+                    gas: 2900000 
+               },function(err,result){
+                    assert.notEqual(err,null);
+
+                    done();
+               }
+          );
+     });
+});
+
+

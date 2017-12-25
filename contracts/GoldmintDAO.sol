@@ -503,6 +503,25 @@ contract GoldmintMigration is CreatorEnabled {
           GoldMigrateWanted(msg.sender, _grapheneAddress, myBalance);
      }
 
+     function isGoldMigrated(address _who) public constant returns(bool){
+          uint index = goldMigrationIndexes[_who];
+          Migration memory mig = goldMigrations[index];
+          return mig.migrated;
+     }
+
+     function setGoldMigrated(address _who, bool _isMigrated, string _comment) public onlyCreator { 
+          uint index = goldMigrationIndexes[_who];
+          goldMigrations[index].migrated = _isMigrated; 
+          goldMigrations[index].comment = _comment; 
+
+          // send an event
+          if(_isMigrated){
+               GoldMigrated(  goldMigrations[index].ethAddress, 
+                              goldMigrations[index].grapheneAddress, 
+                              goldMigrations[index].tokensCount);
+          }
+     }
+
      // Each MNTP token holder gets a GOLD reward as a percent of all rewards
      // proportional to his MNTP token stake
      function calculateMyRewardMax(address _of) public constant returns(uint){

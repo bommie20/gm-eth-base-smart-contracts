@@ -25,81 +25,81 @@ contract CreatorEnabled {
 }
 
 contract StringMover {
-	function stringToBytes32(string s) constant returns(bytes32){
-		bytes32 out;
-		assembly {
-			out := mload(add(s, 32))
-	     }
-		return out;
-	}
+     function stringToBytes32(string s) constant returns(bytes32){
+          bytes32 out;
+          assembly {
+               out := mload(add(s, 32))
+          }
+          return out;
+     }
 
-	function stringToBytes64(string s) constant returns(bytes32,bytes32){
-		bytes32 out;
-		bytes32 out2;
+     function stringToBytes64(string s) constant returns(bytes32,bytes32){
+          bytes32 out;
+          bytes32 out2;
 
-		assembly {
-			out := mload(add(s, 32))
-			out2 := mload(add(s, 64))
-	     }
-		return (out,out2);
-	}
+          assembly {
+               out := mload(add(s, 32))
+               out2 := mload(add(s, 64))
+          }
+          return (out,out2);
+     }
 
-	function bytes32ToString(bytes32 x) constant returns (string) {
-		bytes memory bytesString = new bytes(32);
-		uint charCount = 0;
-		for (uint j = 0; j < 32; j++) {
-			byte char = byte(bytes32(uint(x) * 2 ** (8 * j)));
-			if (char != 0) {
-				bytesString[charCount] = char;
-				charCount++;
-			}
-		}
-		bytes memory bytesStringTrimmed = new bytes(charCount);
-		for (j = 0; j < charCount; j++) {
-			bytesStringTrimmed[j] = bytesString[j];
-		}
-		return string(bytesStringTrimmed);
-	}
+     function bytes32ToString(bytes32 x) constant returns (string) {
+          bytes memory bytesString = new bytes(32);
+          uint charCount = 0;
+          for (uint j = 0; j < 32; j++) {
+               byte char = byte(bytes32(uint(x) * 2 ** (8 * j)));
+               if (char != 0) {
+                    bytesString[charCount] = char;
+                    charCount++;
+               }
+          }
+          bytes memory bytesStringTrimmed = new bytes(charCount);
+          for (j = 0; j < charCount; j++) {
+               bytesStringTrimmed[j] = bytesString[j];
+          }
+          return string(bytesStringTrimmed);
+     }
 
-	function bytes64ToString(bytes32 x, bytes32 y) constant returns (string) {
-		bytes memory bytesString = new bytes(64);
-		uint charCount = 0;
+     function bytes64ToString(bytes32 x, bytes32 y) constant returns (string) {
+          bytes memory bytesString = new bytes(64);
+          uint charCount = 0;
 
-		for (uint j = 0; j < 32; j++) {
-			byte char = byte(bytes32(uint(x) * 2 ** (8 * j)));
-			if (char != 0) {
-				bytesString[charCount] = char;
-				charCount++;
-			}
-		}
-		for (j = 0; j < 32; j++) {
-			char = byte(bytes32(uint(y) * 2 ** (8 * j)));
-			if (char != 0) {
-				bytesString[charCount] = char;
-				charCount++;
-			}
-		}
+          for (uint j = 0; j < 32; j++) {
+               byte char = byte(bytes32(uint(x) * 2 ** (8 * j)));
+               if (char != 0) {
+                    bytesString[charCount] = char;
+                    charCount++;
+               }
+          }
+          for (j = 0; j < 32; j++) {
+               char = byte(bytes32(uint(y) * 2 ** (8 * j)));
+               if (char != 0) {
+                    bytesString[charCount] = char;
+                    charCount++;
+               }
+          }
 
-		bytes memory bytesStringTrimmed = new bytes(charCount);
-		for (j = 0; j < charCount; j++) {
-			bytesStringTrimmed[j] = bytesString[j];
-		}
-		return string(bytesStringTrimmed);
-	}
+          bytes memory bytesStringTrimmed = new bytes(charCount);
+          for (j = 0; j < charCount; j++) {
+               bytesStringTrimmed[j] = bytesString[j];
+          }
+          return string(bytesStringTrimmed);
+     }
 }
 
 
 contract FiatTablesStorage is SafeMath, StringMover {
-	function FiatTablesStorage() public {
-		controllerAddress = msg.sender;
-	}
+     function FiatTablesStorage() public {
+          controllerAddress = msg.sender;
+     }
 
-	address public controllerAddress = 0x0;
-	modifier onlyController() { require(msg.sender==controllerAddress); _; }
+     address public controllerAddress = 0x0;
+     modifier onlyController() { require(msg.sender==controllerAddress); _; }
 
-	function setControllerAddress(address _newController) onlyController {
-		controllerAddress = _newController;
-	}
+     function setControllerAddress(address _newController) onlyController {
+          controllerAddress = _newController;
+     }
 
 // Fields - 1
      mapping(uint => string) docs;
@@ -141,7 +141,7 @@ contract FiatTablesStorage is SafeMath, StringMover {
 
      function getDocAsBytes64(uint _index) public constant returns (bytes32,bytes32){
           require(_index < docCount);
-		return stringToBytes64(docs[_index]);
+          return stringToBytes64(docs[_index]);
      }
 
      function addFiatTransaction(string _userId, int _amountCents) public onlyController returns(uint){
@@ -208,17 +208,17 @@ contract FiatTablesStorage is SafeMath, StringMover {
      }
 
      function getRequest(uint _index) public constant returns(
-		address a, 
-		bytes32 userId, 
-		bytes32 hashA, bytes32 hashB, 
-		bool buy, uint8 state)
-	{
+          address a, 
+          bytes32 userId, 
+          bytes32 hashA, bytes32 hashB, 
+          bool buy, uint8 state)
+     {
           require(_index < requestsCount);
 
           Request memory r = requests[_index];
 
-		bytes32 userBytes = stringToBytes32(r.userId);
-		var (out1, out2) = stringToBytes64(r.requestHash);
+          bytes32 userBytes = stringToBytes32(r.userId);
+          var (out1, out2) = stringToBytes64(r.requestHash);
 
           return (r.sender, userBytes, out1, out2, r.buyRequest, r.state);
      }
@@ -231,7 +231,7 @@ contract FiatTablesStorage is SafeMath, StringMover {
      }
      
      function setRequestProcessed(uint _index) onlyController public {
-		requests[_index].state = 1;
+          requests[_index].state = 1;
      }
 }
 
@@ -248,25 +248,25 @@ contract FiatTables is CreatorEnabled, StringMover {
      function FiatTables(address _goldContractAddress, address _storageAddress) {
           creator = msg.sender;
 
-		if(0!=_storageAddress){
-			// use existing storage
-			myStorage = FiatTablesStorage(_storageAddress);
-		}else{
-			myStorage = new FiatTablesStorage();
-			//myStorage.setControllerAddress(address(this));
-		}
+          if(0!=_storageAddress){
+               // use existing storage
+               myStorage = FiatTablesStorage(_storageAddress);
+          }else{
+               myStorage = new FiatTablesStorage();
+               //myStorage.setControllerAddress(address(this));
+          }
 
           goldToken = IGold(_goldContractAddress);
      }
-	
-	// Only old controller can call setControllerAddress
-	function changeController(address _newController) onlyCreator {
-		myStorage.setControllerAddress(_newController);
-	}
 
-// 1
+     // Only old controller can call setControllerAddress
+     function changeController(address _newController) onlyCreator {
+          myStorage.setControllerAddress(_newController);
+     }
+
+     // 1
      function addDoc(string _ipfsDocLink) public onlyCreator returns(uint){
-		return myStorage.addDoc(_ipfsDocLink);
+          return myStorage.addDoc(_ipfsDocLink);
      }
 
      function getDocCount() public constant returns (uint){
@@ -274,38 +274,38 @@ contract FiatTables is CreatorEnabled, StringMover {
      }
 
      function getDoc(uint _index) public constant returns (string){
-		var (x, y) = myStorage.getDocAsBytes64(_index);
-		return bytes64ToString(x,y);
+          var (x, y) = myStorage.getDocAsBytes64(_index);
+          return bytes64ToString(x,y);
      }
 
 // 2
      // _amountCents can be negative
      // returns index in user array
      function addFiatTransaction(string _userId, int _amountCents) public onlyCreator returns(uint){
-		return myStorage.addFiatTransaction(_userId, _amountCents);
+          return myStorage.addFiatTransaction(_userId, _amountCents);
      }
 
      function getFiatTransactionsCount(string _userId) public constant returns (uint){
-		return myStorage.getFiatTransactionsCount(_userId);
+          return myStorage.getFiatTransactionsCount(_userId);
      }
      
      function getAllFiatTransactionsCount() public constant returns (uint){
-		return myStorage.getAllFiatTransactionsCount();
+          return myStorage.getAllFiatTransactionsCount();
      }
 
      function getFiatTransaction(string _userId, uint _index) public constant returns(int){
-		return myStorage.getFiatTransaction(_userId, _index);
+          return myStorage.getFiatTransaction(_userId, _index);
      }
 
 // 4
      function getUserFiatBalance(string _userId) public constant returns(int){
-		return myStorage.getUserFiatBalance(_userId);
+          return myStorage.getUserFiatBalance(_userId);
      }
 
 // 3:
      function addBuyTokensRequest(string _userId, string _requestHash) public returns(uint){
           NewTokenBuyRequest(msg.sender, _userId); 
-		return myStorage.addBuyTokensRequest(_userId, _requestHash);
+          return myStorage.addBuyTokensRequest(_userId, _requestHash);
      }
 
      function addSellTokensRequest(string _userId, string _requestHash) returns(uint){
@@ -318,23 +318,23 @@ contract FiatTables is CreatorEnabled, StringMover {
      }
 
      function getRequest(uint _index) public constant returns(address, string, string, bool, uint8){
-		var (sender, userIdBytes, hashA, hashB, buy, state) = myStorage.getRequest(_index);
+          var (sender, userIdBytes, hashA, hashB, buy, state) = myStorage.getRequest(_index);
 
-		string memory userId = bytes32ToString(userIdBytes);
-		string memory hash = bytes64ToString(hashA, hashB);
+          string memory userId = bytes32ToString(userIdBytes);
+          string memory hash = bytes64ToString(hashA, hashB);
 
-		return (sender, userId, hash, buy, state);
+          return (sender, userId, hash, buy, state);
      }
 
      function cancelRequest(uint _index) onlyCreator public {
-		RequestCancelled(_index);
-		return myStorage.cancelRequest(_index);
+          RequestCancelled(_index);
+          return myStorage.cancelRequest(_index);
      }
      
      function processRequest(uint _index, uint _amountCents, uint _centsPerGold) onlyCreator public {
           require(_index < getRequestsCount());
 
-		var (sender, userId, hash, isBuy, state) = getRequest(_index);
+          var (sender, userId, hash, isBuy, state) = getRequest(_index);
           require(0==state);
 
           // 0 - get fiat amount that user has
@@ -373,7 +373,7 @@ contract FiatTables is CreatorEnabled, StringMover {
           }
 
           // 3 - update state
-		myStorage.setRequestProcessed(_index);
+          myStorage.setRequestProcessed(_index);
 
           // 4 - send event
           RequestProcessed(_index);

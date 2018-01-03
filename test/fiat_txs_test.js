@@ -101,21 +101,6 @@ describe('Fiat 1', function() {
           );
      });
 
-     it('should set ico contract address',function(done){
-          // set myself
-          mntContract.setIcoContractAddress(
-               creator,
-               {
-                    from: creator,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.equal(err,null);
-
-                    done();
-               }
-          );
-     });
-
      it('should not add doc',function(done){
           assert.equal(fiatContract.getDocCount(),0);
 
@@ -656,21 +641,6 @@ describe('Fiat 2 - change the controller', function() {
                     gas: 2900000 
                },function(err,result){
                     assert.equal(err,null);
-                    done();
-               }
-          );
-     });
-
-     it('should set ico contract address',function(done){
-          // set myself
-          mntContract.setIcoContractAddress(
-               creator,
-               {
-                    from: creator,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.equal(err,null);
-
                     done();
                }
           );

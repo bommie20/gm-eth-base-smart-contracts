@@ -533,7 +533,7 @@ contract GoldmintMigration is CreatorEnabled {
                return 0;
           }
 
-          return migrationRewardTotal * (myCurrentMntpBalance / mntpToMigrateTotal);
+          return (migrationRewardTotal * myCurrentMntpBalance) / mntpToMigrateTotal;
      }
 
      // Migration rewards decreased linearly. 

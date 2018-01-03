@@ -483,6 +483,11 @@ describe('Fiat 1', function() {
                     // 97% will be = 1940000000000000 GOLD
                     assert.equal(balance, (((100 * 1000000000000000000) / centsPerGold) * 97) / 100)
 
+                    var r = fiatContract.getRequest(2);
+                    assert.equal(r[0],buyer3);
+                    assert.equal(r[1],"xxx");
+                    assert.equal(r[4],1);    // state
+
                     done();
                }
           );

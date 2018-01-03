@@ -167,9 +167,6 @@ contract Gold is StdToken, CreatorEnabled {
      bool public migrationStarted = false;
      bool public migrationFinished = false;
 
-     bool public controllerSet = false;
-     bool public migrationSet = false;
-
 // Modifiers:
      modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
      modifier onlyMigrationOrController() { require(msg.sender==migrationAddress || msg.sender==controllerAddress); _; }
@@ -186,15 +183,11 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function setControllerContractAddress(address _controllerAddress) public onlyCreator {
-          require(false==controllerSet);
           controllerAddress = _controllerAddress;
-          controllerSet = true;
      }
 
      function setMigrationContractAddress(address _migrationAddress) public onlyCreator {
-          require(false==migrationSet);
           migrationAddress = _migrationAddress;
-          migrationSet = true;
      }
 
      function setGoldmintTeamAddress(address _teamAddress) public onlyCreator {

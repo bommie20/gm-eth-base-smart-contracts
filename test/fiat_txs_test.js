@@ -1,4 +1,4 @@
- solc = require('solc');
+var solc = require('solc');
 var Web3 = require('web3');
 
 var fs = require('fs');
@@ -27,9 +27,6 @@ var goldFeeContract;
 
 var goldContractAddress;
 var goldContract;
-
-var migrationContractAddress;
-var migrationContract;
 
 var goldFiatFeeContractAddress;
 var goldFiatFeeContract;
@@ -77,18 +74,13 @@ describe('Fiat 1', function() {
                     deployGold2Contract(data,function(err){
                          assert.equal(err,null);
 
-                         deployMigrationContract(data,function(err){
+                         deployFiatFeeContract(data,function(err){
                               assert.equal(err,null);
 
-                              // 
-                              deployFiatFeeContract(data,function(err){
+                              deployFiatContract(data,function(err){
                                    assert.equal(err,null);
 
-                                   deployFiatContract(data,function(err){
-                                        assert.equal(err,null);
-
-                                        done();
-                                   });
+                                   done();
                               });
                          });
                     });

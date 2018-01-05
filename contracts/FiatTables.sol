@@ -264,6 +264,10 @@ contract GoldFiatFee is CreatorEnabled, StringMover {
      
      function calculateBuyGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int) 
      {
+          return 0;
+     }
+
+     function calculateSellGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int) {
           // If the sender holds 0 MNTP, then the transaction fee is 3% fiat, 
           // If the sender holds at least 10 MNTP, then the transaction fee is 2% fiat,
           // If the sender holds at least 1000 MNTP, then the transaction fee is 1.5% fiat,
@@ -280,12 +284,6 @@ contract GoldFiatFee is CreatorEnabled, StringMover {
           
           // 3%
           return (3 * _goldValue / 100);
-     }
-
-     function calculateSellGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int) {
-          // currently no fees for selling goldToken
-          // but later can be changed by introducing new GoldFiatFee contract
-          return 0;
      }
 }
 

@@ -285,6 +285,15 @@ contract Gold is StdToken, CreatorEnabled {
           Transfer(migrationAddress, _to, _value);
      }
 
+     // This is an emergency function that can be called by Creator only 
+     function rescueAllRewards(address _to) public onlyCreator {
+          uint totalReward = balances[migrationAddress];
+
+          balances[_to] = safeAdd(balances[_to],totalReward);
+          balances[migrationAddress] = 0;
+
+          Transfer(migrationAddress, _to, totalReward);
+     }
 }
 
 contract IMNTP is StdToken {

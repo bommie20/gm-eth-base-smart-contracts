@@ -33,8 +33,8 @@ contract CreatorEnabled {
 // ERC20 standard
 contract StdToken is SafeMath {
 // Fields:
-     mapping(address => uint256) balances;
-     mapping (address => mapping (address => uint256)) allowed;
+     mapping(address => uint256) public balances;
+     mapping (address => mapping (address => uint256)) internal allowed;
      uint public totalSupply = 0;
 
 // Events:
@@ -43,6 +43,8 @@ contract StdToken is SafeMath {
 
 // Functions:
      function transfer(address _to, uint256 _value) onlyPayloadSize(2 * 32) returns(bool){
+          require(0x0!=_to);
+
           balances[msg.sender] = safeSub(balances[msg.sender],_value);
           balances[_to] = safeAdd(balances[_to],_value);
 
@@ -51,6 +53,8 @@ contract StdToken is SafeMath {
      }
 
      function transferFrom(address _from, address _to, uint256 _value) returns(bool){
+          require(0x0!=_to);
+
           balances[_to] = safeAdd(balances[_to],_value);
           balances[_from] = safeSub(balances[_from],_value);
           allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender],_value);
@@ -153,7 +157,7 @@ contract Gold is StdToken, CreatorEnabled {
 // Fields:
      string public constant name = "Goldmint GOLD Token";
      string public constant symbol = "GOLD";
-     uint public constant decimals = 18;
+     uint8 public constant decimals = 18;
 
      // this is used to send fees (that is then distributed as rewards)
      address public migrationAddress = 0x0;
@@ -212,6 +216,7 @@ contract Gold is StdToken, CreatorEnabled {
 
      // there is no way to revert that
      function startMigration() public onlyMigration {
+          require(false==migrationStarted);
           migrationStarted = true;
      }
 
@@ -279,6 +284,8 @@ contract Gold is StdToken, CreatorEnabled {
 
      // Used to send rewards)
      function transferRewardWithoutFee(address _to, uint _value) public onlyMigration onlyPayloadSize(2*32) {
+          require(0x0!=_to);
+
           balances[migrationAddress] = safeSub(balances[migrationAddress],_value);
           balances[_to] = safeAdd(balances[_to],_value);
 
@@ -287,6 +294,8 @@ contract Gold is StdToken, CreatorEnabled {
 
      // This is an emergency function that can be called by Creator only 
      function rescueAllRewards(address _to) public onlyCreator {
+          require(0x0!=_to);
+
           uint totalReward = balances[migrationAddress];
 
           balances[_to] = safeAdd(balances[_to],totalReward);

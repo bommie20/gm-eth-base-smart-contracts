@@ -184,9 +184,9 @@ contract Storage is SafeMath, StringMover {
           return fiatBalancesCents[_userId];
      }
 
-     function addBuyTokensRequest(string _userId, string _requestHash) public onlyController returns(uint){
+     function addBuyTokensRequest(address _who, string _userId, string _requestHash) public onlyController returns(uint){
           Request memory r;
-          r.sender = tx.origin;
+          r.sender = _who;
           r.userId = _userId;
           r.requestHash = _requestHash;
           r.buyRequest = true;
@@ -198,9 +198,9 @@ contract Storage is SafeMath, StringMover {
           return out;
      }
 
-     function addSellTokensRequest(string _userId, string _requestHash) onlyController returns(uint){
+     function addSellTokensRequest(address _who, string _userId, string _requestHash) onlyController returns(uint){
           Request memory r;
-          r.sender = tx.origin;
+          r.sender = _who;
           r.userId = _userId;
           r.requestHash = _requestHash;
           r.buyRequest = false;
@@ -253,7 +253,7 @@ contract GoldFiatFee is CreatorEnabled, StringMover {
           gmUserId = _gmUserId;
      }
 
-     function getGoldmintFeeAccount() public returns(bytes32){
+     function getGoldmintFeeAccount() public constant returns(bytes32){
           bytes32 userBytes = stringToBytes32(gmUserId);
           return userBytes;
      }
@@ -288,7 +288,7 @@ contract GoldFiatFee is CreatorEnabled, StringMover {
 }
 
 contract IGoldFiatFee {
-     function getGoldmintFeeAccount()public returns(bytes32);
+     function getGoldmintFeeAccount()public constant returns(bytes32);
      function calculateBuyGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int);
      function calculateSellGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int);
 }
@@ -315,9 +315,9 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
                myStorage = new Storage();
           }
 
-          assert(0x0!=_mntpContractAddress);
-          assert(0x0!=_goldContractAddress);
-          assert(0x0!=_fiatFeeContract);
+          require(0x0!=_mntpContractAddress);
+          require(0x0!=_goldContractAddress);
+          require(0x0!=_fiatFeeContract);
 
           mntpToken = IMNTP(_mntpContractAddress);
           goldToken = IGold(_goldContractAddress);
@@ -325,11 +325,11 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
      }
 
      // Only old controller can call setControllerAddress
-     function changeController(address _newController) onlyCreator {
+     function changeController(address _newController) public onlyCreator {
           myStorage.setControllerAddress(_newController);
      }
 
-     function changeFiatFeeContract(address _newFiatFee) onlyCreator {
+     function changeFiatFeeContract(address _newFiatFee) public onlyCreator {
           fiatFee = IGoldFiatFee(_newFiatFee);
      }
 
@@ -374,12 +374,12 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
 // 3:
      function addBuyTokensRequest(string _userId, string _requestHash) public returns(uint){
           NewTokenBuyRequest(msg.sender, _userId); 
-          return myStorage.addBuyTokensRequest(_userId, _requestHash);
+          return myStorage.addBuyTokensRequest(msg.sender, _userId, _requestHash);
      }
 
-     function addSellTokensRequest(string _userId, string _requestHash) returns(uint){
+     function addSellTokensRequest(string _userId, string _requestHash) public returns(uint){
           NewTokenSellRequest(msg.sender, _userId);
-		return myStorage.addSellTokensRequest(_userId, _requestHash);
+		return myStorage.addSellTokensRequest(msg.sender, _userId, _requestHash);
      }
 
      function getRequestsCount() public constant returns(uint){
@@ -397,7 +397,7 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
 
      function cancelRequest(uint _index) onlyCreator public {
           RequestCancelled(_index);
-          return myStorage.cancelRequest(_index);
+          myStorage.cancelRequest(_index);
      }
      
      function processRequest(uint _index, uint _amountCents, uint _centsPerGold) onlyCreator public {

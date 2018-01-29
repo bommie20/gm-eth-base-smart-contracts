@@ -118,9 +118,15 @@ contract Storage is SafeMath, StringMover {
      mapping(string => mapping(uint => int)) fiatTxs;
      mapping(string => int) fiatBalancesCents;
      mapping(string => uint) fiatCounts;
-     uint fiatTotal = 0;
+     uint fiatTxTotal = 0;
 
 // Fields - 3 
+     mapping(string => mapping(uint => int)) goldTxs;
+     mapping(string => int) goldBalances;
+     mapping(string => uint) goldCounts;
+     uint goldTxTotal = 0;
+
+// Fields - 4 
      struct Request {
           address sender;
           string userId;
@@ -163,7 +169,7 @@ contract Storage is SafeMath, StringMover {
 
           fiatCounts[_userId] = safeAdd(fiatCounts[_userId],1);
 
-          fiatTotal++;
+          fiatTxTotal++;
           return c;
      }
 
@@ -172,7 +178,7 @@ contract Storage is SafeMath, StringMover {
      }
      
      function getAllFiatTransactionsCount() public constant returns (uint){
-          return fiatTotal;
+          return fiatTxTotal;
      }
 
      function getFiatTransaction(string _userId, uint _index) public constant returns(int){
@@ -182,6 +188,37 @@ contract Storage is SafeMath, StringMover {
 
      function getUserFiatBalance(string _userId) public constant returns(int){
           return fiatBalancesCents[_userId];
+     }
+
+    function addGoldTransaction(string _userId, int _amount) public onlyController returns(uint){
+          require(0!=_amount);
+
+          uint c = goldCounts[_userId];
+
+          goldTxs[_userId][c] = _amount;
+          goldBalances[_userId] = goldBalances[_userId] + _amount;
+
+          goldCounts[_userId] = safeAdd(goldCounts[_userId],1);
+
+          goldTxTotal++;
+          return c;
+     }
+
+     function getGoldTransactionsCount(string _userId) public constant returns (uint){
+          return goldCounts[_userId];
+     }
+     
+     function getAllGoldTransactionsCount() public constant returns (uint){
+          return goldTxTotal;
+     }
+
+     function getGoldTransaction(string _userId, uint _index) public constant returns(int){
+          require(_index < goldCounts[_userId]);
+          return goldTxs[_userId][_index];
+     }
+
+     function getUserGoldBalance(string _userId) public constant returns(int){
+          return goldBalances[_userId];
      }
 
      function addBuyTokensRequest(address _who, string _userId, string _requestHash) public onlyController returns(uint){
@@ -293,8 +330,8 @@ contract IGoldFiatFee {
      function calculateSellGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int);
 }
 
-contract FiatTables is SafeMath, CreatorEnabled, StringMover {
-	Storage public myStorage;
+contract StorageBL is SafeMath, CreatorEnabled, StringMover {
+	 Storage public stor;
      IMNTP public mntpToken;
      IGold public goldToken;
      IGoldFiatFee public fiatFee;
@@ -305,14 +342,14 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
      event RequestProcessed(uint indexed _reqId);
 
 ////////////////////
-     function FiatTables(address _mntpContractAddress, address _goldContractAddress, address _storageAddress, address _fiatFeeContract) {
+     function StorageBL(address _mntpContractAddress, address _goldContractAddress, address _storageAddress, address _fiatFeeContract) {
           creator = msg.sender;
 
           if(0!=_storageAddress){
                // use existing storage
-               myStorage = Storage(_storageAddress);
+               stor = Storage(_storageAddress);
           }else{
-               myStorage = new Storage();
+               stor = new Storage();
           }
 
           require(0x0!=_mntpContractAddress);
@@ -326,7 +363,7 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
 
      // Only old controller can call setControllerAddress
      function changeController(address _newController) public onlyCreator {
-          myStorage.setControllerAddress(_newController);
+          stor.setControllerAddress(_newController);
      }
 
      function changeFiatFeeContract(address _newFiatFee) public onlyCreator {
@@ -335,15 +372,15 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
 
      // 1
      function addDoc(string _ipfsDocLink) public onlyCreator returns(uint){
-          return myStorage.addDoc(_ipfsDocLink);
+          return stor.addDoc(_ipfsDocLink);
      }
 
      function getDocCount() public constant returns (uint){
-          return myStorage.docCount(); 
+          return stor.docCount(); 
      }
 
      function getDoc(uint _index) public constant returns (string){
-          var (x, y) = myStorage.getDocAsBytes64(_index);
+          var (x, y) = stor.getDocAsBytes64(_index);
           return bytes64ToString(x,y);
      }
 
@@ -351,43 +388,64 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
      // _amountCents can be negative
      // returns index in user array
      function addFiatTransaction(string _userId, int _amountCents) public onlyCreator returns(uint){
-          return myStorage.addFiatTransaction(_userId, _amountCents);
+          return stor.addFiatTransaction(_userId, _amountCents);
      }
 
      function getFiatTransactionsCount(string _userId) public constant returns (uint){
-          return myStorage.getFiatTransactionsCount(_userId);
+          return stor.getFiatTransactionsCount(_userId);
      }
      
      function getAllFiatTransactionsCount() public constant returns (uint){
-          return myStorage.getAllFiatTransactionsCount();
+          return stor.getAllFiatTransactionsCount();
      }
 
      function getFiatTransaction(string _userId, uint _index) public constant returns(int){
-          return myStorage.getFiatTransaction(_userId, _index);
+          return stor.getFiatTransaction(_userId, _index);
      }
 
-// 4
      function getUserFiatBalance(string _userId) public constant returns(int){
-          return myStorage.getUserFiatBalance(_userId);
+          return stor.getUserFiatBalance(_userId);
      }
 
-// 3:
+// 3
+
+     function addGoldTransaction(string _userId, int _amount) public onlyCreator returns(uint){
+          return stor.addGoldTransaction(_userId, _amount);
+     }
+
+     function getGoldTransactionsCount(string _userId) public constant returns (uint){
+          return stor.getGoldTransactionsCount(_userId);
+     }
+     
+     function getAllGoldTransactionsCount() public constant returns (uint){
+          return stor.getAllGoldTransactionsCount();
+     }
+
+     function getGoldTransaction(string _userId, uint _index) public constant returns(int){
+          return stor.getGoldTransaction(_userId, _index);
+     }
+
+     function getUserGoldBalance(string _userId) public constant returns(int){
+          return stor.getUserGoldBalance(_userId);
+     }
+
+// 4:
      function addBuyTokensRequest(string _userId, string _requestHash) public returns(uint){
           NewTokenBuyRequest(msg.sender, _userId); 
-          return myStorage.addBuyTokensRequest(msg.sender, _userId, _requestHash);
+          return stor.addBuyTokensRequest(msg.sender, _userId, _requestHash);
      }
 
      function addSellTokensRequest(string _userId, string _requestHash) public returns(uint){
           NewTokenSellRequest(msg.sender, _userId);
-		return myStorage.addSellTokensRequest(msg.sender, _userId, _requestHash);
+		return stor.addSellTokensRequest(msg.sender, _userId, _requestHash);
      }
 
      function getRequestsCount() public constant returns(uint){
-          return myStorage.getRequestsCount();
+          return stor.getRequestsCount();
      }
 
      function getRequest(uint _index) public constant returns(address, string, string, bool, uint8){
-          var (sender, userIdBytes, hashA, hashB, buy, state) = myStorage.getRequest(_index);
+          var (sender, userIdBytes, hashA, hashB, buy, state) = stor.getRequest(_index);
 
           string memory userId = bytes32ToString(userIdBytes);
           string memory hash = bytes64ToString(hashA, hashB);
@@ -397,7 +455,7 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
 
      function cancelRequest(uint _index) onlyCreator public {
           RequestCancelled(_index);
-          myStorage.cancelRequest(_index);
+          stor.cancelRequest(_index);
      }
      
      function processRequest(uint _index, uint _amountCents, uint _centsPerGold) onlyCreator public {
@@ -417,7 +475,7 @@ contract FiatTables is SafeMath, CreatorEnabled, StringMover {
           }
 
           // 3 - update state
-          myStorage.setRequestProcessed(_index);
+          stor.setRequestProcessed(_index);
 
           // 4 - send event
           RequestProcessed(_index);

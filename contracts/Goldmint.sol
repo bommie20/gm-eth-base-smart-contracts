@@ -1,5 +1,6 @@
-pragma solidity ^0.4.16;
+pragma solidity ^0.4.19;
 
+// Turn the usage of callcode
 contract SafeMath {
      function safeMul(uint a, uint b) internal returns (uint) {
           uint c = a * b;
@@ -32,8 +33,8 @@ contract CreatorEnabled {
 // ERC20 standard
 contract StdToken is SafeMath {
 // Fields:
-     mapping(address => uint256) balances;
-     mapping (address => mapping (address => uint256)) allowed;
+     mapping(address => uint256) public balances;
+     mapping (address => mapping (address => uint256)) internal allowed;
      uint public totalSupply = 0;
 
 // Events:
@@ -42,6 +43,8 @@ contract StdToken is SafeMath {
 
 // Functions:
      function transfer(address _to, uint256 _value) onlyPayloadSize(2 * 32) returns(bool){
+          require(0x0!=_to);
+
           balances[msg.sender] = safeSub(balances[msg.sender],_value);
           balances[_to] = safeAdd(balances[_to],_value);
 
@@ -50,6 +53,8 @@ contract StdToken is SafeMath {
      }
 
      function transferFrom(address _from, address _to, uint256 _value) returns(bool){
+          require(0x0!=_to);
+
           balances[_to] = safeAdd(balances[_to],_value);
           balances[_from] = safeSub(balances[_from],_value);
           allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender],_value);
@@ -82,6 +87,12 @@ contract StdToken is SafeMath {
           require(msg.data.length >= _size + 4);
           _;
      }
+}
+
+contract IGoldFee {
+     function calculateFee(
+          bool _isMigrationStarted, bool _isMigrationFinished, 
+          uint _mntpBalance, uint _value) public constant returns(uint);
 }
 
 contract GoldFee is CreatorEnabled {
@@ -146,39 +157,37 @@ contract Gold is StdToken, CreatorEnabled {
 // Fields:
      string public constant name = "Goldmint GOLD Token";
      string public constant symbol = "GOLD";
-     uint public constant decimals = 18;
+     uint8 public constant decimals = 18;
 
      // this is used to send fees (that is then distributed as rewards)
      address public migrationAddress = 0x0;
+     address public controllerAddress = 0x0;
+
      address public goldmintTeamAddress = 0x0;
-     MNTP_Interface public mntpToken;
-     GoldFee public goldFee;
+     IMNTP public mntpToken;
+     IGoldFee public goldFee;
 
      bool public lockTransfers = false;
      bool public migrationStarted = false;
      bool public migrationFinished = false;
 
-     struct IssueInfo {
-          address who;
-          uint count;
-          string docLink;
-     }
-     mapping (uint=>IssueInfo) public issues;
-     uint public totalIssues = 0;
-     mapping (address=>uint) public issuesPerAddressCount;
-     mapping (address=> mapping(uint=>uint)) public issuesPerAddress;
-
 // Modifiers:
      modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
+     modifier onlyMigrationOrController() { require(msg.sender==migrationAddress || msg.sender==controllerAddress); _; }
+     modifier onlyCreatorOrController() { require(msg.sender==creator || msg.sender==controllerAddress); _; }
      modifier onlyIfUnlocked() { require(!lockTransfers); _; }
 
 // Functions:
      function Gold(address _mntpContractAddress, address _goldmintTeamAddress, address _goldFeeAddress) public {
           creator = msg.sender;
 
-          mntpToken = MNTP_Interface(_mntpContractAddress);
+          mntpToken = IMNTP(_mntpContractAddress);
           goldmintTeamAddress = _goldmintTeamAddress; 
-          goldFee = GoldFee(_goldFeeAddress);
+          goldFee = IGoldFee(_goldFeeAddress);
+     }
+
+     function setControllerContractAddress(address _controllerAddress) public onlyCreator {
+          controllerAddress = _controllerAddress;
      }
 
      function setMigrationContractAddress(address _migrationAddress) public onlyCreator {
@@ -190,65 +199,24 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function setGoldFeeAddress(address _goldFeeAddress) public onlyCreator {
-          goldFee = GoldFee(_goldFeeAddress);
-     }
-
-     // IPFS docs access method:
-     function getIssuesCount() constant returns (uint){
-          return totalIssues;
-     }
-
-     function getIssueInfo(uint _index) constant returns (address, uint, string){
-          require(_index < getIssuesCount());
-
-          IssueInfo memory info = issues[_index];
-          return (info.who, info.count, info.docLink);
-     }
-
-     function getIssuesCountForAddress(address _address) constant returns (uint){
-          return issuesPerAddressCount[_address];
-     }
-
-     function getIssueForAddress(address _address, uint _index) constant returns (address, uint, string){
-          require(_index<issuesPerAddressCount[_address]);
-
-          uint indexInGlobalArr = issuesPerAddress[_address][_index];
-          return getIssueInfo(indexInGlobalArr);
-     }
-
-     function issueTokens(address _who, uint _tokens, string _ipfsDocLink) public onlyCreator {
-          balances[_who] = safeAdd(balances[_who],_tokens);
-          totalSupply = safeAdd(totalSupply,_tokens);
-
-          // add to issues
-          IssueInfo memory issue;
-          issue.who = _who;
-          issue.count = _tokens;
-          issue.docLink = _ipfsDocLink;
-          issues[totalIssues] = issue; 
-
-          // add to issues per user
-          issuesPerAddress[_who][issuesPerAddressCount[_who]] = totalIssues;
-          issuesPerAddressCount[_who]++;
-          totalIssues++;
-
-          Transfer(0x0, _who, _tokens);
+          goldFee = IGoldFee(_goldFeeAddress);
      }
      
-     function issueTokensWithNoDoc(address _who, uint _tokens) public onlyCreator {
+     function issueTokens(address _who, uint _tokens) public onlyCreatorOrController {
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
 
           Transfer(0x0, _who, _tokens);
      }
 
-     function burnTokens(address _who, uint _tokens) public onlyMigration {
+     function burnTokens(address _who, uint _tokens) public onlyMigrationOrController {
           balances[_who] = safeSub(balances[_who],_tokens);
           totalSupply = safeSub(totalSupply,_tokens);
      }
 
      // there is no way to revert that
      function startMigration() public onlyMigration {
+          require(false==migrationStarted);
           migrationStarted = true;
      }
 
@@ -294,10 +262,7 @@ contract Gold is StdToken, CreatorEnabled {
           uint yourCurrentMntpBalance = mntpToken.balanceOf(_from);
 
           uint fee = goldFee.calculateFee(migrationStarted, migrationFinished, yourCurrentMntpBalance, _value);
-          uint sendThis = _value;
           if(0!=fee){ 
-               safeSub(_value,fee);
-          
                // 1.Transfer fee
                // A -> rewards account
                // 
@@ -313,29 +278,43 @@ contract Gold is StdToken, CreatorEnabled {
           
           // 2.Transfer
           // A -> B
+          uint sendThis = safeSub(_value,fee);
           return super.transferFrom(_from, _to, sendThis);
      }
 
      // Used to send rewards)
      function transferRewardWithoutFee(address _to, uint _value) public onlyMigration onlyPayloadSize(2*32) {
+          require(0x0!=_to);
+
           balances[migrationAddress] = safeSub(balances[migrationAddress],_value);
           balances[_to] = safeAdd(balances[_to],_value);
 
           Transfer(migrationAddress, _to, _value);
      }
 
+     // This is an emergency function that can be called by Creator only 
+     function rescueAllRewards(address _to) public onlyCreator {
+          require(0x0!=_to);
+
+          uint totalReward = balances[migrationAddress];
+
+          balances[_to] = safeAdd(balances[_to],totalReward);
+          balances[migrationAddress] = 0;
+
+          Transfer(migrationAddress, _to, totalReward);
+     }
 }
 
-contract MNTP_Interface is StdToken {
+contract IMNTP is StdToken {
 // Additional methods that MNTP contract provides
      function lockTransfer(bool _lock);
-
+     function issueTokens(address _who, uint _tokens);
      function burnTokens(address _who, uint _tokens);
 }
 
 contract GoldmintMigration is CreatorEnabled {
 // Fields:
-     MNTP_Interface public mntpToken;
+     IMNTP public mntpToken;
      Gold public goldToken;
 
      enum State {
@@ -394,7 +373,7 @@ contract GoldmintMigration is CreatorEnabled {
           require(_mntpContractAddress!=0);
           require(_goldContractAddress!=0);
 
-          mntpToken = MNTP_Interface(_mntpContractAddress);
+          mntpToken = IMNTP(_mntpContractAddress);
           goldToken = Gold(_goldContractAddress);
      }
 
@@ -541,6 +520,25 @@ contract GoldmintMigration is CreatorEnabled {
           GoldMigrateWanted(msg.sender, _grapheneAddress, myBalance);
      }
 
+     function isGoldMigrated(address _who) public constant returns(bool){
+          uint index = goldMigrationIndexes[_who];
+          Migration memory mig = goldMigrations[index];
+          return mig.migrated;
+     }
+
+     function setGoldMigrated(address _who, bool _isMigrated, string _comment) public onlyCreator { 
+          uint index = goldMigrationIndexes[_who];
+          goldMigrations[index].migrated = _isMigrated; 
+          goldMigrations[index].comment = _comment; 
+
+          // send an event
+          if(_isMigrated){
+               GoldMigrated(  goldMigrations[index].ethAddress, 
+                              goldMigrations[index].grapheneAddress, 
+                              goldMigrations[index].tokensCount);
+          }
+     }
+
      // Each MNTP token holder gets a GOLD reward as a percent of all rewards
      // proportional to his MNTP token stake
      function calculateMyRewardMax(address _of) public constant returns(uint){
@@ -553,7 +551,7 @@ contract GoldmintMigration is CreatorEnabled {
                return 0;
           }
 
-          return migrationRewardTotal * (myCurrentMntpBalance / mntpToMigrateTotal);
+          return (migrationRewardTotal * myCurrentMntpBalance) / mntpToMigrateTotal;
      }
 
      // Migration rewards decreased linearly. 
@@ -578,8 +576,10 @@ contract GoldmintMigration is CreatorEnabled {
           return calculateMyRewardDecreased(day, _myRewardMax);
      }
 
+/////////
      // do not allow to send money to this contract...
-     function() public payable{
+     function() external payable{
           revert();
      }
 }
+

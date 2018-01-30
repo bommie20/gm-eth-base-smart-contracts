@@ -310,13 +310,13 @@ contract GoldFiatFee is CreatorEnabled, StringMover {
           // If the sender holds at least 1000 MNTP, then the transaction fee is 1.5% fiat,
           // If the sender holds at least 10000 MNTP, then the transaction fee is 1% fiat,
           if(_mntpBalance>=(10000 * 1 ether)){
-               return _goldValue / 100;
+               return (75 * _goldValue / 10000);
           }
           if(_mntpBalance>=(1000 * 1 ether)){
                return (15 * _goldValue / 1000);
           }
           if(_mntpBalance>=(10 * 1 ether)){
-               return (2 * _goldValue / 100);
+               return (25 * _goldValue / 1000);
           }
           
           // 3%

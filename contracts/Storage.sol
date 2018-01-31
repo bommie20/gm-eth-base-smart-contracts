@@ -330,8 +330,8 @@ contract IGoldFiatFee {
      function calculateSellGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int);
 }
 
-contract StorageBL is SafeMath, CreatorEnabled, StringMover {
-	 Storage public stor;
+contract StorageController is SafeMath, CreatorEnabled, StringMover {
+     Storage public stor;
      IMNTP public mntpToken;
      IGold public goldToken;
      IGoldFiatFee public fiatFee;
@@ -341,8 +341,7 @@ contract StorageBL is SafeMath, CreatorEnabled, StringMover {
      event RequestCancelled(uint indexed _reqId);
      event RequestProcessed(uint indexed _reqId);
 
-////////////////////
-     function StorageBL(address _mntpContractAddress, address _goldContractAddress, address _storageAddress, address _fiatFeeContract) {
+     function StorageController(address _mntpContractAddress, address _goldContractAddress, address _storageAddress, address _fiatFeeContract) {
           creator = msg.sender;
 
           if(0!=_storageAddress){

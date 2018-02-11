@@ -69,8 +69,8 @@ describe('Fiat 1', function() {
                deployGoldFeeContract(data,function(err){
                     assert.equal(err,null);
 
-                    // same as deplyGold2Contract but deploys 
-                    // Gold from GoldmintDAO.sol file
+                    // same as deployGold2Contract but deploys 
+                    // Gold from Goldmint.sol file
                     deployGold2Contract(data,function(err){
                          assert.equal(err,null);
 
@@ -187,7 +187,7 @@ describe('Fiat 1', function() {
           assert.equal(fiatContract.getUserFiatBalance(user),0);
 
           // $3 
-          var amount = -300;
+          var amount = 300;
 
           fiatContract.addFiatTransaction(
                user,
@@ -200,7 +200,7 @@ describe('Fiat 1', function() {
 
                     assert.equal(fiatContract.getFiatTransactionsCount(user),1);
                     assert.equal(fiatContract.getAllFiatTransactionsCount(),1);
-                    assert.equal(fiatContract.getUserFiatBalance(user),-300);
+                    assert.equal(fiatContract.getUserFiatBalance(user),300);
 
                     var amount2 = fiatContract.getFiatTransaction(user,0);
                     assert.equal(amount2,amount);
@@ -243,8 +243,7 @@ describe('Fiat 1', function() {
      it('should add fiat tx 3',function(done){
           var user = "kostya";
 
-          // $9 
-          var amount = -900;
+          var amount = -100;
 
           fiatContract.addFiatTransaction(
                user,
@@ -257,7 +256,7 @@ describe('Fiat 1', function() {
 
                     assert.equal(fiatContract.getFiatTransactionsCount(user),2);
                     assert.equal(fiatContract.getAllFiatTransactionsCount(),3);
-                    assert.equal(fiatContract.getUserFiatBalance(user),-400);
+                    assert.equal(fiatContract.getUserFiatBalance(user),400);
 
                     var amount2 = fiatContract.getFiatTransaction(user,1);
                     assert.equal(amount2,amount);
@@ -375,9 +374,31 @@ describe('Fiat 1', function() {
           );
      });
 
-     it('should not process request if no fiat',function(done){
-          var amountCents = 100;
 
+     it('should add fiat tx 4',function(done){
+        var user = "anton";
+
+        // $3 
+        var amount = -300;
+
+        fiatContract.addFiatTransaction(
+             user,
+             amount,
+             {
+                  from: creator,               
+                  gas: 2900000 
+             },function(err,result){
+                  assert.equal(err,null);
+
+                  assert.equal(fiatContract.getUserFiatBalance(user),0);
+
+                  done();
+             }
+        );
+     });
+
+     it('should not process request if no fiat',function(done){
+          var amountCents = 500;
           // 1 GOLD - $500
           var centsPerGold = (500 * 100);
 
@@ -389,15 +410,16 @@ describe('Fiat 1', function() {
                     from: creator,               
                     gas: 2900000 
                },function(err,result){
+                    
                     assert.notEqual(err,null);
                     done();
                }
           );
      });
 
-     it('should add fiat tx 4',function(done){
+     it('should add fiat tx 5',function(done){
           var user = "xxx"; 
-          var amount = 900;        // $9 
+          var amount = 120000;        // $1200 
 
           fiatContract.addFiatTransaction(
                user,
@@ -437,7 +459,7 @@ describe('Fiat 1', function() {
      });
 
      it('should process request',function(done){
-          var amountCents = 100;
+          var amountCents = 100000;
 
           // 1 GOLD - $500
           var centsPerGold = (500 * 100);
@@ -456,17 +478,16 @@ describe('Fiat 1', function() {
                },function(err,result){
                     assert.equal(err,null);
 
-                    // 900 - 100
+                    // 120000 - 100000
                     var user = 'xxx';
-                    assert.equal(fiatContract.getUserFiatBalance(user),800);
+                    assert.equal(fiatContract.getUserFiatBalance(user),20000);
 
                     var goldmintFeeAccount = "12312312";
-                    assert.equal(fiatContract.getUserFiatBalance(goldmintFeeAccount),3);
+                    //assert.equal(fiatContract.getUserFiatBalance(goldmintFeeAccount),3);
 
                     // GOLD balance should be increased
                     var balance = goldContract.balanceOf(buyer3);
-                    // 97% will be = 1940000000000000 GOLD
-                    assert.equal(balance, (((100 * 1000000000000000000) / centsPerGold) * 97) / 100)
+                    assert.equal(balance, 2000000000000000000)
 
                     var r = fiatContract.getRequest(2);
                     assert.equal(r[0],buyer3);
@@ -496,11 +517,11 @@ describe('Fiat 1', function() {
      });
 
      it('should process request 2',function(done){
-          // 800 left only
-          var amountCents = 1000;
+          // 20000 left only
+          var amountCents = 100000;
 
           // 1 GOLD - $500
-          var centsPerGold = (500 * 100);
+          var centsPerGold = (400 * 100);
 
           fiatContract.processRequest(
                3,
@@ -517,8 +538,8 @@ describe('Fiat 1', function() {
 
                     // GOLD balance should be increased
                     var balance = goldContract.balanceOf(buyer3);
-                    // total bought was 900 - 3%
-                    assert.equal(balance, ((900 * 1000000000000000000 / centsPerGold) * 97) / 100 );
+                    // total bought was 2 + 0.5 = 2.5
+                    assert.equal(balance, 2500000000000000000 );
 
                     done();
                }
@@ -543,9 +564,12 @@ describe('Fiat 1', function() {
      });
 
      it('should process request 3',function(done){
-          // sell $100 worth of tokens 
-          var amountCents = 100;
 
+        var balanceBefore = goldContract.balanceOf(buyer3);
+        
+          // sell $100 worth of tokens 
+          var amountCents = 10000;
+            
           // 1 GOLD - $500
           var centsPerGold = (500 * 100);
 
@@ -558,17 +582,16 @@ describe('Fiat 1', function() {
                     gas: 2900000 
                },function(err,result){
                     assert.equal(err,null);
-
-                    // should be increased
+                    
+                    // should be increased: 100$ - 3% = 97$
                     var user = 'xxx';
-                    assert.equal(fiatContract.getUserFiatBalance(user),100);
+                    assert.equal(fiatContract.getUserFiatBalance(user),9700);
 
                     // GOLD balance should be decreased  
                     var balance = goldContract.balanceOf(buyer3);
 
-                    var wasBeforeSell = ((900 * 1000000000000000000 / centsPerGold) * 97) / 100;
-                    var sell = (100 * 1000000000000000000 / centsPerGold);
-                    var shouldBe = wasBeforeSell - sell;
+                    var sell = (amountCents * 1000000000000000000 / centsPerGold);
+                    var shouldBe = balanceBefore - sell;
 
                     assert.equal(balance, shouldBe);
 
@@ -611,7 +634,7 @@ describe('Fiat 2 - change the controller', function() {
                     assert.equal(err,null);
 
                     // same as deplyGold2Contract but deploys 
-                    // Gold from GoldmintDAO.sol file
+                    // Gold from Goldmint.sol file
                     deployGold2Contract(data,function(err){
                          assert.equal(err,null);
 
@@ -669,12 +692,12 @@ describe('Fiat 2 - change the controller', function() {
      });
      
      it('should change the controller',function(done){
-		var storageAddressWas = fiatContract.myStorage();
+		var storageAddressWas = fiatContract.stor();
 		console.log('EXISTING STORAGE ADDRESS: ');
 		console.log(storageAddressWas);
 
-		var file = './contracts/FiatTables.sol';
-		var contractName = ':FiatTables';
+		var file = './contracts/Storage.sol';
+		var contractName = ':StorageController';
 
 		fs.readFile(file, function(err, result){
 			assert.equal(err,null);

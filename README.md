@@ -10,5 +10,5 @@ npm install -g mocha
 node_modules/.bin/testrpc --port 8989 --gasLimit 10000000
 
 # In another window
-./run_tests.sh
+./run-tests.sh
 ```

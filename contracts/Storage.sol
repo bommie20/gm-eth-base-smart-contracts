@@ -7,7 +7,7 @@ contract IGold {
 }
 
 // StdToken inheritance is commented, because no 'totalSupply' needed
-contract IMNTP /*is StdToken */{
+contract IMNTP { /*is StdToken */
      function balanceOf(address _owner) constant returns (uint256);
 // Additional methods that MNTP contract provides
      function lockTransfer(bool _lock);
@@ -16,11 +16,16 @@ contract IMNTP /*is StdToken */{
 }
 
 contract SafeMath {
-     function safeAdd(uint a, uint b) internal returns (uint) {
-          uint c = a + b;
-          assert(c>=a && c>=b);
-          return c;
+    function safeAdd(uint a, uint b) internal returns (uint) {
+        uint c = a + b;
+        assert(c>=a && c>=b);
+        return c;
      }
+
+    function safeSub(uint a, uint b) internal returns (uint) {
+        assert(b <= a);
+        return a - b;
+    }
 }
 
 contract CreatorEnabled {
@@ -116,14 +121,14 @@ contract Storage is SafeMath, StringMover {
 
 // Fields - 2 
      mapping(string => mapping(uint => int)) fiatTxs;
-     mapping(string => int) fiatBalancesCents;
-     mapping(string => uint) fiatCounts;
+     mapping(string => uint) fiatBalancesCents;
+     mapping(string => uint) fiatTxCounts;
      uint fiatTxTotal = 0;
 
 // Fields - 3 
      mapping(string => mapping(uint => int)) goldTxs;
-     mapping(string => int) goldBalances;
-     mapping(string => uint) goldCounts;
+     mapping(string => uint) goldBalances;
+     mapping(string => uint) goldTxCounts;
      uint goldTxTotal = 0;
 
 // Fields - 4 
@@ -160,64 +165,74 @@ contract Storage is SafeMath, StringMover {
      }
 
      function addFiatTransaction(string _userId, int _amountCents) public onlyController returns(uint){
-          require(0!=_amountCents);
+          require(0 != _amountCents);
 
-          uint c = fiatCounts[_userId];
+          uint c = fiatTxCounts[_userId];
 
           fiatTxs[_userId][c] = _amountCents;
-          fiatBalancesCents[_userId] = fiatBalancesCents[_userId] + _amountCents;
+        
+          if (_amountCents > 0) {
+              fiatBalancesCents[_userId] = safeAdd(fiatBalancesCents[_userId], uint(_amountCents));
+          } else {
+              fiatBalancesCents[_userId] = safeSub(fiatBalancesCents[_userId], uint(-_amountCents));
+          }
 
-          fiatCounts[_userId] = safeAdd(fiatCounts[_userId],1);
+          fiatTxCounts[_userId] = safeAdd(fiatTxCounts[_userId], 1);
 
           fiatTxTotal++;
           return c;
      }
 
-     function getFiatTransactionsCount(string _userId) public constant returns (uint){
-          return fiatCounts[_userId];
+     function getFiatTransactionsCount(string _userId) public constant returns (uint) {
+          return fiatTxCounts[_userId];
      }
      
-     function getAllFiatTransactionsCount() public constant returns (uint){
+     function getAllFiatTransactionsCount() public constant returns (uint) {
           return fiatTxTotal;
      }
 
-     function getFiatTransaction(string _userId, uint _index) public constant returns(int){
-          require(_index < fiatCounts[_userId]);
+     function getFiatTransaction(string _userId, uint _index) public constant returns(int) {
+          require(_index < fiatTxCounts[_userId]);
           return fiatTxs[_userId][_index];
      }
 
-     function getUserFiatBalance(string _userId) public constant returns(int){
+     function getUserFiatBalance(string _userId) public constant returns(uint) {
           return fiatBalancesCents[_userId];
      }
 
-    function addGoldTransaction(string _userId, int _amount) public onlyController returns(uint){
+    function addGoldTransaction(string _userId, int _amount) public onlyController returns(uint) {
           require(0!=_amount);
 
-          uint c = goldCounts[_userId];
+          uint c = goldTxCounts[_userId];
 
           goldTxs[_userId][c] = _amount;
-          goldBalances[_userId] = goldBalances[_userId] + _amount;
 
-          goldCounts[_userId] = safeAdd(goldCounts[_userId],1);
+          if (_amount > 0) {
+              goldBalances[_userId] = safeAdd(goldBalances[_userId], uint(_amount));
+          } else {
+              goldBalances[_userId] = safeSub(goldBalances[_userId], uint(-_amount));
+          }
+
+          goldTxCounts[_userId] = safeAdd(goldTxCounts[_userId], 1);
 
           goldTxTotal++;
           return c;
      }
 
-     function getGoldTransactionsCount(string _userId) public constant returns (uint){
-          return goldCounts[_userId];
+     function getGoldTransactionsCount(string _userId) public constant returns (uint) {
+          return goldTxCounts[_userId];
      }
      
-     function getAllGoldTransactionsCount() public constant returns (uint){
+     function getAllGoldTransactionsCount() public constant returns (uint) {
           return goldTxTotal;
      }
 
-     function getGoldTransaction(string _userId, uint _index) public constant returns(int){
-          require(_index < goldCounts[_userId]);
+     function getGoldTransaction(string _userId, uint _index) public constant returns(int) {
+          require(_index < goldTxCounts[_userId]);
           return goldTxs[_userId][_index];
      }
 
-     function getUserGoldBalance(string _userId) public constant returns(int){
+     function getUserGoldBalance(string _userId) public constant returns(uint) {
           return goldBalances[_userId];
      }
 
@@ -285,12 +300,12 @@ contract GoldFiatFee is CreatorEnabled, StringMover {
      string gmUserId = "";
 
 // Functions: 
-     function GoldFiatFee(string _gmUserId){
+     function GoldFiatFee(string _gmUserId) {
           creator = msg.sender;
           gmUserId = _gmUserId;
      }
 
-     function getGoldmintFeeAccount() public constant returns(bytes32){
+     function getGoldmintFeeAccount() public constant returns(bytes32) {
           bytes32 userBytes = stringToBytes32(gmUserId);
           return userBytes;
      }
@@ -299,12 +314,12 @@ contract GoldFiatFee is CreatorEnabled, StringMover {
           gmUserId = _gmUserId;
      }
      
-     function calculateBuyGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int) 
+     function calculateBuyGoldFee(uint _mntpBalance, uint _goldValue) public constant returns(uint) 
      {
           return 0;
      }
 
-     function calculateSellGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int) {
+     function calculateSellGoldFee(uint _mntpBalance, uint _goldValue) public constant returns(uint) {
           // If the sender holds 0 MNTP, then the transaction fee is 3% fiat, 
           // If the sender holds at least 10 MNTP, then the transaction fee is 2% fiat,
           // If the sender holds at least 1000 MNTP, then the transaction fee is 1.5% fiat,
@@ -326,8 +341,8 @@ contract GoldFiatFee is CreatorEnabled, StringMover {
 
 contract IGoldFiatFee {
      function getGoldmintFeeAccount()public constant returns(bytes32);
-     function calculateBuyGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int);
-     function calculateSellGoldFee(uint _mntpBalance, int _goldValue) public constant returns(int);
+     function calculateBuyGoldFee(uint _mntpBalance, uint _goldValue) public constant returns(uint);
+     function calculateSellGoldFee(uint _mntpBalance, uint _goldValue) public constant returns(uint);
 }
 
 contract StorageController is SafeMath, CreatorEnabled, StringMover {
@@ -344,10 +359,10 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
      function StorageController(address _mntpContractAddress, address _goldContractAddress, address _storageAddress, address _fiatFeeContract) {
           creator = msg.sender;
 
-          if(0!=_storageAddress){
+          if (0 != _storageAddress) {
                // use existing storage
                stor = Storage(_storageAddress);
-          }else{
+          } else {
                stor = new Storage();
           }
 
@@ -360,6 +375,7 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
           fiatFee = IGoldFiatFee(_fiatFeeContract);
      }
 
+
      // Only old controller can call setControllerAddress
      function changeController(address _newController) public onlyCreator {
           stor.setControllerAddress(_newController);
@@ -370,15 +386,15 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
      }
 
      // 1
-     function addDoc(string _ipfsDocLink) public onlyCreator returns(uint){
+     function addDoc(string _ipfsDocLink) public onlyCreator returns(uint) {
           return stor.addDoc(_ipfsDocLink);
      }
 
-     function getDocCount() public constant returns (uint){
+     function getDocCount() public constant returns (uint) {
           return stor.docCount(); 
      }
 
-     function getDoc(uint _index) public constant returns (string){
+     function getDoc(uint _index) public constant returns (string) {
           var (x, y) = stor.getDocAsBytes64(_index);
           return bytes64ToString(x,y);
      }
@@ -386,23 +402,23 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
 // 2
      // _amountCents can be negative
      // returns index in user array
-     function addFiatTransaction(string _userId, int _amountCents) public onlyCreator returns(uint){
+     function addFiatTransaction(string _userId, int _amountCents) public onlyCreator returns(uint) {
           return stor.addFiatTransaction(_userId, _amountCents);
      }
 
-     function getFiatTransactionsCount(string _userId) public constant returns (uint){
+     function getFiatTransactionsCount(string _userId) public constant returns (uint) {
           return stor.getFiatTransactionsCount(_userId);
      }
      
-     function getAllFiatTransactionsCount() public constant returns (uint){
+     function getAllFiatTransactionsCount() public constant returns (uint) {
           return stor.getAllFiatTransactionsCount();
      }
 
-     function getFiatTransaction(string _userId, uint _index) public constant returns(int){
+     function getFiatTransaction(string _userId, uint _index) public constant returns(int) {
           return stor.getFiatTransaction(_userId, _index);
      }
 
-     function getUserFiatBalance(string _userId) public constant returns(int){
+     function getUserFiatBalance(string _userId) public constant returns(uint) {
           return stor.getUserFiatBalance(_userId);
      }
 
@@ -416,34 +432,34 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
           return stor.getGoldTransactionsCount(_userId);
      }
      
-     function getAllGoldTransactionsCount() public constant returns (uint){
+     function getAllGoldTransactionsCount() public constant returns (uint) {
           return stor.getAllGoldTransactionsCount();
      }
 
-     function getGoldTransaction(string _userId, uint _index) public constant returns(int){
+     function getGoldTransaction(string _userId, uint _index) public constant returns(int) {
           return stor.getGoldTransaction(_userId, _index);
      }
 
-     function getUserGoldBalance(string _userId) public constant returns(int){
+     function getUserGoldBalance(string _userId) public constant returns(uint) {
           return stor.getUserGoldBalance(_userId);
      }
 
 // 4:
-     function addBuyTokensRequest(string _userId, string _requestHash) public returns(uint){
+     function addBuyTokensRequest(string _userId, string _requestHash) public returns(uint) {
           NewTokenBuyRequest(msg.sender, _userId); 
           return stor.addBuyTokensRequest(msg.sender, _userId, _requestHash);
      }
 
-     function addSellTokensRequest(string _userId, string _requestHash) public returns(uint){
+     function addSellTokensRequest(string _userId, string _requestHash) public returns(uint) {
           NewTokenSellRequest(msg.sender, _userId);
 		return stor.addSellTokensRequest(msg.sender, _userId, _requestHash);
      }
 
-     function getRequestsCount() public constant returns(uint){
+     function getRequestsCount() public constant returns(uint) {
           return stor.getRequestsCount();
      }
 
-     function getRequest(uint _index) public constant returns(address, string, string, bool, uint8){
+     function getRequest(uint _index) public constant returns(address, string, string, bool, uint8) {
           var (sender, userIdBytes, hashA, hashB, buy, state) = stor.getRequest(_index);
 
           string memory userId = bytes32ToString(userIdBytes);
@@ -461,16 +477,12 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
           require(_index < getRequestsCount());
 
           var (sender, userId, hash, isBuy, state) = getRequest(_index);
-          require(0==state);
+          require(0 == state);
 
-          // 0 - get fiat amount that user has
-          int amount = int(_amountCents);
-          require(amount > 0);
-
-          if(isBuy){
-               processBuyRequest(userId, sender, amount, _centsPerGold);
-          }else{
-               processSellRequest(userId, sender, amount, _centsPerGold);
+          if (isBuy) {
+               processBuyRequest(userId, sender, _amountCents, _centsPerGold);
+          } else {
+               processSellRequest(userId, sender, _amountCents, _centsPerGold);
           }
 
           // 3 - update state
@@ -480,22 +492,24 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
           RequestProcessed(_index);
      }
 
-     function processBuyRequest(string _userId, address _userAddress, int _amount, uint _centsPerGold) internal {
-          int userFiatBalance = getUserFiatBalance(_userId);
+     function processBuyRequest(string _userId, address _userAddress, uint _amount, uint _centsPerGold) internal {
+          uint userFiatBalance = getUserFiatBalance(_userId);
           require(userFiatBalance > 0);
-          if(_amount > userFiatBalance){
+
+          if (_amount > userFiatBalance) {
                _amount = userFiatBalance;
           }
 
           uint userMntpBalance = mntpToken.balanceOf(_userAddress);
-          int fee = fiatFee.calculateBuyGoldFee(userMntpBalance, _amount);
+          uint fee = fiatFee.calculateBuyGoldFee(userMntpBalance, _amount);
           require(_amount > fee);  
 
           // 1 - issue tokens minus fee
-          int amountMinusFee = _amount;
-          if(fee>0){ 
-               amountMinusFee = _amount - fee;
+          uint amountMinusFee = _amount;
+          if (fee > 0) { 
+               amountMinusFee = safeSub(_amount, fee);
           }
+
           require(amountMinusFee > 0);
 
           uint tokens = (uint(amountMinusFee) * 1 ether) / _centsPerGold;
@@ -503,44 +517,44 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
 
           // 2 - add fiat tx
           // negative for buy (total amount including fee!)
-          addFiatTransaction(_userId, - _amount);
+          addFiatTransaction(_userId, - int(_amount));
 
           // 3 - send fee to Goldmint
           // positive for sell 
-          if(fee>0){
-               string memory f = bytes32ToString(fiatFee.getGoldmintFeeAccount());
-               addFiatTransaction(f, fee);
+          if (fee > 0) {
+               string memory gmAccount = bytes32ToString(fiatFee.getGoldmintFeeAccount());
+               addFiatTransaction(gmAccount, int(fee));
           }
      }
 
-     function processSellRequest(string _userId, address _userAddress, int _amount, uint _centsPerGold) internal {
+     function processSellRequest(string _userId, address _userAddress, uint _amount, uint _centsPerGold) internal {
           uint tokens = (uint(_amount) * 1 ether) / _centsPerGold;
           uint tokenBalance = goldToken.balanceOf(_userAddress);
 
-          if(tokenBalance < tokens){
+          if (tokenBalance < tokens) {
                tokens = tokenBalance;
-               _amount = int((tokens * _centsPerGold) / 1 ether);
+               _amount = uint((tokens * _centsPerGold) / 1 ether);
           }
 
           burnGoldTokens(_userAddress, tokens);
 
           // 2 - add fiat tx
           uint userMntpBalance = mntpToken.balanceOf(_userAddress);
-          int fee = fiatFee.calculateSellGoldFee(userMntpBalance, _amount);
+          uint fee = fiatFee.calculateSellGoldFee(userMntpBalance, _amount);
           require(_amount > fee);  
 
-          int amountMinusFee = _amount;
-          if(fee>0){ 
-               amountMinusFee = _amount - fee;
+          uint amountMinusFee = _amount;
+          if (fee>0) { 
+               amountMinusFee = safeSub(_amount, fee);
           }
           require(amountMinusFee > 0);
           // positive for sell 
-          addFiatTransaction(_userId, amountMinusFee);
+          addFiatTransaction(_userId, int(amountMinusFee));
 
           // 3 - send fee to Goldmint
-          if(fee>0){
-               string memory f = bytes32ToString(fiatFee.getGoldmintFeeAccount());
-               addFiatTransaction(f, fee);
+          if (fee > 0) {
+               string memory gmAccount = bytes32ToString(fiatFee.getGoldmintFeeAccount());
+               addFiatTransaction(gmAccount, int(fee));
           }
      }
      

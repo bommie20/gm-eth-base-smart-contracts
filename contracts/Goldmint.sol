@@ -246,9 +246,9 @@ contract Gold is StdToken, CreatorEnabled {
                // Each GOLD token transfer should send transaction fee to
                // GoldmintMigration contract if Migration process is not started.
                // Goldmint team if Migration process is started.
-               if(migrationStarted){
+               if (migrationStarted) {
                     super.transfer(goldmintTeamAddress, fee);
-               }else{
+               }else {
                     super.transfer(migrationAddress, fee);
                }
           }
@@ -262,16 +262,16 @@ contract Gold is StdToken, CreatorEnabled {
           uint yourCurrentMntpBalance = mntpToken.balanceOf(_from);
 
           uint fee = goldFee.calculateFee(migrationStarted, migrationFinished, yourCurrentMntpBalance, _value);
-          if(0!=fee){ 
+          if (0 != fee) { 
                // 1.Transfer fee
                // A -> rewards account
                // 
                // Each GOLD token transfer should send transaction fee to
                // GoldmintMigration contract if Migration process is not started.
                // Goldmint team if Migration process is started.
-               if(migrationStarted){
+               if (migrationStarted) {
                     super.transferFrom(_from, goldmintTeamAddress, fee);
-               }else{
+               } else {
                     super.transferFrom(_from, migrationAddress, fee);
                }
           }

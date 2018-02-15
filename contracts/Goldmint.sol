@@ -104,7 +104,7 @@ contract GoldFee is CreatorEnabled {
      function getMin(uint out)returns (uint){
           // 0.002 GOLD is min fee
           uint minFee = (2 * 1 ether) / 1000;
-          if(out<minFee){
+          if (out < minFee) {
                return minFee;
           }
           return out;
@@ -113,7 +113,7 @@ contract GoldFee is CreatorEnabled {
      function getMax(uint out)returns (uint){
           // 0.02 GOLD is max fee
           uint maxFee = (2 * 1 ether) / 100;
-          if(out>=maxFee){
+          if (out >= maxFee) {
                return maxFee;
           }
           return out;
@@ -123,8 +123,8 @@ contract GoldFee is CreatorEnabled {
           bool _isMigrationStarted, bool _isMigrationFinished, 
           uint _mntpBalance, uint _value) public constant returns(uint) 
      {
-          // When migration process is finished (1 year from Graphene launch), then transaction fee is 1% GOLD.
-          if(_isMigrationFinished){
+          // When migration process is finished (1 year from Goldmint blockchain launch), then transaction fee is 1% GOLD.
+          if (_isMigrationFinished) {
                return (_value / 100); 
           }
 
@@ -138,13 +138,13 @@ contract GoldFee is CreatorEnabled {
 
           // If the sender holds at least 10000 MNTP, then the transaction fee is 0.0333333% GOLD,
           // but not more than 0.02 MNTP
-          if(_mntpBalance>=(10000 * 1 ether)){
+          if (_mntpBalance >= (10000 * 1 ether)) {
                return getMax((_value / 100) / 30);
           }
-          if(_mntpBalance>=(1000 * 1 ether)){
+          if (_mntpBalance >= (1000 * 1 ether)) {
                return getMin((_value / 100) / 30);
           }
-          if(_mntpBalance>=(10 * 1 ether)){
+          if (_mntpBalance >= (10 * 1 ether)) {
                return getMin((_value / 100) / 3);
           }
           
@@ -170,6 +170,9 @@ contract Gold is StdToken, CreatorEnabled {
      bool public lockTransfers = false;
      bool public migrationStarted = false;
      bool public migrationFinished = false;
+
+     uint public totalIssued = 0;
+     uint public totalBurnt = 0;
 
 // Modifiers:
      modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
@@ -205,6 +208,7 @@ contract Gold is StdToken, CreatorEnabled {
      function issueTokens(address _who, uint _tokens) public onlyCreatorOrController {
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
+          totalIssued = safeAdd(totalIssued,_tokens);
 
           Transfer(0x0, _who, _tokens);
      }
@@ -212,17 +216,18 @@ contract Gold is StdToken, CreatorEnabled {
      function burnTokens(address _who, uint _tokens) public onlyMigrationOrController {
           balances[_who] = safeSub(balances[_who],_tokens);
           totalSupply = safeSub(totalSupply,_tokens);
+          totalBurnt = safeAdd(totalBurnt,_tokens);
      }
 
      // there is no way to revert that
      function startMigration() public onlyMigration {
-          require(false==migrationStarted);
+          require(false == migrationStarted);
           migrationStarted = true;
      }
 
      // there is no way to revert that
      function finishMigration() public onlyMigration {
-          require(true==migrationStarted);
+          require(true == migrationStarted);
 
           migrationFinished = true;
      }
@@ -237,7 +242,7 @@ contract Gold is StdToken, CreatorEnabled {
           // you can transfer if fee is ZERO 
           uint fee = goldFee.calculateFee(migrationStarted, migrationFinished, yourCurrentMntpBalance, _value);
           uint sendThis = _value;
-          if(0!=fee){ 
+          if (0 != fee) { 
                sendThis = safeSub(_value,fee);
           
                // 1.Transfer fee
@@ -248,7 +253,7 @@ contract Gold is StdToken, CreatorEnabled {
                // Goldmint team if Migration process is started.
                if (migrationStarted) {
                     super.transfer(goldmintTeamAddress, fee);
-               }else {
+               } else {
                     super.transfer(migrationAddress, fee);
                }
           }
@@ -258,7 +263,7 @@ contract Gold is StdToken, CreatorEnabled {
           return super.transfer(_to, sendThis);
      }
 
-     function transferFrom(address _from, address _to, uint256 _value) public onlyIfUnlocked returns(bool){
+     function transferFrom(address _from, address _to, uint256 _value) public onlyIfUnlocked returns(bool) {
           uint yourCurrentMntpBalance = mntpToken.balanceOf(_from);
 
           uint fee = goldFee.calculateFee(migrationStarted, migrationFinished, yourCurrentMntpBalance, _value);
@@ -303,6 +308,15 @@ contract Gold is StdToken, CreatorEnabled {
 
           Transfer(migrationAddress, _to, totalReward);
      }
+
+
+     function getTotalIssued() public constant returns (uint) {
+          return totalIssued; 
+     }
+
+     function getTotalBurnt() public constant returns (uint) {
+          return totalBurnt; 
+     }
 }
 
 contract IMNTP is StdToken {
@@ -334,12 +348,13 @@ contract GoldmintMigration is CreatorEnabled {
 
      struct Migration {
           address ethAddress;
-          string grapheneAddress;
+          string gmAddress;
           uint tokensCount;
           bool migrated;
           uint64 date;
           string comment;
      }
+
      mapping (uint=>Migration) public mntpMigrations;
      mapping (address=>uint) public mntpMigrationIndexes;
      uint public mntpMigrationsCount = 0;
@@ -348,21 +363,21 @@ contract GoldmintMigration is CreatorEnabled {
      mapping (address=>uint) public goldMigrationIndexes;
      uint public goldMigrationsCount = 0;
 
-     event MntpMigrateWanted(address _ethAddress, string _grapheneAddress, uint256 _value);
-     event MntpMigrated(address _ethAddress, string _grapheneAddress, uint256 _value);
+     event MntpMigrateWanted(address _ethAddress, string _gmAddress, uint256 _value);
+     event MntpMigrated(address _ethAddress, string _gmAddress, uint256 _value);
 
-     event GoldMigrateWanted(address _ethAddress, string _grapheneAddress, uint256 _value);
-     event GoldMigrated(address _ethAddress, string _grapheneAddress, uint256 _value);
+     event GoldMigrateWanted(address _ethAddress, string _gmAddress, uint256 _value);
+     event GoldMigrated(address _ethAddress, string _gmAddress, uint256 _value);
 
 // Access methods
      function getMntpMigration(uint index) public constant returns(address,string,uint,bool,uint64,string){
           Migration memory mig = mntpMigrations[index];
-          return (mig.ethAddress, mig.grapheneAddress, mig.tokensCount, mig.migrated, mig.date, mig.comment);
+          return (mig.ethAddress, mig.gmAddress, mig.tokensCount, mig.migrated, mig.date, mig.comment);
      }
 
      function getGoldMigration(uint index) public constant returns(address,string,uint,bool,uint64,string){
           Migration memory mig = goldMigrations[index];
-          return (mig.ethAddress, mig.grapheneAddress, mig.tokensCount, mig.migrated, mig.date, mig.comment);
+          return (mig.ethAddress, mig.gmAddress, mig.tokensCount, mig.migrated, mig.date, mig.comment);
      }
 
 // Functions:
@@ -370,8 +385,11 @@ contract GoldmintMigration is CreatorEnabled {
      function GoldmintMigration(address _mntpContractAddress, address _goldContractAddress) public {
           creator = msg.sender;
 
-          require(_mntpContractAddress!=0);
-          require(_goldContractAddress!=0);
+          require(_mntpContractAddress != 0);
+          require(_goldContractAddress != 0);
+
+          mntpMigrationIndexes[address(0x0)] = 0;
+          goldMigrationIndexes[address(0x0)] = 0;
 
           mntpToken = IMNTP(_mntpContractAddress);
           goldToken = Gold(_goldContractAddress);
@@ -388,9 +406,9 @@ contract GoldmintMigration is CreatorEnabled {
      // This method is called when migration to Goldmint's blockchain
      // process is started...
      function startMigration() public onlyCreator {
-          require((State.Init==state) || (State.MigrationPaused==state));
+          require((State.Init == state) || (State.MigrationPaused == state));
 
-          if(State.Init==state){
+          if (State.Init == state) {
                // 1 - change fees
                goldToken.startMigration();
                
@@ -404,17 +422,17 @@ contract GoldmintMigration is CreatorEnabled {
      }
 
      function pauseMigration() public onlyCreator {
-          require((state==State.MigrationStarted) || (state==State.MigrationFinished));
+          require((state == State.MigrationStarted) || (state == State.MigrationFinished));
 
           state = State.MigrationPaused;
      }
 
-     // that doesn't mean that you cant migrate from Ethereum -> Graphene
+     // that doesn't mean that you cant migrate from Ethereum -> Goldmint blockchain
      // that means that you will get no reward
      function finishMigration() public onlyCreator {
-          require((State.MigrationStarted==state) || (State.MigrationPaused==state));
+          require((State.MigrationStarted == state) || (State.MigrationPaused == state));
 
-          if(State.MigrationStarted==state){
+          if (State.MigrationStarted == state) {
                goldToken.finishMigration();
                migrationFinishedTime = uint64(now);
           }
@@ -427,13 +445,13 @@ contract GoldmintMigration is CreatorEnabled {
      }
 
 // MNTP
-     // Call this to migrate your MNTP tokens to Graphene MNT
+     // Call this to migrate your MNTP tokens to Goldmint MNT
      // (this is one-way only)
-     // _grapheneAddress is something like that - "BTS7yRXCkBjKxho57RCbqYE3nEiprWXXESw3Hxs5CKRnft8x7mdGi"
+     // _gmAddress is something like that - "BTS7yRXCkBjKxho57RCbqYE3nEiprWXXESw3Hxs5CKRnft8x7mdGi"
      //
      // !!! WARNING: will not allow anyone to migrate tokens partly
-     // !!! DISCLAIMER: check graphene address format. You will not be able to change that!
-     function migrateMntp(string _grapheneAddress) public {
+     // !!! DISCLAIMER: check goldmint blockchain address format. You will not be able to change that!
+     function migrateMntp(string _gmAddress) public {
           require((state==State.MigrationStarted) || (state==State.MigrationFinished));
 
           // 1 - calculate current reward
@@ -457,41 +475,44 @@ contract GoldmintMigration is CreatorEnabled {
           // save tuple 
           Migration memory mig;
           mig.ethAddress = msg.sender;
-          mig.grapheneAddress = _grapheneAddress;
+          mig.gmAddress = _gmAddress;
           mig.tokensCount = myBalance;
           mig.migrated = false;
           mig.date = uint64(now);
           mig.comment = '';
 
-          mntpMigrations[mntpMigrationsCount] = mig;
-          mntpMigrationIndexes[msg.sender] = mntpMigrationsCount;
+          mntpMigrations[mntpMigrationsCount + 1] = mig;
+          mntpMigrationIndexes[msg.sender] = mntpMigrationsCount + 1;
           mntpMigrationsCount++;
 
           // send an event
-          MntpMigrateWanted(msg.sender, _grapheneAddress, myBalance);
+          MntpMigrateWanted(msg.sender, _gmAddress, myBalance);
      }
 
-     function isMntpMigrated(address _who) public constant returns(bool){
+     function isMntpMigrated(address _who) public constant returns(bool) {
           uint index = mntpMigrationIndexes[_who];
+
           Migration memory mig = mntpMigrations[index];
           return mig.migrated;
      }
 
      function setMntpMigrated(address _who, bool _isMigrated, string _comment) public onlyCreator { 
           uint index = mntpMigrationIndexes[_who];
+          require(index > 0);
+
           mntpMigrations[index].migrated = _isMigrated; 
           mntpMigrations[index].comment = _comment; 
 
           // send an event
-          if(_isMigrated){
+          if (_isMigrated) {
                MntpMigrated(  mntpMigrations[index].ethAddress, 
-                              mntpMigrations[index].grapheneAddress, 
+                              mntpMigrations[index].gmAddress, 
                               mntpMigrations[index].tokensCount);
           }
      }
 
 // GOLD
-     function migrateGold(string _grapheneAddress) public {
+     function migrateGold(string _gmAddress) public {
           require((state==State.MigrationStarted) || (state==State.MigrationFinished));
 
           // 1 - get balance
@@ -506,35 +527,38 @@ contract GoldmintMigration is CreatorEnabled {
           // save tuple 
           Migration memory mig;
           mig.ethAddress = msg.sender;
-          mig.grapheneAddress = _grapheneAddress;
+          mig.gmAddress = _gmAddress;
           mig.tokensCount = myBalance;
           mig.migrated = false;
           mig.date = uint64(now);
           mig.comment = '';
 
-          goldMigrations[goldMigrationsCount] = mig;
-          goldMigrationIndexes[msg.sender] = goldMigrationsCount;
+          goldMigrations[goldMigrationsCount + 1] = mig;
+          goldMigrationIndexes[msg.sender] = goldMigrationsCount + 1;
           goldMigrationsCount++;
 
           // send an event
-          GoldMigrateWanted(msg.sender, _grapheneAddress, myBalance);
+          GoldMigrateWanted(msg.sender, _gmAddress, myBalance);
      }
 
-     function isGoldMigrated(address _who) public constant returns(bool){
+     function isGoldMigrated(address _who) public constant returns(bool) {
           uint index = goldMigrationIndexes[_who];
+
           Migration memory mig = goldMigrations[index];
           return mig.migrated;
      }
 
      function setGoldMigrated(address _who, bool _isMigrated, string _comment) public onlyCreator { 
           uint index = goldMigrationIndexes[_who];
+          require(index > 0);
+
           goldMigrations[index].migrated = _isMigrated; 
           goldMigrations[index].comment = _comment; 
 
           // send an event
-          if(_isMigrated){
+          if (_isMigrated) {
                GoldMigrated(  goldMigrations[index].ethAddress, 
-                              goldMigrations[index].grapheneAddress, 
+                              goldMigrations[index].gmAddress, 
                               goldMigrations[index].tokensCount);
           }
      }
@@ -542,12 +566,12 @@ contract GoldmintMigration is CreatorEnabled {
      // Each MNTP token holder gets a GOLD reward as a percent of all rewards
      // proportional to his MNTP token stake
      function calculateMyRewardMax(address _of) public constant returns(uint){
-          if(0==mntpToMigrateTotal){
+          if (0 == mntpToMigrateTotal) {
                return 0;
           }
 
           uint myCurrentMntpBalance = mntpToken.balanceOf(_of);
-          if(0==myCurrentMntpBalance){
+          if (0 == myCurrentMntpBalance) {
                return 0;
           }
 
@@ -562,7 +586,7 @@ contract GoldmintMigration is CreatorEnabled {
      // On 2nd day of migration, you will get: 100 - 100 * 1/365 = 99.7261% of your rewards
      // On 365th day of migration, you will get: 100 - 100 * 364/365 = 0.274%
      function calculateMyRewardDecreased(uint _day, uint _myRewardMax) public constant returns(uint){
-          if(_day>=365){
+          if (_day >= 365) {
                return 0;
           }
 
@@ -578,7 +602,7 @@ contract GoldmintMigration is CreatorEnabled {
 
 /////////
      // do not allow to send money to this contract...
-     function() external payable{
+     function() external payable {
           revert();
      }
 }

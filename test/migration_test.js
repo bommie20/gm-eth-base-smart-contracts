@@ -67,7 +67,7 @@ describe('Migrations 1', function() {
 
                     // same as deplyGold2Contract but deploys 
                     // Gold from GoldmintDAO.sol file
-                    deployGold2Contract(data,function(err){
+                    deployGoldContract(data,function(err){
                          assert.equal(err,null);
 
                          deployMigrationContract(data,function(err){
@@ -408,16 +408,16 @@ describe('Migrations 1', function() {
           console.log('Migrating MNTPs: ' + myMntpBalance.toString(10));
           var mntpTotalSupplyShouldBe = mntpSupply.minus(myMntpBalance);
           assert.notEqual(myMntpBalance.toString(10),0);
-
+          
           var out = migrationContract.calculateMyRewardMax(buyer); 
           var out2= migrationContract.calculateMyReward(out); 
           assert.equal(out2.toString(10),2000000000000000);
-
+          
           assert.equal(migrationContract.mntpMigrationsCount(),0);
-
+          
           var isMigrated = migrationContract.isMntpMigrated(buyer);
           assert.equal(isMigrated, false);
-
+          
           migrationContract.migrateMntp(
                grapheneAddress,
                {
@@ -456,7 +456,7 @@ describe('Migrations 1', function() {
 
                     assert.equal(migrationContract.mntpMigrationsCount(),1);
 
-                    var mig = migrationContract.getMntpMigration(0);
+                    var mig = migrationContract.getMntpMigration(1);
                     assert.equal(mig[0], buyer);
                     assert.equal(mig[1], '224238729837489237482374892734897234897');
                     assert.equal(mig[2].toString(10), 1000);
@@ -503,7 +503,7 @@ describe('Migrations 1', function() {
                     isMigrated = migrationContract.isMntpMigrated(buyer);
                     assert.equal(isMigrated, true);
 
-                    var mig = migrationContract.getMntpMigration(0);
+                    var mig = migrationContract.getMntpMigration(1);
                     assert.equal(mig[0], buyer);
                     assert.equal(mig[1], '224238729837489237482374892734897234897');
                     assert.equal(mig[2].toString(10), 1000);
@@ -674,7 +674,7 @@ describe('Migrations 2 - calculate fees', function() {
 
                     // same as deplyGold2Contract but deploys 
                     // Gold from GoldmintDAO.sol file
-                    deployGold2Contract(data,function(err){
+                    deployGoldContract(data,function(err){
                          assert.equal(err,null);
 
                          deployMigrationContract(data,function(err){
@@ -838,7 +838,7 @@ describe('Migrations 3 - calculate rewards', function() {
 
                     // same as deplyGold2Contract but deploys 
                     // Gold from GoldmintDAO.sol file
-                    deployGold2Contract(data,function(err){
+                    deployGoldContract(data,function(err){
                          assert.equal(err,null);
 
                          deployMigrationContract(data,function(err){
@@ -938,7 +938,7 @@ describe('Migrations 4', function() {
 
                     // same as deplyGold2Contract but deploys 
                     // Gold from GoldmintDAO.sol file
-                    deployGold2Contract(data,function(err){
+                    deployGoldContract(data,function(err){
                          assert.equal(err,null);
 
                          deployMigrationContract(data,function(err){
@@ -1040,7 +1040,7 @@ describe('Migrations 4', function() {
 
                     assert.equal(migrationContract.goldMigrationsCount(),1);
 
-                    var mig = migrationContract.getGoldMigration(0);
+                    var mig = migrationContract.getGoldMigration(1);
                     assert.equal(mig[0], buyer);
                     assert.equal(mig[1], '224238729837489237482374892734897234897');
                     assert.equal(mig[2].toString(10), amount);
@@ -1096,7 +1096,7 @@ describe('Migrations 4', function() {
                     isMigrated = migrationContract.isGoldMigrated(buyer);
                     assert.equal(isMigrated, true);
 
-                    var mig = migrationContract.getGoldMigration(0);
+                    var mig = migrationContract.getGoldMigration(1);
                     assert.equal(mig[0], buyer);
                     assert.equal(mig[1], '224238729837489237482374892734897234897');
                     assert.equal(mig[2].toString(10), amount);

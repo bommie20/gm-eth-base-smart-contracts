@@ -34,9 +34,23 @@ describe('GOLD token 1', function() {
                creator2 = accounts[1];
                buyer = accounts[2];
 
-               deployGoldContract(null,function(err){
-                    done();
-               });
+               var data = {};
+
+               deployMntContract(data,function(err){
+                assert.equal(err,null);
+                
+                        deployGoldFeeContract(data,function(err){
+                            assert.equal(err,null);
+        
+                            // same as deplyGold2Contract but deploys 
+                            // Gold from GoldmintDAO.sol file
+                            deployGoldContract(data,function(err){
+                                assert.equal(err,null);
+        
+                                done();
+                            });
+                        });
+                });
           });
      });
 
@@ -158,9 +172,21 @@ describe('GOLD token 2', function() {
                creator2 = accounts[1];
                buyer = accounts[2];
 
-               deployGoldContract(null,function(err){
-                    done();
-               });
+               deployMntContract(data,function(err){
+                assert.equal(err,null);
+                
+                deployGoldFeeContract(data,function(err){
+                        assert.equal(err,null);
+    
+                        // same as deplyGold2Contract but deploys 
+                        // Gold from GoldmintDAO.sol file
+                        deployGoldContract(data,function(err){
+                            assert.equal(err,null);
+    
+                            done();
+                        });
+                    });
+                });
           });
      });
 

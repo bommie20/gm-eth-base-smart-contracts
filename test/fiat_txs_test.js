@@ -35,6 +35,8 @@ var fiatContractAddress;
 var fiatContract;
 var fiatContractOld;
 
+var hotWalletTokenHolderAddress;
+
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
 describe('Fiat 1', function() {
@@ -51,6 +53,7 @@ describe('Fiat 1', function() {
                buyer2 = accounts[2];
                buyer3 = accounts[3];
                goldmintTeamAddress = accounts[4];
+               hotWalletTokenHolderAddress = accounts[5];
 
                done();
           });
@@ -69,9 +72,9 @@ describe('Fiat 1', function() {
                deployGoldFeeContract(data,function(err){
                     assert.equal(err,null);
 
-                    // same as deployGold2Contract but deploys 
+                    // same as deployGoldContract but deploys 
                     // Gold from Goldmint.sol file
-                    deployGold2Contract(data,function(err){
+                    deployGoldContract(data,function(err){
                          assert.equal(err,null);
 
                          deployFiatFeeContract(data,function(err){
@@ -599,6 +602,115 @@ describe('Fiat 1', function() {
                }
           );
      });
+
+     it('should set new hot wallet token address to storage',function(done){
+		// call old fiatContract 
+            fiatContract.changeHotWalletTokenHolderAddress(
+			// new controller
+               hotWalletTokenHolderAddress,
+               {
+                    from: creator,               
+                    gas: 2900000 
+               },function(err,result){
+                    assert.equal(err,null);
+
+                    done();
+               }
+          );
+    });
+
+     it('should add fiat tx 6', function(done) {
+        var user = "hot-wallet";
+
+        // $3 
+        var amount = 300000;
+
+        fiatContract.addFiatTransaction(
+             user,
+             amount,
+             {
+                  from: creator,               
+                  gas: 2900000 
+             },function(err,result){
+                  assert.equal(err,null);
+
+                  assert.equal(fiatContract.getUserFiatBalance(user),300000);
+
+                  done();
+             }
+        );
+     });   
+
+     it('should process inner buy request',function(done) {
+
+        var user = "hot-wallet";
+
+        var balanceBefore = goldContract.balanceOf(hotWalletTokenHolderAddress);
+
+        // 20000 left only
+        var amountCents = 100000;
+
+        // 1 GOLD - $500
+        var centsPerGold = (500 * 100);
+
+        fiatContract.processInternalRequest(
+             user,
+             true,
+             amountCents,
+             centsPerGold,
+             {
+                  from: creator,               
+                  gas: 2900000 
+             },function(err,result){
+                  assert.equal(err,null);
+
+                  assert.equal(fiatContract.getUserFiatBalance(user), 200000);
+
+                  // GOLD balance should be increased
+                  var balance = goldContract.balanceOf(hotWalletTokenHolderAddress);
+                  // total bought was 2
+                  assert.equal(balance, 2000000000000000000);
+
+                  done();
+             }
+        );
+   });
+
+
+    it('should process inner sell request',function(done) {
+
+        var user = "hot-wallet-1";
+
+        var balanceBefore = goldContract.balanceOf(hotWalletTokenHolderAddress);
+
+        // 20000 left only
+        var amountCents = 100000;
+
+        // 1 GOLD - $500
+        var centsPerGold = (500 * 100);
+
+        fiatContract.processInternalRequest(
+            user,
+            false,
+            amountCents,
+            centsPerGold,
+            {
+                from: creator,               
+                gas: 2900000 
+            },function(err,result){
+                assert.equal(err,null);
+
+                assert.equal(fiatContract.getUserFiatBalance(user), 200000);
+
+                // GOLD balance should be increased
+                var balance = goldContract.balanceOf(hotWalletTokenHolderAddress);
+                // total bought was 2
+                assert.equal(balance, 2000000000000000000);
+
+                done();
+            }
+        );
+    });
 });
 
 describe('Fiat 2 - change the controller', function() {
@@ -615,7 +727,7 @@ describe('Fiat 2 - change the controller', function() {
                buyer2 = accounts[2];
                buyer3 = accounts[3];
                goldmintTeamAddress = accounts[4];
-
+               hotWalletTokenHolderAddress = accounts[5];
                done();
           });
      });
@@ -625,36 +737,32 @@ describe('Fiat 2 - change the controller', function() {
      });
 
      it('should deploy token contract',function(done){
-          var data = {};
+        var data = {};
 
-          deployMntContract(data,function(err){
-               assert.equal(err,null);
-               
-               deployGoldFeeContract(data,function(err){
-                    assert.equal(err,null);
+        deployMntContract(data,function(err){
+             assert.equal(err,null);
+             
+             deployGoldFeeContract(data,function(err){
+                  assert.equal(err,null);
 
-                    // same as deplyGold2Contract but deploys 
-                    // Gold from Goldmint.sol file
-                    deployGold2Contract(data,function(err){
-                         assert.equal(err,null);
+                  // same as deployGoldContract but deploys 
+                  // Gold from Goldmint.sol file
+                  deployGoldContract(data,function(err){
+                       assert.equal(err,null);
 
-                         deployMigrationContract(data,function(err){
-                              assert.equal(err,null);
+                       deployFiatFeeContract(data,function(err){
+                            assert.equal(err,null);
 
-                              deployFiatFeeContract(data,function(err){
-                                   assert.equal(err,null);
+                            deployFiatContract(data,function(err){
+                                 assert.equal(err,null);
 
-                                   deployFiatContract(data,function(err){
-                                        assert.equal(err,null);
-
-                                        done();
-                                   });
-                              });
-                         });
-                    });
-               });
-          });
-     });
+                                 done();
+                            });
+                       });
+                  });
+             });
+        });
+   });
 
      it('should set migration address',function(done){
           goldContract.setControllerContractAddress(
@@ -716,10 +824,10 @@ describe('Fiat 2 - change the controller', function() {
 			var alreadyCalled = false;
 
 			tempContract.new(
-                    mntContractAddress,
+                mntContractAddress,
 				goldContractAddress,
 				storageAddressWas,		// use old storage with new controller!
-                    goldFiatFeeContractAddress,
+                goldFiatFeeContractAddress,
 				{
 					from: creator, 
 					// should not exceed 5000000 for Kovan by default
@@ -769,21 +877,6 @@ describe('Fiat 2 - change the controller', function() {
 		done();
      });
 
-     it('should not add doc 2 to new controller',function(done){
-          var ipfsLink = "999";
-          fiatContract.addDoc(
-               ipfsLink,
-               {
-                    from: creator,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.notEqual(err,null);
-                    assert.equal(fiatContract.getDocCount(),1);
-                    done();
-               }
-          );
-     });
-
 	it('should set new controller address to storage',function(done){
 		// call old fiatContract 
           fiatContractOld.changeController(
@@ -800,7 +893,8 @@ describe('Fiat 2 - change the controller', function() {
                }
           );
 
-	});
+    });
+    
 
      it('should add doc 2 to new controller',function(done){
           var ipfsLink = "999";
@@ -820,4 +914,8 @@ describe('Fiat 2 - change the controller', function() {
                }
           );
      });
+
+
+
+
 });

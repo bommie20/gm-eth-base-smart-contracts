@@ -307,7 +307,7 @@ function deployGoldFeeContract(data,cb){
                {
                     from: creator, 
                     // should not exceed 5000000 for Kovan by default
-                    gas: 4995000,
+                    gas: 7995000,
                     //gasPrice: 120000000000,
                     data: '0x' + bytecode
                }, 
@@ -532,7 +532,7 @@ function deployFiatContract(data,cb){
      });
 }
 
-function deployGold2Contract(data,cb){
+function deployGoldContract(data,cb){
      var file = './contracts/Goldmint.sol';
      var contractName = ':Gold';
 

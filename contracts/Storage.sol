@@ -133,7 +133,7 @@ contract Storage is SafeMath, StringMover {
 
 // Fields - 3 
      mapping(string => mapping(uint => int)) goldTxs;
-     mapping(string => uint) goldBalances;
+     mapping(string => uint) goldHotBalances;
      mapping(string => uint) goldTxCounts;
      uint goldTxTotal = 0;
 
@@ -215,9 +215,9 @@ contract Storage is SafeMath, StringMover {
           goldTxs[_userId][c] = _amount;
 
           if (_amount > 0) {
-              goldBalances[_userId] = safeAdd(goldBalances[_userId], uint(_amount));
+              goldHotBalances[_userId] = safeAdd(goldHotBalances[_userId], uint(_amount));
           } else {
-              goldBalances[_userId] = safeSub(goldBalances[_userId], uint(-_amount));
+              goldHotBalances[_userId] = safeSub(goldHotBalances[_userId], uint(-_amount));
           }
 
           goldTxCounts[_userId] = safeAdd(goldTxCounts[_userId], 1);
@@ -239,8 +239,8 @@ contract Storage is SafeMath, StringMover {
           return goldTxs[_userId][_index];
      }
 
-     function getUserGoldBalance(string _userId) public constant returns(uint) {
-          return goldBalances[_userId];
+     function getUserHotGoldBalance(string _userId) public constant returns(uint) {
+          return goldHotBalances[_userId];
      }
 
      function addBuyTokensRequest(address _who, string _userId, string _requestHash) public onlyController returns(uint) {
@@ -452,8 +452,8 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
           return stor.getGoldTransaction(_userId, _index);
      }
 
-     function getUserGoldBalance(string _userId) public constant returns(uint) {
-          return stor.getUserGoldBalance(_userId);
+     function getUserHotGoldBalance(string _userId) public constant returns(uint) {
+          return stor.getUserHotGoldBalance(_userId);
      }
 
 // 4:
@@ -528,7 +528,7 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
           issueGoldTokens(_userAddress, tokens);
         
           // request from hot wallet
-          if (_userAddress == stor.hotWalletTokenHolder()) {
+          if (isHotWallet(_userAddress)) {
             addGoldTransaction(_userId, int(tokens));
           }
 
@@ -548,19 +548,19 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
           uint tokens = (uint(_amountCents) * 1 ether) / _centsPerGold;
           uint tokenBalance = goldToken.balanceOf(_userAddress);
 
+          if (isHotWallet(_userAddress)) {
+              tokenBalance = getUserHotGoldBalance(_userId);
+          }
+
           if (tokenBalance < tokens) {
                tokens = tokenBalance;
                _amountCents = uint((tokens * _centsPerGold) / 1 ether);
           }
 
-          if (_userAddress == stor.hotWalletTokenHolder()) {
-              require(getUserGoldBalance(_userId) > tokens);
-          }
-
           burnGoldTokens(_userAddress, tokens);
 
           // request from hot wallet
-          if (_userAddress == stor.hotWalletTokenHolder()) {
+          if (isHotWallet(_userAddress)) {
             addGoldTransaction(_userId, - int(tokens));
           }
 
@@ -605,6 +605,10 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
      function burnGoldTokens(address _userAddress, uint _tokenAmount) internal {
           require(0!=_tokenAmount);
           goldToken.burnTokens(_userAddress, _tokenAmount);
+     }
+
+     function isHotWallet(address _address) internal returns(bool) {
+         return _address == stor.hotWalletTokenHolder();
      }
 }
 

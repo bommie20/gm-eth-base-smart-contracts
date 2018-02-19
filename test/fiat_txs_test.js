@@ -676,15 +676,79 @@ describe('Fiat 1', function() {
         );
    });
 
+    it('should add fiat tx 7', function(done) {
+        var user = "hot-wallet-1";
 
-    it('should process inner sell request',function(done) {
+        // $3 
+        var amount = 3000 * 100;
+
+        fiatContract.addFiatTransaction(
+            user,
+            amount,
+            {
+                from: creator,               
+                gas: 2900000 
+            },function(err,result){
+                assert.equal(err,null);
+
+                assert.equal(fiatContract.getUserFiatBalance(user),300000);
+
+                done();
+            }
+        );
+    });      
+
+    it('should process inner buy request',function(done) {
 
         var user = "hot-wallet-1";
 
         var balanceBefore = goldContract.balanceOf(hotWalletTokenHolderAddress);
 
         // 20000 left only
-        var amountCents = 100000;
+        var amountCents = 1000 * 100;
+
+        // 1 GOLD - $500
+        var centsPerGold = (500 * 100);
+
+        fiatContract.processInternalRequest(
+             user,
+             true,
+             amountCents,
+             centsPerGold,
+             {
+                  from: creator,               
+                  gas: 2900000 
+             },function(err,result){
+                  assert.equal(err,null);
+
+                  assert.equal(fiatContract.getUserFiatBalance(user), 2000 * 100);
+
+                  // GOLD balance should be increased
+                  var balance = goldContract.balanceOf(hotWalletTokenHolderAddress);
+                  // total bought was 2
+                  assert.equal(balance, 4000000000000000000);
+
+                  done();
+             }
+        );
+   });
+
+    it('should process inner sell request',function(done) {
+
+        var user = "hot-wallet-1";
+
+        var balanceUserGoldBefore = fiatContract.getUserHotGoldBalance(user);
+        console.log("balanceUserGoldBefore: " + balanceUserGoldBefore);
+
+        var balanceFiatBefore = fiatContract.getUserFiatBalance(user);
+        console.log("balanceFiatBefore: " + balanceFiatBefore);
+
+        var hotWalletGoldBalance = goldContract.balanceOf(hotWalletTokenHolderAddress);
+        console.log("hotWalletGoldBalance: " + hotWalletGoldBalance);
+
+
+        // 2000$ left only
+        var amountCents = 5000 * 100;
 
         // 1 GOLD - $500
         var centsPerGold = (500 * 100);
@@ -700,7 +764,10 @@ describe('Fiat 1', function() {
             },function(err,result){
                 assert.equal(err,null);
 
-                assert.equal(fiatContract.getUserFiatBalance(user), 200000);
+                //
+                assert.equal(fiatContract.getUserFiatBalance(user), 297000);
+                assert.equal(fiatContract.getUserHotGoldBalance(user), 0);
+                assert.equal(goldContract.balanceOf(hotWalletTokenHolderAddress), hotWalletGoldBalance - balanceUserGoldBefore);
 
                 // GOLD balance should be increased
                 var balance = goldContract.balanceOf(hotWalletTokenHolderAddress);

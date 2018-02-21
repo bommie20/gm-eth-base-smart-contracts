@@ -28,8 +28,16 @@ var goldFeeContract;
 var goldContractAddress;
 var goldContract;
 
+var goldFiatFeeContractAddress;
+var goldFiatFeeContract;
+
+var fiatContractAddress;
+var fiatContract;
+
 var migrationContractAddress;
 var migrationContract;
+
+var hotWalletTokenHolderAddress;
 
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
@@ -47,6 +55,7 @@ describe('Migrations 1', function() {
                buyer2 = accounts[2];
                buyer3 = accounts[3];
                goldmintTeamAddress = accounts[4];
+               hotWalletTokenHolderAddress = accounts[5];
 
                done();
           });
@@ -55,6 +64,7 @@ describe('Migrations 1', function() {
      after("Deinitialize everything", function(done) {
           done();
      });
+
 
      it('should deploy token contract',function(done){
           var data = {};
@@ -73,25 +83,49 @@ describe('Migrations 1', function() {
                          deployMigrationContract(data,function(err){
                               assert.equal(err,null);
 
-                              done();
+                              deployFiatFeeContract(data,function(err){
+                                assert.equal(err,null);
+  
+                                deployStorageControllerContract(data,function(err){
+                                     assert.equal(err,null);
+  
+                                     done();
+                                });
+                            });
                          });
                     });
                });
           });
      });
 
-     it('should not set migration address if not creator',function(done){
-          goldContract.setMigrationContractAddress(
-               migrationContractAddress,
+     it('should set storage controller address',function(done){
+        goldContract.setStorageControllerContractAddress(
+             fiatContractAddress,
+             {
+                  from: creator,               
+                  gas: 2900000 
+             },function(err,result){
+                  assert.equal(err,null);
+                  done();
+             }
+        );
+   });
+
+     it('should set new hot wallet token address to storage',function(done){
+		// call old fiatContract 
+            fiatContract.setHotWalletTokenHolderAddress(
+			// new controller
+               hotWalletTokenHolderAddress,
                {
-                    from: buyer,               
+                    from: creator,               
                     gas: 2900000 
                },function(err,result){
-                    assert.notEqual(err,null);
+                    assert.equal(err,null);
+                    
                     done();
                }
           );
-     });
+    });
 
      it('should set migration address',function(done){
           goldContract.setMigrationContractAddress(
@@ -171,6 +205,7 @@ describe('Migrations 1', function() {
      });
 
      it('should transfer GOLD tokens to get some reward',function(done){
+
           assert.notEqual(goldContract.migrationAddress(),0);
 
           var balance1 = goldContract.balanceOf(buyer2);
@@ -852,7 +887,7 @@ describe('Migrations 3 - calculate rewards', function() {
      });
 
      it('should set migration address',function(done){
-          goldContract.setMigrationContractAddress(
+          goldContract.setStorageControllerContractAddress(
                migrationContractAddress,
                {
                     from: creator,               
@@ -1008,6 +1043,7 @@ describe('Migrations 4', function() {
      });
 
      it('should start the migration',function(done){
+
           migrationContract.startMigration(
                {
                     from: creator,               

@@ -307,7 +307,7 @@ function deployGoldFeeContract(data,cb){
                {
                     from: creator, 
                     // should not exceed 5000000 for Kovan by default
-                    gas: 7995000,
+                    gas: 79950000,
                     //gasPrice: 120000000000,
                     data: '0x' + bytecode
                }, 
@@ -466,7 +466,7 @@ function deployMigrationContract(data,cb){
      });
 }
 
-function deployFiatContract(data,cb){
+function deployStorageControllerContract(data,cb){
      var file = './contracts/Storage.sol';
      var contractName = ':StorageController';
 

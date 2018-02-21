@@ -95,13 +95,17 @@ contract IGoldFee {
           uint _mntpBalance, uint _value) public constant returns(uint);
 }
 
+contract IStorageController {
+    function getHotWalletTokenHolderAddress() public constant returns (address);
+}
+
 contract GoldFee is CreatorEnabled {
 // Functions: 
-     function GoldFee(){
+     function GoldFee() {
           creator = msg.sender;
      }
 
-     function getMin(uint out)returns (uint){
+     function getMin(uint out)returns (uint) {
           // 0.002 GOLD is min fee
           uint minFee = (2 * 1 ether) / 1000;
           if (out < minFee) {
@@ -110,7 +114,7 @@ contract GoldFee is CreatorEnabled {
           return out;
      }
 
-     function getMax(uint out)returns (uint){
+     function getMax(uint out)returns (uint) {
           // 0.02 GOLD is max fee
           uint maxFee = (2 * 1 ether) / 100;
           if (out >= maxFee) {
@@ -161,24 +165,27 @@ contract Gold is StdToken, CreatorEnabled {
 
      // this is used to send fees (that is then distributed as rewards)
      address public migrationAddress = 0x0;
-     address public controllerAddress = 0x0;
 
      address public goldmintTeamAddress = 0x0;
      IMNTP public mntpToken;
      IGoldFee public goldFee;
+     IStorageController public storageController;
 
-     bool public lockTransfers = false;
+     bool public transfersLocked = false;
+     bool public contractLocked = false;
      bool public migrationStarted = false;
      bool public migrationFinished = false;
 
      uint public totalIssued = 0;
      uint public totalBurnt = 0;
 
+
 // Modifiers:
-     modifier onlyMigration() { require(msg.sender==migrationAddress); _; }
-     modifier onlyMigrationOrController() { require(msg.sender==migrationAddress || msg.sender==controllerAddress); _; }
-     modifier onlyCreatorOrController() { require(msg.sender==creator || msg.sender==controllerAddress); _; }
-     modifier onlyIfUnlocked() { require(!lockTransfers); _; }
+     modifier onlyMigration() { require(msg.sender == migrationAddress); _; }
+     modifier onlyCreator() { require(msg.sender == creator); _; }
+     modifier onlyMigrationOrStorageController() { require(msg.sender == migrationAddress || msg.sender == address(storageController)); _; }
+     modifier onlyCreatorOrStorageController() { require(msg.sender == creator || msg.sender == address(storageController)); _; }
+     modifier onlyIfUnlocked() { require(!transfersLocked); _; }
 
 // Functions:
      function Gold(address _mntpContractAddress, address _goldmintTeamAddress, address _goldFeeAddress) public {
@@ -189,8 +196,16 @@ contract Gold is StdToken, CreatorEnabled {
           goldFee = IGoldFee(_goldFeeAddress);
      }
 
-     function setControllerContractAddress(address _controllerAddress) public onlyCreator {
-          controllerAddress = _controllerAddress;
+     function setCreator(address _address) public onlyCreator {
+         creator = _address;
+     }
+
+    function lockContract(bool _contractLocked) public onlyCreator {
+         contractLocked = _contractLocked;
+     }
+
+     function setStorageControllerContractAddress(address _address) public onlyCreator {
+          storageController = IStorageController(_address);
      }
 
      function setMigrationContractAddress(address _migrationAddress) public onlyCreator {
@@ -205,7 +220,9 @@ contract Gold is StdToken, CreatorEnabled {
           goldFee = IGoldFee(_goldFeeAddress);
      }
      
-     function issueTokens(address _who, uint _tokens) public onlyCreatorOrController {
+     function issueTokens(address _who, uint _tokens) public onlyCreatorOrStorageController {
+          require(!contractLocked);
+
           balances[_who] = safeAdd(balances[_who],_tokens);
           totalSupply = safeAdd(totalSupply,_tokens);
           totalIssued = safeAdd(totalIssued,_tokens);
@@ -213,7 +230,8 @@ contract Gold is StdToken, CreatorEnabled {
           Transfer(0x0, _who, _tokens);
      }
 
-     function burnTokens(address _who, uint _tokens) public onlyMigrationOrController {
+     function burnTokens(address _who, uint _tokens) public onlyMigrationOrStorageController {
+          require(!contractLocked);
           balances[_who] = safeSub(balances[_who],_tokens);
           totalSupply = safeSub(totalSupply,_tokens);
           totalBurnt = safeAdd(totalBurnt,_tokens);
@@ -233,10 +251,11 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function lockTransfer(bool _lock) public onlyMigration {
-          lockTransfers = _lock;
+          transfersLocked = _lock;
      }
 
-     function transfer(address _to, uint256 _value) public onlyIfUnlocked onlyPayloadSize(2 * 32) returns(bool){
+     function transfer(address _to, uint256 _value) public onlyIfUnlocked onlyPayloadSize(2 * 32) returns(bool) {
+
           uint yourCurrentMntpBalance = mntpToken.balanceOf(msg.sender);
 
           // you can transfer if fee is ZERO 
@@ -264,6 +283,7 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function transferFrom(address _from, address _to, uint256 _value) public onlyIfUnlocked returns(bool) {
+
           uint yourCurrentMntpBalance = mntpToken.balanceOf(_from);
 
           uint fee = goldFee.calculateFee(migrationStarted, migrationFinished, yourCurrentMntpBalance, _value);

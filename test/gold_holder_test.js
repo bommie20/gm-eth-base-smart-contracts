@@ -19,6 +19,8 @@ var initialBalanceCreator = 0;
 var goldContractAddress;
 var goldContract;
 
+var goldmintTeamAddress;
+
 eval(fs.readFileSync('./test/helpers/misc.js')+'');
 
 describe('GOLD token 1', function() {
@@ -33,6 +35,7 @@ describe('GOLD token 1', function() {
                creator = accounts[0];
                creator2 = accounts[1];
                buyer = accounts[2];
+               goldmintTeamAddress = accounts[3];
 
                var data = {};
 
@@ -104,6 +107,15 @@ describe('GOLD token 1', function() {
           })
      });
 
+     it('should lock', function(done){
+            var params = {from: creator2, gas: 2900000};
+
+            goldContract.lockContract(true,params,(err,res)=>{
+                assert.equal(err, null);
+                done();                              
+            });
+        });
+
      it('should not issue tokens externally if locked', function(done){
           var params = {from: creator2, gas: 2900000};
           goldContract.issueTokens(buyer, 1000, params, (err,res)=>{
@@ -160,35 +172,38 @@ describe('GOLD token 1', function() {
 
 
 describe('GOLD token 2', function() {
-     before("Initialize everything", function(done) {
-          web3.eth.getAccounts(function(err, as) {
-               if(err) {
-                    done(err);
-                    return;
-               }
+    before("Initialize everything", function(done) {
+        web3.eth.getAccounts(function(err, as) {
+             if(err) {
+                  done(err);
+                  return;
+             }
 
-               accounts = as;
-               creator = accounts[0];
-               creator2 = accounts[1];
-               buyer = accounts[2];
+             accounts = as;
+             creator = accounts[0];
+             creator2 = accounts[1];
+             buyer = accounts[2];
+             goldmintTeamAddress = accounts[3];
 
-               deployMntContract(data,function(err){
-                assert.equal(err,null);
-                
-                deployGoldFeeContract(data,function(err){
-                        assert.equal(err,null);
-    
-                        // same as deplyGold2Contract but deploys 
-                        // Gold from GoldmintDAO.sol file
-                        deployGoldContract(data,function(err){
-                            assert.equal(err,null);
-    
-                            done();
-                        });
-                    });
-                });
-          });
-     });
+             var data = {};
+
+             deployMntContract(data,function(err){
+              assert.equal(err,null);
+              
+                      deployGoldFeeContract(data,function(err){
+                          assert.equal(err,null);
+      
+                          // same as deplyGold2Contract but deploys 
+                          // Gold from GoldmintDAO.sol file
+                          deployGoldContract(data,function(err){
+                              assert.equal(err,null);
+      
+                              done();
+                          });
+                      });
+              });
+        });
+   });
 
      after("Deinitialize everything", function(done) {
           done();
@@ -220,7 +235,7 @@ describe('GOLD token 2', function() {
 
      it('should not set token manager if from bad account', function(done){
           var params = {from: buyer, gas: 2900000};
-          goldContract.setTokenManager(creator2, params, (err,res)=>{
+          goldContract.setCreator(creator2, params, (err,res)=>{
                assert.notEqual(err,null);
 
                done();
@@ -230,7 +245,7 @@ describe('GOLD token 2', function() {
      // only creator can update token manager
      it('should set token manager', function(done){
           var params = {from: creator, gas: 2900000};
-          goldContract.setTokenManager(creator2, params, (err,res)=>{
+          goldContract.setCreator(creator2, params, (err,res)=>{
                assert.equal(err,null);
                done();
           });
@@ -246,7 +261,7 @@ describe('GOLD token 2', function() {
      });
 
      it('should issue tokens again if token manager', function(done){
-          assert.equal(goldContract.tokenManager(),creator2);
+          assert.equal(goldContract.creator(),creator2);
 
           var params = {from: creator2, gas: 2900000};
           goldContract.issueTokens(buyer, 1000, params, (err,res)=>{

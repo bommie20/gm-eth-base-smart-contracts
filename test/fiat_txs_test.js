@@ -71,7 +71,7 @@ describe('Fiat 1', function() {
                
                deployGoldFeeContract(data,function(err){
                     assert.equal(err,null);
-
+                    
                     // same as deployGoldContract but deploys 
                     // Gold from Goldmint.sol file
                     deployGoldContract(data,function(err){
@@ -80,7 +80,7 @@ describe('Fiat 1', function() {
                          deployFiatFeeContract(data,function(err){
                               assert.equal(err,null);
 
-                              deployFiatContract(data,function(err){
+                              deployStorageControllerContract(data,function(err){
                                    assert.equal(err,null);
 
                                    done();
@@ -91,8 +91,8 @@ describe('Fiat 1', function() {
           });
      });
 
-     it('should set migration address',function(done){
-          goldContract.setControllerContractAddress(
+     it('should set storage controller address',function(done){
+          goldContract.setStorageControllerContractAddress(
                fiatContractAddress,
                {
                     from: creator,               
@@ -605,7 +605,7 @@ describe('Fiat 1', function() {
 
      it('should set new hot wallet token address to storage',function(done){
 		// call old fiatContract 
-            fiatContract.changeHotWalletTokenHolderAddress(
+            fiatContract.setHotWalletTokenHolderAddress(
 			// new controller
                hotWalletTokenHolderAddress,
                {
@@ -820,7 +820,7 @@ describe('Fiat 2 - change the controller', function() {
                        deployFiatFeeContract(data,function(err){
                             assert.equal(err,null);
 
-                            deployFiatContract(data,function(err){
+                            deployStorageControllerContract(data,function(err){
                                  assert.equal(err,null);
 
                                  done();
@@ -831,18 +831,6 @@ describe('Fiat 2 - change the controller', function() {
         });
    });
 
-     it('should set migration address',function(done){
-          goldContract.setControllerContractAddress(
-               fiatContractAddress,
-               {
-                    from: creator,               
-                    gas: 2900000 
-               },function(err,result){
-                    assert.equal(err,null);
-                    done();
-               }
-          );
-     });
 
      it('should add doc 1',function(done){
           assert.equal(fiatContract.getDocCount(),0);

@@ -389,8 +389,12 @@ contract StorageController is SafeMath, CreatorEnabled, StringMover {
           stor.setControllerAddress(_newController);
      }
 
-     function changeHotWalletTokenHolderAddress(address _newHotWalletTokenHolder) public onlyCreator {
+     function setHotWalletTokenHolderAddress(address _newHotWalletTokenHolder) public onlyCreator {
           stor.setHotWalletTokenHolderAddress(_newHotWalletTokenHolder);
+     }
+
+     function getHotWalletTokenHolderAddress() public constant returns (address) {
+          return stor.hotWalletTokenHolder(); 
      }
 
      function changeFiatFeeContract(address _newFiatFee) public onlyCreator {

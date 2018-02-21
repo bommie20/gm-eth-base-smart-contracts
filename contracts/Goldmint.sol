@@ -95,10 +95,6 @@ contract IGoldFee {
           uint _mntpBalance, uint _value) public constant returns(uint);
 }
 
-contract IStorageController {
-    function getHotWalletTokenHolderAddress() public constant returns (address);
-}
-
 contract GoldFee is CreatorEnabled {
 // Functions: 
      function GoldFee() {
@@ -165,11 +161,12 @@ contract Gold is StdToken, CreatorEnabled {
 
      // this is used to send fees (that is then distributed as rewards)
      address public migrationAddress = 0x0;
+     address public storageControllerAddress = 0x0;
 
      address public goldmintTeamAddress = 0x0;
      IMNTP public mntpToken;
      IGoldFee public goldFee;
-     IStorageController public storageController;
+     
 
      bool public transfersLocked = false;
      bool public contractLocked = false;
@@ -183,8 +180,8 @@ contract Gold is StdToken, CreatorEnabled {
 // Modifiers:
      modifier onlyMigration() { require(msg.sender == migrationAddress); _; }
      modifier onlyCreator() { require(msg.sender == creator); _; }
-     modifier onlyMigrationOrStorageController() { require(msg.sender == migrationAddress || msg.sender == address(storageController)); _; }
-     modifier onlyCreatorOrStorageController() { require(msg.sender == creator || msg.sender == address(storageController)); _; }
+     modifier onlyMigrationOrStorageController() { require(msg.sender == migrationAddress || msg.sender == storageControllerAddress); _; }
+     modifier onlyCreatorOrStorageController() { require(msg.sender == creator || msg.sender == storageControllerAddress); _; }
      modifier onlyIfUnlocked() { require(!transfersLocked); _; }
 
 // Functions:
@@ -205,7 +202,7 @@ contract Gold is StdToken, CreatorEnabled {
      }
 
      function setStorageControllerContractAddress(address _address) public onlyCreator {
-          storageController = IStorageController(_address);
+          storageControllerAddress = _address;
      }
 
      function setMigrationContractAddress(address _migrationAddress) public onlyCreator {
